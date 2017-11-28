@@ -1,4 +1,4 @@
-¡­or create a new repository on the command line
+Â¡Â­or create a new repository on the command line
 
 echo "# deeplearning" >> README.md
 git init
@@ -6,7 +6,11 @@ git add README.md
 git commit -m "first commit"
 git remote add origin git@github.com:facingwaller/deeplearning.git
 git push -u origin master
-¡­or push an existing repository from the command line
+Â¡Â­or push an existing repository from the command line
 
 git remote add origin git@github.com:facingwaller/deeplearning.git
 git push -u origin master
+---------------------------------
+git push origin master 
+
+git pull 
