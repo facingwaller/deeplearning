@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import input_data
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+
 #x不是一个特定的值，而是一个占位符placeholder
 #这里的None表示此张量的第一个维度可以是任何长度的。
 #784表示一个图片的像素总数
@@ -11,6 +12,7 @@ x = tf.placeholder("float", [None, 784])
 # 它们可以用于计算输入值，也可以在计算中被修改
 W = tf.Variable(tf.zeros([784,10]))
 b = tf.Variable(tf.zeros([10]))
+
 
 a = tf.constant(1.,name="const1")
 b = tf.constant(2.,name="const2")
