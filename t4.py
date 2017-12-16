@@ -1,22 +1,26 @@
-#coding=utf-8
-#tensorflow对mnist数据集的处理
-from tensorflow.examples.tutorials.mnist import input_data
+import re
+inputStr = "hello crifan, nihao crifan";
+replacedStr = re.sub(r"hello (\w+), nihao \1", "crifanli", inputStr);
+# print("replacedStr=",replacedStr)   # crifanli
 
-batch_size = 100
+# ######################################## 实验 文本向量化
+# coding=utf-8
+import tensorflow as tf
+import numpy as np
+vocab_size = 5
+embedding_size = 10
+W = tf.Variable(
+    # tf.random_uniform((4, 4), minval=low,maxval=high,dtype=tf.float32)))返回4*4的矩阵，
+    # 产生于low和high之间，产生的值是均匀分布的。
+    tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0),
+    name="W")
 
-#载入MNIST数据集，如果给定地址没有数据集，将会自动下载
-mnist = input_data.read_data_sets("MNIST_data/",one_hot=True)
+input_ids = tf.placeholder(dtype=tf.int32, shape=[None])
 
-print("Training data size:",mnist.train.num_examples)
+embedding = tf.Variable(np.identity(5, dtype=np.int32))
+input_embedding = tf.nn.embedding_lookup(W, input_ids)
 
-print( "Validating data size:",mnist.validation.num_examples)
-print( "Testing data size:",mnist.test.num_examples)
-
-print ("Example training data:",mnist.train.images[0])
-
-print ("Example training data label:",mnist.train.labels[0])
-
-xs,ys = mnist.train.next_batch(batch_size)
-
-print( "xs.shape:",xs.shape)
-print ("ys.shape",ys.shape)
+sess = tf.InteractiveSession()
+sess.run(tf.global_variables_initializer())
+print(embedding.eval())
+print(sess.run(input_embedding, feed_dict={input_ids:[1, 2, 3, 0, 3, 2, 1]}))
