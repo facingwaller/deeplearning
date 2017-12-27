@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<QUESTIONBANK xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<DOC>
+		<Question>谁有最新的大陆路歌曲?</Question>
+		<QuestionStyle>推荐类</QuestionStyle>
+		<AnswerType1>表示类</AnswerType1>
+		<AnswerType2>歌名</AnswerType2>
+		<Confidence>1</Confidence>
+	</DOC>
+</QUESTIONBANK>
