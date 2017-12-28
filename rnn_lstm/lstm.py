@@ -31,8 +31,8 @@ row as a sequence of pixels. Because MNIST image shape is 28*28px, we will then
 handle 28 sequences of 28 steps for every sample.
 '''
 tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_string("positive_data_file", "./data/rt-polaritydata/rt-polarity.pos-1", "Data source for the positive data.")
-tf.flags.DEFINE_string("negative_data_file", "./data/rt-polaritydata/rt-polarity.neg-1", "Data source for the negative data.")
+tf.flags.DEFINE_string("positive_data_file", "../data/rt-polarity.pos-1", "Data source for the positive data.")
+tf.flags.DEFINE_string("negative_data_file", "../data/rt-polarity.neg-1", "Data source for the negative data.")
 # Training parameters
 # batch_size：1次迭代所使用的样本量； ；一个epoch是指把所有训练数据完整的过一遍；iteration：表示1次迭代，每次迭代更新1次网络结构的参数
 tf.flags.DEFINE_integer("batch_size", 5, "Batch Size (default: 64)")
@@ -78,14 +78,14 @@ batch_size = 128
 display_step = 200
 
 # Network Parameters
-num_input = 28 # MNIST data input (img shape: 28*28) 类比句子的一个单词的维度
-timesteps = 28 # timesteps                           类比句子的长度
+num_input = 28 # 28 MNIST data input (img shape: 28*28) 类比句子的长度
+timesteps = 28 # 28 timesteps                           类比句子的一个单词的维度
 num_hidden = 128 # hidden layer num of features
-num_classes = 10 # MNIST total classes (0-9 digits)
+num_classes = 10 # 这里是2分类 10 # MNIST total classes (0-9 digits)
 
 # tf Graph input
 X = tf.placeholder("float", [None, timesteps, num_input])
-Y = tf.placeholder("float", [None, num_classes])    # 10分类
+Y = tf.placeholder("float", [None, num_classes])    # 2 ··· 10分类
 
 # Define weights
 weights = {
@@ -95,7 +95,7 @@ biases = {
     'out': tf.Variable(tf.random_normal([num_classes]))
 }
 
-
+# X [None, timesteps, num_input]
 def RNN(x, weights, biases):
 
     # Prepare data shape to match `rnn` function requirements
@@ -103,8 +103,9 @@ def RNN(x, weights, biases):
     # Required shape: 'timesteps' tensors list of shape (batch_size, n_input)
 
     # Unstack to get a list of 'timesteps' tensors of shape (batch_size, n_input)
+    print("x1:",x)
     x = tf.unstack(x, timesteps, 1)
-
+    print("x2:", x)
     # Define a lstm cell with tensorflow
     lstm_cell = rnn.BasicLSTMCell(num_hidden, forget_bias=1.0)
 
@@ -138,12 +139,27 @@ with tf.Session() as sess:
     sess.run(init)
     for step in range(1, training_steps+1):
         # Generate batches
-        #         batches = data_helpers.batch_iter(
+        # batches = data_helpers.batch_iter(
         #    list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
-        batch_x, batch_y = mnist.train.next_batch(batch_size)
+
+        batch_x, batch_y = mnist.train.next_batch(batch_size)  # batch_size
+        if step == 1 :
+            print("batch_size  :", batch_size)
+            print("batch_x len:", len(batch_x))
+            print("batch_x1 len:", len(batch_x[0]))
+            # print("batch_x:", batch_x)
+            print("batch_y: len,col", len(batch_y), len(batch_y[0]))
+            print("batch_y:", batch_y)
         # Reshape data to get 28 seq of 28 elements
+        # 将128*128 的向量，重新构 成
         batch_x = batch_x.reshape((batch_size, timesteps, num_input))
+        if step == 1:
+            print("batch_x d1,d2,d3 ", len(batch_x), len(batch_x[0]), len(batch_x[0][0]))
+            # print("batch_x 1 :", batch_x[0])
+            print("batch_x 1 len:", len(batch_x[0]))
         # Run optimization op (backprop)
+        # batch_x 是128 * 28 的矩阵
+        # batch_y 是128 * 10 的矩阵
         sess.run(train_op, feed_dict={X: batch_x, Y: batch_y})
         if step % display_step == 0 or step == 1:
             # Calculate batch loss and accuracy
