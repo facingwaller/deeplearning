@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../TensorFlow-Examples/.idea/TensorFlow-Examples.iml" filepath="$PROJECT_DIR$/../TensorFlow-Examples/.idea/TensorFlow-Examples.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../cnn-text-classification-tf/.idea/cnn-text-classification-tf.iml" filepath="$PROJECT_DIR$/../cnn-text-classification-tf/.idea/cnn-text-classification-tf.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/tensorFlow1.iml" filepath="$PROJECT_DIR$/.idea/tensorFlow1.iml" />
     </modules>
   </component>

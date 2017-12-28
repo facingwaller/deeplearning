@@ -65,7 +65,7 @@ def train(mnist):
     y = inference(x, None, weights1, biaes1, weights2, biaes2)
     # 定义存储模型训练轮数的变量，并指明为不可训练的参数
     global_step = tf.Variable(0, trainable=False)
-    # 初始化滑动平均的函数类，加入训练轮数的变量可以加快需年早期变量的更新速度
+    # 初始化滑动平均的函数类，加入训练轮数的变量可以加快训练早期变量的更新速度
     variable_averages = tf.train.ExponentialMovingAverage(MOVING_AVERAGE_DECAY, global_step)
     # 对神经网络里所有可训练参数（列表）应用滑动平均模型，每次进行这个操作，列表里的元素都会得到更新
     variable_averages_op = variable_averages.apply(tf.trainable_variables())
@@ -74,7 +74,7 @@ def train(mnist):
     average_y = inference(x, variable_averages, weights1, biaes1, weights2, biaes2)
 
     # 当只有一个标准答案的时候，使用sprase_softmax_cross_entropy_with_logits计算损失，可以加速计算
-    # 参数：不包含softma层的前向传播结果，训练数据的正确答案
+    # 参数：不包含softmax层的前向传播结果，训练数据的正确答案
     # 因为标准答案是一个长度为10的一维数组，而该函数需要提供一个正确答案的数字，
     # 因此需要使用tf.argmax函数得到正确答案的对应类别编号
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y, labels=tf.argmax(y_, 1))
