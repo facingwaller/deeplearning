@@ -6,12 +6,12 @@ import logging
 
 def main():
 	logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-	model = models.Word2Vec.load('med250.model.bin')
+	model = models.Word2Vec.load('en25.model.bin')
 
 
 	while True:
 		try:
-			print(model["测试"])
+			print(model["like"])
 			query = input()
 			q_list = query.split()
 

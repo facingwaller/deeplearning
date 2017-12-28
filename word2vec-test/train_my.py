@@ -8,7 +8,7 @@ def main():
     model = word2vec.Word2Vec(sentences, size=250)
 
 
-    model.save("med250.model.bin")
+    model.save("question25.model.bin")
 
 
 
