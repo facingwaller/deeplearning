@@ -36,7 +36,7 @@ tf.flags.DEFINE_string("negative_data_file", "../data/rt-polarity.neg-1", "Data 
 # Training parameters
 # batch_size：1次迭代所使用的样本量； ；一个epoch是指把所有训练数据完整的过一遍；iteration：表示1次迭代，每次迭代更新1次网络结构的参数
 tf.flags.DEFINE_integer("batch_size", 5, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 2, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 1, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 5, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 10, "Save model after this many steps (default: 100)")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
@@ -74,14 +74,19 @@ print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
 # Training Parameters
 learning_rate = 0.001
 training_steps = 10 # 10000
-batch_size = 128
+batch_size = len(y_train)# 128
 display_step = 200
 
 # Network Parameters
-num_input = 28 # 28 MNIST data input (img shape: 28*28) 类比句子的长度
-timesteps = 28 # 28 timesteps                           类比句子的一个单词的维度
+word_d = 1 # 一个单词的维度
+
+num_input = word_d # 28 # 28 MNIST data input (img shape: 28*28) 类比句子的长度
+timesteps = max_document_length # 28 # 28 timesteps                           类比句子的一个单词的维度
+# sentence_len = 40 # 一个句子的长度
+# max_document_length 一个句子的长度
+
 num_hidden = 128 # hidden layer num of features
-num_classes = 10 # 这里是2分类 10 # MNIST total classes (0-9 digits)
+num_classes = 2  # 10 # 这里是2分类 10 # MNIST total classes (0-9 digits)
 
 # tf Graph input
 X = tf.placeholder("float", [None, timesteps, num_input])
@@ -137,11 +142,25 @@ init = tf.global_variables_initializer()
 with tf.Session() as sess:
     # Run the initializer
     sess.run(init)
+    index = 0
     for step in range(1, training_steps+1):
+        if step == 1:
+            print("查看x_train ===============================")
+            # x_train 句子个数*句子长度
+            print("x_train len", len(x_train),x_train)  # 40 * 0.9 = 36
+            print("y_train len", len(y_train),y_train)
         # Generate batches
-        # batches = data_helpers.batch_iter(
-        #    list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
+        batches = data_helpers.batch_iter(
+             list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
+        batches1 = batches.__next__()
 
+        # batches1 ,d1 是batch_size，(5行);d2 是2个array，
+        # 第一个array是一句话max_len位，第二个array是2位
+        if step == 1:
+            print("batches1 d1,d2,d3 ", len(batches1), len(batches1[0]))
+            # print("matrix_rank ",np.linalg.matrix_rank(batches1))
+            print("batches1 ",batches1)
+            print("===============================")
         batch_x, batch_y = mnist.train.next_batch(batch_size)  # batch_size
         if step == 1 :
             print("batch_size  :", batch_size)
@@ -152,15 +171,20 @@ with tf.Session() as sess:
             print("batch_y:", batch_y)
         # Reshape data to get 28 seq of 28 elements
         # 将128*128 的向量，重新构 成
-        batch_x = batch_x.reshape((batch_size, timesteps, num_input))
-        if step == 1:
-            print("batch_x d1,d2,d3 ", len(batch_x), len(batch_x[0]), len(batch_x[0][0]))
-            # print("batch_x 1 :", batch_x[0])
-            print("batch_x 1 len:", len(batch_x[0]))
+        # batch_x = batch_x.reshape((batch_size, timesteps, num_input))
+        # x_train = 1440 =36句子 *40 长度
+        x_train = x_train.reshape((batch_size,max_document_length, word_d))
+        # if step == 1:
+            # print("batch_x d1,d2,d3 ", len(batch_x), len(batch_x[0]), len(batch_x[0][0]))
+            # # print("batch_x 1 :", batch_x[0])
+            # print("batch_x 1 len:", len(batch_x[0]))
         # Run optimization op (backprop)
         # batch_x 是128 * 28 的矩阵
         # batch_y 是128 * 10 的矩阵
+        batch_x = x_train
+        batch_y = y_train
         sess.run(train_op, feed_dict={X: batch_x, Y: batch_y})
+
         if step % display_step == 0 or step == 1:
             # Calculate batch loss and accuracy
             loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x,
@@ -169,8 +193,13 @@ with tf.Session() as sess:
 
     print("Optimization Finished!")
     # Calculate accuracy for 128 mnist test images
-    test_len = 128
-    test_data = mnist.test.images[:test_len].reshape((-1, timesteps, num_input))
-    test_label = mnist.test.labels[:test_len]
+    # test_len = 128
+    # test_data = mnist.test.images[:test_len].reshape((-1, timesteps, num_input))
+    # test_label = mnist.test.labels[:test_len]
+    test_data = x_dev.reshape((-1, timesteps, num_input))
+    test_label = y_dev
+
+
     print("Testing Accuracy:",
         sess.run(accuracy, feed_dict={X: test_data, Y: test_label}))
+
