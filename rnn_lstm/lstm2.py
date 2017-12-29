@@ -144,7 +144,7 @@ with tf.Session() as sess:
         # batch_y = data_helpers.batch_iter(
         #     list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
         # batch_x, batch_y = mnist.train.next_batch(batch_size)
-        batch_x, batch_y = mnist.train.next_batch(1)
+        batch_x, batch_y = mnist.train.next_batch(batch_size)
 
         if step == 1 :
             print("batch_x 1 :", batch_x)

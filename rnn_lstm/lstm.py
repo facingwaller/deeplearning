@@ -95,12 +95,7 @@ Y = tf.placeholder("float", [None, num_classes])    # 2 ··· 10分类
 
 
 # Define weights
-weights = {
-    'out': tf.Variable(tf.random_normal([num_hidden, num_classes]))
-}
-biases = {
-    'out': tf.Variable(tf.random_normal([num_classes]))
-}
+
 #  生成一个带可展开符号的一个域，并且支持嵌套操作
 with tf.name_scope("weights1"):
     weights1 = tf.Variable(tf.random_normal([num_hidden, num_classes]))
@@ -109,9 +104,8 @@ with tf.name_scope("biases1"):
 
 tf.summary.histogram( "weights1", weights1)  # 可视化观看变量
 tf.summary.histogram( "biases1", biases1)  # 可视化观看变量
-# tf.summary.scalar("weights", weights1)
-# tf.summary.scalar("biases", biases1)
-merged = tf.summary.merge_all()
+
+
 
 # X [None, timesteps, num_input]
 def RNN(x, weights, biases):
@@ -137,6 +131,7 @@ def RNN(x, weights, biases):
 logits = RNN(X, weights1, biases1)  # 将输入，权重和偏置值都传进去，需要设定好隐藏层数量
 # logits 10维的向量
 prediction = tf.nn.softmax(logits)
+tf.summary.histogram( "prediction1", prediction)  # 可视化观看变量
 
 # Define loss and optimizer 定义损失和优化
 loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
@@ -166,9 +161,7 @@ saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
 # Initialize the variables (i.e. assign their default value)
 init = tf.global_variables_initializer()
 
-
-
-
+merged = tf.summary.merge_all()
 # Start training
 with tf.Session().as_default() as sess:
     writer = tf.summary.FileWriter("log/", sess.graph)
@@ -236,8 +229,10 @@ with tf.Session().as_default() as sess:
         batch_x = x_train
         batch_y = y_train
         # summary,_ = sess.run([merged,train_op], feed_dict={X: batch_x, Y: batch_y})
-        summary  = sess.run( merged , feed_dict={X: batch_x, Y: batch_y})
+        summary,prediction_Ret  = sess.run( [merged,prediction] , feed_dict={X: batch_x, Y: batch_y})
         writer.add_summary(summary,step)
+        # writer.add_summary(prediction_Ret, step)
+        print("prediction_Ret ",prediction_Ret)
         # writer
         # print(weights1_ret)
 
