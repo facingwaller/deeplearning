@@ -18,13 +18,44 @@ from tensorflow.contrib import rnn
 
 # Import MNIST data
 from tensorflow.examples.tutorials.mnist import input_data
-import data_helpers
+import rnn_lstm.data_helpers as data_helpers
 from tensorflow.contrib import learn
 mnist = input_data.read_data_sets("../MNIST_data/", one_hot=True)
+
+from tensorflow.python import debug as tfdbg
 import numpy as np
 import os
 import time
 import datetime
+import pickle
+
+import logging
+import logging.handlers
+
+LOG_FILE = 'log2/'+str(time.time())+'.txt'
+
+handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024, backupCount=5)  # 实例化handler
+#fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'
+fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(message)s'
+
+formatter = logging.Formatter(fmt)  # 实例化formatter
+handler.setFormatter(formatter)  # 为handler添加formatter
+
+logger = logging.getLogger('tst')  # 获取名为tst的logger
+logger.addHandler(handler)  # 为logger添加handler
+logger.setLevel(logging.DEBUG)
+
+logger.info('==================================')
+
+
+def prn_obj(obj):
+    logger.info('\n'.join(['%s:%s' % item for item in obj.__dict__.items()]))
+def myLog(obj):
+    logger.info("obj begin===========================" + str(len(obj)))
+    for l1 in obj:
+        print(l1)
+        logger.info(l1)
+
 '''
 To classify images using a recurrent neural network, we consider every image
 row as a sequence of pixels. Because MNIST image shape is 28*28px, we will then
@@ -140,7 +171,9 @@ optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
 train_op = optimizer.minimize(loss_op)
 
 # Evaluate model (with test logits, for dropout to be disabled) 验证模块 ，计算准确度
-correct_pred = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
+prediction_argmax = tf.argmax(prediction, 1)
+Y_argmax = tf.argmax(Y, 1)
+correct_pred = tf.equal(prediction_argmax, Y_argmax)
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Output directory for models and summaries
@@ -165,7 +198,8 @@ merged = tf.summary.merge_all()
 # Start training
 with tf.Session().as_default() as sess:
     writer = tf.summary.FileWriter("log/", sess.graph)
-
+    # sess = tfdbg.LocalCLIDebugWrapperSession(sess)
+    # sess.add_tensor_filter("has_inf_or_nan", tfdbg.has_nan_or_inf)
     # Run the initializer
     sess.run(init)
     index = 0
@@ -176,8 +210,8 @@ with tf.Session().as_default() as sess:
         if step == 1:
             print("查看x_train ===============================")
             # x_train 句子个数*句子长度
-            print("x_train len", len(x_train),x_train)  # 40 * 0.9 = 36
-            print("y_train len", len(y_train),y_train)
+           # print("x_train len", len(x_train),x_train)  # 40 * 0.9 = 36
+           # print("y_train len", len(y_train),y_train)
         # Generate batches
 
         # batches1 = batches.__next__()
@@ -229,10 +263,24 @@ with tf.Session().as_default() as sess:
         batch_x = x_train
         batch_y = y_train
         # summary,_ = sess.run([merged,train_op], feed_dict={X: batch_x, Y: batch_y})
-        summary,prediction_Ret  = sess.run( [merged,prediction] , feed_dict={X: batch_x, Y: batch_y})
+        # _train_op1,_logits1,_prediction1 = sess.run([train_op, logits, prediction]
+        summary, _prediction1, _logits1,_prediction_argmax1,_Y_argmax1 = sess.run( [merged,prediction,logits,prediction_argmax,Y_argmax] , feed_dict={X: batch_x, Y: batch_y})
         writer.add_summary(summary,step)
+
+        if step == 1:
+            # pickle.dump(_logits1, open('log2/d2.txt', 'wb'))
+            logger.info("batch_x len :"+str(len(batch_x)))
+            # logIt(_prediction1)
+            # logIt(_logits1)
+            myLog(_prediction_argmax1)
+            myLog(_Y_argmax1)
+
+
+
+            # logger.info(_prediction1)
+            # prn_obj(_logits1)
         # writer.add_summary(prediction_Ret, step)
-        print("prediction_Ret ",prediction_Ret)
+            # print("prediction_Ret ",prediction_Ret)
         # writer
         # print(weights1_ret)
 

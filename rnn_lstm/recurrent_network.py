@@ -12,7 +12,7 @@ Project: https://github.com/aymericdamien/TensorFlow-Examples/
 """
 
 from __future__ import print_function
-
+from tensorflow.python import debug as tfdbg
 import tensorflow as tf
 from tensorflow.contrib import rnn
 
@@ -28,9 +28,9 @@ handle 28 sequences of 28 steps for every sample.
 
 # Training Parameters
 learning_rate = 0.001
-training_steps = 10000
+training_steps = 5
 batch_size = 128
-display_step = 200
+display_step = 2
 
 # Network Parameters
 num_input = 28 # MNIST data input (img shape: 28*28)
@@ -90,6 +90,8 @@ with tf.Session() as sess:
 
     # Run the initializer
     sess.run(init)
+    # sess = tfdbg.LocalCLIDebugWrapperSession(sess)
+    # sess.add_tensor_filter("has_inf_or_nan", tfdbg.has_inf_or_nan)
 
     for step in range(1, training_steps+1):
         batch_x, batch_y = mnist.train.next_batch(batch_size)
@@ -97,8 +99,9 @@ with tf.Session() as sess:
         print("batch_y 0 ", batch_y[0])
         # Reshape data to get 28 seq of 28 elements
         batch_x = batch_x.reshape((batch_size, timesteps, num_input))
+
         # Run optimization op (backprop)
-        sess.run(train_op, feed_dict={X: batch_x, Y: batch_y})
+        _train_op1,_logits1,_prediction1 = sess.run([train_op, logits, prediction], feed_dict={X: batch_x, Y: batch_y})
         if step % display_step == 0 or step == 1:
             # Calculate batch loss and accuracy
             loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x,
@@ -113,5 +116,7 @@ with tf.Session() as sess:
     test_len = 128
     test_data = mnist.test.images[:test_len].reshape((-1, timesteps, num_input))
     test_label = mnist.test.labels[:test_len]
+
     print("Testing Accuracy:", \
         sess.run(accuracy, feed_dict={X: test_data, Y: test_label}))
+
