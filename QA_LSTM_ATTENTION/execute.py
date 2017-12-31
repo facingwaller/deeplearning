@@ -6,15 +6,15 @@ import time
 import tensorflow as tf
 import operator
 
-from data_helper import load_train_data, load_test_data, load_embedding, batch_iter
-from polymerization import LSTM_QA
+from QA_LSTM_ATTENTION.data_helper import load_train_data, load_test_data, load_embedding, batch_iter
+from QA_LSTM_ATTENTION.polymerization import LSTM_QA
 
 
 #------------------------- define parameter -----------------------------
-tf.flags.DEFINE_string("train_file", "../insuranceQA/train", "train corpus file")
-tf.flags.DEFINE_string("test_file", "../insuranceQA/test1", "test corpus file")
-tf.flags.DEFINE_string("valid_file", "../insuranceQA/test1.sample", "test corpus file")
-tf.flags.DEFINE_string("embedding_file", "../insuranceQA/vectors.nobin", "embedding file")
+tf.flags.DEFINE_string("train_file", "../data/insuranceQA/train", "train corpus file")
+tf.flags.DEFINE_string("test_file", "../data/insuranceQA/test1.sample", "test corpus file") # test1不存在加了个.sample
+tf.flags.DEFINE_string("valid_file", "../data/insuranceQA/test1.sample", "test corpus file")
+tf.flags.DEFINE_string("embedding_file", "../data/insuranceQA/vectors.nobin", "embedding file")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding size")
 tf.flags.DEFINE_float("dropout", 1, "the proportion of dropout")
 tf.flags.DEFINE_float("lr", 0.1, "the proportion of dropout")
@@ -129,31 +129,30 @@ def valid_model(sess, lstm, valid_ori_quests, valid_cand_quests, labels, results
 
 #----------------------------------- begin to train -----------------------------------
 with tf.Graph().as_default():
-    with tf.device("/gpu:2"):
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_options)
-        session_conf = tf.ConfigProto(allow_soft_placement=FLAGS.allow_soft_placement, log_device_placement=FLAGS.log_device_placement, gpu_options=gpu_options)
-        with tf.Session(config=session_conf).as_default() as sess:
+    with tf.device("/cpu:0"):
+        # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_options)
+        # session_conf = tf.ConfigProto(allow_soft_placement=FLAGS.allow_soft_placement, log_device_placement=FLAGS.log_device_placement, gpu_options=gpu_options)
+        with tf.Session().as_default() as sess:
             lstm = LSTM_QA(FLAGS.batch_size, FLAGS.num_unroll_steps, embedding, FLAGS.embedding_size, FLAGS.rnn_size, FLAGS.num_rnn_layers, FLAGS.max_grad_norm, FLAGS.attention_matrix_size)
             global_step = tf.Variable(0, name="globle_step",trainable=False)
             tvars = tf.trainable_variables()
             grads, _ = tf.clip_by_global_norm(tf.gradients(lstm.loss, tvars),
                                           FLAGS.max_grad_norm)
-
             #optimizer = tf.train.GradientDescentOptimizer(lstm.lr)
             optimizer = tf.train.GradientDescentOptimizer(1e-1)
             optimizer.apply_gradients(zip(grads, tvars))
             train_op=optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
 
-            sess.run(tf.initialize_all_variables())
+            sess.run(tf.global_variables_initializer())
 
             for epoch in range(FLAGS.epoches):
                 #cur_lr = FLAGS.lr / (epoch + 1)
                 #lstm.assign_new_lr(sess, cur_lr)
                 #logger.info("current learning ratio:" + str(cur_lr))
                 for ori_train, cand_train, neg_train in batch_iter(ori_quests, cand_quests, FLAGS.batch_size, epoches=1):
-	            run_step(sess, ori_train, cand_train, neg_train, lstm)
+                    run_step(sess, ori_train, cand_train, neg_train, lstm)
                     cur_step = tf.train.global_step(sess, global_step)
-                    
+
                     if cur_step % FLAGS.evaluate_every == 0 and cur_step != 0:
                         valid_model(sess, lstm, valid_ori_quests, valid_cand_quests, valid_labels, valid_results)
             valid_model(sess, lstm, test_ori_quests, test_cand_quests, labels, results)

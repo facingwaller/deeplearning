@@ -7,27 +7,29 @@ from tensorflow.python.ops import rnn, rnn_cell
 
 # return n outputs of the n lstm cells
 def biLSTM(x, hidden_size):
-	# biLSTM£º
-	# ¹¦ÄÜ£ºÌí¼Óbidirectional_lstm²Ù×÷
-	# ²ÎÊı£º
+	# biLSTMï¼š
+	# åŠŸèƒ½ï¼šæ·»åŠ bidirectional_lstmæ“ä½œ
+	# å‚æ•°ï¼š
 	# 	x: [batch, height, width]   / [batch, step, embedding_size]
-	# 	hidden_size: lstmÒş²Ø²ã½Úµã¸öÊı
-	# Êä³ö£º
+	# 	hidden_size: lstméšè—å±‚èŠ‚ç‚¹ä¸ªæ•°
+	# è¾“å‡ºï¼š
 	# 	output: [batch, height, 2*hidden_size]  / [batch, step, 2*hidden_size]
 
 	# input transformation
 	input_x = tf.transpose(x, [1, 0, 2])
 	# input_x = tf.reshape(input_x, [-1, w])
 	# input_x = tf.split(0, h, input_x)
-	input_x = tf.unpack(input_x)
+	input_x = tf.unstack(input_x) # [tf.pack] å’Œ [tf.unpack] å¼ƒç”¨ï¼Œæ”¹ä¸º [tf.stack] å’Œ [tf.unstack]ã€‚
 
 	# define the forward and backward lstm cells
 	lstm_fw_cell = rnn_cell.BasicLSTMCell(hidden_size, forget_bias=1.0, state_is_tuple=True)
 	lstm_bw_cell = rnn_cell.BasicLSTMCell(hidden_size, forget_bias=1.0, state_is_tuple=True)
-	output, _, _ = rnn.bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, input_x, dtype=tf.float32)
+	# rnn.bidirectional_dynamic_rnn()
+	# bidirectional_rnn è¿‡æœŸ è€ƒè™‘ä½¿ç”¨é™åŠ¨æ€ bidirectional_dynamic_rnn
+	output, _, _ = rnn.static_bidirectional_rnn (lstm_fw_cell, lstm_bw_cell, input_x, dtype=tf.float32)
 
 	# output transformation to the original tensor type
-	output = tf.pack(output)
+	output = tf.stack(output)
 	output = tf.transpose(output, [1, 0, 2])
 	return output
 

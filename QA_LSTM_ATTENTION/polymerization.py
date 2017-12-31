@@ -1,7 +1,7 @@
 # coding:utf-8
 import tensorflow as tf
-from bilstm import biLSTM
-from utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature
+from QA_LSTM_ATTENTION.bilstm import biLSTM
+from QA_LSTM_ATTENTION.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature
 
 
 class LSTM_QA(object):

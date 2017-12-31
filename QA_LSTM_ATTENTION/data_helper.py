@@ -32,7 +32,7 @@ def load_embedding(filename, embedding_size):
                 idx2word[len(word2idx)] = arr[0]
                 embeddings.append(embedding)
 
-        except Exception, e:
+        except Exception as e:
             logging.error("load embedding Exception," , e)
         finally:
             rf.close()
@@ -67,7 +67,7 @@ def load_train_data(filename, word2idx, sequence_len):
                 ori_quests.append(ori_quest)
                 cand_quests.append(cand_quest)
 
-        except Exception, e:
+        except Exception as e:
             logging.error("load train data Exception," + e)
         finally:
             rf.close()
@@ -109,7 +109,7 @@ def load_test_data(filename, word2idx, sequence_len):
                 labels.append(label)
                 results.append(result)
 
-        except Exception, e:
+        except Exception as  e:
             logging.error("load test error," , e)
         finally:
             rf.close()
