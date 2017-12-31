@@ -3,3 +3,9 @@
 /rnn_lstm/__pycache__
 /t_6/leNet5/__pycache__
 /output
+/rnn_lstm/runs
+/rnn_lstm/log
+/tensorflow_google
+/word2vec-test/wiki_texts.txt
+/word2vec-test/rt_polarity.model.bin
+/word2vec-test/rt_polarity.txt
