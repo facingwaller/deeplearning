@@ -12,44 +12,34 @@ Project: https://github.com/aymericdamien/TensorFlow-Examples/
 """
 
 from __future__ import print_function
-
 import tensorflow as tf
 from tensorflow.contrib import rnn
-
 # Import MNIST data
 from tensorflow.examples.tutorials.mnist import input_data
 import rnn_lstm.data_helpers as data_helpers
 from tensorflow.contrib import learn
 # mnist = input_data.read_data_sets("../MNIST_data/", one_hot=True)
-
 from tensorflow.python import debug as tfdbg
 import numpy as np
 import os
 import time
 import datetime
 import pickle
-
 import logging
 import logging.handlers
 from gensim.models import word2vec
 from gensim import models
 
+''' 日志  '''
 LOG_FILE = 'log2/'+str(time.time())+'.txt'
-
 handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024*1024, backupCount=5)  # 实例化handler
-#fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'
 fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(message)s'
-
 formatter = logging.Formatter(fmt)  # 实例化formatter
 handler.setFormatter(formatter)  # 为handler添加formatter
-
 logger = logging.getLogger('tst')  # 获取名为tst的logger
 logger.addHandler(handler)  # 为logger添加handler
 logger.setLevel(logging.DEBUG)
-
-
 logger.info('==================================')
-
 
 def prn_obj(obj):
     logger.info('\n'.join(['%s:%s' % item for item in obj.__dict__.items()]))
@@ -59,10 +49,7 @@ def myLog(obj):
         # print(l1)
         logger.info(l1)
 
-'''
-To classify images using a recurrent neural network, we consider every image
-row as a sequence of pixels. Because MNIST image shape is 28*28px, we will then
-handle 28 sequences of 28 steps for every sample.
+''' 预定义变量
 '''
 tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
 tf.flags.DEFINE_string("positive_data_file", "../data/rt-polarity.pos", "Data source for the positive data.")
@@ -76,20 +63,21 @@ tf.flags.DEFINE_integer("evaluate_every", 5, "Evaluate model on dev set after th
 tf.flags.DEFINE_integer("checkpoint_every", 10, "Save model after this many steps (default: 100)")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 
+word_d2 = 50  # 50维
 FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
 print("\nParameters:")
 for attr, value in sorted(FLAGS.__flags.items()):
     print("{}={}".format(attr.upper(), value))
-print("")
+
 x_text, y = data_helpers.load_data_and_labels(FLAGS.positive_data_file,
                                               FLAGS.negative_data_file)
-word_d2 = 50  # 50维
+
 # Build vocabulary
 max_document_length = max([len(x.split(" ")) for x in x_text])  # 获取单行的最大的长度
-print("max_document_length:",max_document_length)
-vocab_processor = learn.preprocessing.VocabularyProcessor(max_document_length) # 单词转化为在字典中的位置，这是一个操作
-x = np.array(list(vocab_processor.fit_transform(x_text)))
+# print("max_document_length:",max_document_length)
+# vocab_processor = learn.preprocessing.VocabularyProcessor(max_document_length) # 单词转化为在字典中的位置，这是一个操作
+# x = np.array(list(vocab_processor.fit_transform(x_text)))
 
 model = models.Word2Vec.load('../models/rt_polarity.model.bin')
 # 遍历x，重新赋值给x，将之前的一位替换维一个向量数组
@@ -99,7 +87,6 @@ for x_text_sentences in x_text:
     print("x_text_sentences:", x_text_sentences)
     x_text_sentences_list = str(x_text_sentences).split(" ")
     one_sent = []
-
     # 补齐
     for index in range(max_document_length - len(x_text_sentences_list)):
         x_text_sentences_list.append("as")
@@ -149,24 +136,28 @@ logger.info("y=====")
 # y_train, y_dev = y_shuffled[:dev_sample_index], y_shuffled[dev_sample_index:]
 # print("Vocabulary Size: {:d}".format(len(vocab_processor.vocabulary_)))
 # print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
-origin_x = x.copy()
-origin_y = y.copy()
+total_len = len(y)
+total_index = total_len * 0.9
+rate = 0.8
+# 训练的部分
+origin_x,test_x = data_helpers.capNums(x.copy()) # x.copy()
+origin_y,test_y = data_helpers.capNums(y.copy()) # y.copy()
 x,y= data_helpers.batch_iter2(origin_x,origin_y)
+# 测试的部分
+
 
 # Training Parameters
 learning_rate = 0.001
-training_steps = 2000 # 10000
+training_steps = 100 # 10000
 batch_size = 128 # len(y_train)# 128 这个数字没用，下面重新定义
-display_step = 2
+display_step = 10
 
 # Network Parameters
 word_d =  50 # word2vec之后是50维  1 # 一个单词的维度
-
 num_input = word_d # 28 # 28 MNIST data input (img shape: 28*28) 类比句子的长度
 timesteps = max_document_length # 28 # 28 timesteps                           类比句子的一个单词的维度
 # sentence_len = 40 # 一个句子的长度
 # max_document_length 一个句子的长度
-
 num_hidden = 200 # hidden layer num of features
 num_classes = 2  # 10 # 这里是2分类 10 # MNIST total classes (0-9 digits)
 
@@ -281,16 +272,12 @@ def runAndLog(batch_x,batch_y,writer,step,merged, prediction, logits, prediction
 # Start training
 with tf.Session().as_default() as sess:
     writer = tf.summary.FileWriter("log/", sess.graph)
-
-
     # sess = tfdbg.LocalCLIDebugWrapperSession(sess)
     # sess.add_tensor_filter("has_inf_or_nan", tfdbg.has_nan_or_inf)
     # Run the initializer
     sess.run(init)
     index = 0
-
     # batches = data_helpers.batch_iter(  list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
-
     for step in range(1, training_steps+1):
         # if step == 1:
             # print("查看x_train ===============================")
@@ -334,8 +321,6 @@ with tf.Session().as_default() as sess:
         # batch_size = int( float(len(y)))- total
         # if step == 1:
         #     print("batch_size:",batch_size)
-
-
         x_train, y_train = data_helpers.batch_iter2(origin_x, origin_y)
         batch_size = len(y_train)
         logger.info("vec x_train")
@@ -408,7 +393,9 @@ with tf.Session().as_default() as sess:
 
     print("Optimization Finished!")
 
-    x_train, y_train = data_helpers.batch_iter2(origin_x, origin_y)
+    # x_train, y_train = data_helpers.batch_iter2(origin_x, origin_y)
+    x_train = test_x
+    y_train = test_y
     # Calculate accuracy for 128 mnist test images
     # test_len = 128
     # test_data = mnist.test.images[:test_len].reshape((-1, timesteps, num_input))

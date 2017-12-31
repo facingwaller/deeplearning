@@ -147,3 +147,23 @@ def batch_iter2(x,y,num = 100 ):
     # print(y)
     return  np.array(x1),np.array(y2)
 
+def capNums(y,rate = 0.8 ):
+    y = np.array(y)
+    s = 0
+    total_len = len(y)
+    total_index = total_len * rate + 1
+    e = int(total_index)
+
+    reverseIndex = int(total_len - total_index)
+    print(reverseIndex)
+    # 正向截取
+    # 逆向
+    y1 = y[s:e]  # [ > s and <= e  ]
+    print(type(y1))
+
+    y2 = y[:reverseIndex]
+    print("split into 2 ")
+    print(total_len)
+    print(len(y1))
+    print(len(y2))
+    return y1,y2
