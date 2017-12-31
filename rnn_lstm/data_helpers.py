@@ -2,7 +2,8 @@ import numpy as np
 import re
 import itertools
 from collections import Counter
-
+import numpy as np
+import random
 
 def clean_str(string):
     """
@@ -33,7 +34,7 @@ def load_data_and_labels(positive_data_file, negative_data_file):
     """
     # Load data from files
     positive_examples = list(open(positive_data_file, "r",encoding="utf-8").readlines())
-    positive_examples = [s.strip() for s in positive_examples]  #  s.strip(rm) 当rm为空时，默认删除空白符（包括'\n', '\r',  '\t',  ' ')
+    positive_examples = [s.strip() for s in positive_examples]  # s.strip(rm) 当rm为空时，默认删除空白符（包括'\n', '\r',  '\t',  ' ')
     negative_examples = list(open(negative_data_file, "r",encoding="utf-8").readlines())
     negative_examples = [s.strip() for s in negative_examples]
     # Split by words
@@ -120,4 +121,29 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
             start_index = batch_num * batch_size
             end_index = min((batch_num + 1) * batch_size, data_size)
             yield shuffled_data[start_index:end_index]
+
+
+
+def batch_iter2(x,y,num = 100 ):
+    x = np.array(x)
+    y = np.array(y)
+    # random.seed(1)
+    # print("------------------------")
+    # print(y)
+    # print(len(y))
+    for step in range(1000):
+        s1 = random.randint(0, len(y) - 1)
+        s2 = random.randint(0, len(y) - 1)
+        # print("s1,s2 : ",s1,s2)
+        y[[s1, s2], :] = y[[s2, s1], :]
+        x[[s1, s2], :] = x[[s2, s1], :]
+    x1 = []
+    y2 = []
+    num = min(num,len(y)/2)
+
+    for index in range(num):
+        x1.append(x[index])
+        y2.append(y[index])
+    # print(y)
+    return  np.array(x1),np.array(y2)
 

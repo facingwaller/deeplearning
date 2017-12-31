@@ -31,6 +31,8 @@ import pickle
 
 import logging
 import logging.handlers
+from gensim.models import word2vec
+from gensim import models
 
 LOG_FILE = 'log2/'+str(time.time())+'.txt'
 
@@ -44,6 +46,7 @@ handler.setFormatter(formatter)  # 为handler添加formatter
 logger = logging.getLogger('tst')  # 获取名为tst的logger
 logger.addHandler(handler)  # 为logger添加handler
 logger.setLevel(logging.DEBUG)
+
 
 logger.info('==================================')
 
@@ -62,8 +65,8 @@ row as a sequence of pixels. Because MNIST image shape is 28*28px, we will then
 handle 28 sequences of 28 steps for every sample.
 '''
 tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_string("positive_data_file", "../data/rt-polarity.pos-1", "Data source for the positive data.")
-tf.flags.DEFINE_string("negative_data_file", "../data/rt-polarity.neg-1", "Data source for the negative data.")
+tf.flags.DEFINE_string("positive_data_file", "../data/rt-polarity.pos", "Data source for the positive data.")
+tf.flags.DEFINE_string("negative_data_file", "../data/rt-polarity.neg", "Data source for the negative data.")
 tf.flags.DEFINE_string("log_path", "log/", "log_path")
 # Training parameters
 # batch_size：1次迭代所使用的样本量； ；一个epoch是指把所有训练数据完整的过一遍；iteration：表示1次迭代，每次迭代更新1次网络结构的参数
@@ -79,54 +82,92 @@ print("\nParameters:")
 for attr, value in sorted(FLAGS.__flags.items()):
     print("{}={}".format(attr.upper(), value))
 print("")
-x_text, y = data_helpers.load_data_and_labels(FLAGS.positive_data_file, FLAGS.negative_data_file)
-
+x_text, y = data_helpers.load_data_and_labels(FLAGS.positive_data_file,
+                                              FLAGS.negative_data_file)
+word_d2 = 50  # 50维
 # Build vocabulary
 max_document_length = max([len(x.split(" ")) for x in x_text])  # 获取单行的最大的长度
 print("max_document_length:",max_document_length)
 vocab_processor = learn.preprocessing.VocabularyProcessor(max_document_length) # 单词转化为在字典中的位置，这是一个操作
 x = np.array(list(vocab_processor.fit_transform(x_text)))
+
+model = models.Word2Vec.load('../models/rt_polarity.model.bin')
+# 遍历x，重新赋值给x，将之前的一位替换维一个向量数组
+print("===== x_text")
+sentences = []
+for x_text_sentences in x_text:
+    print("x_text_sentences:", x_text_sentences)
+    x_text_sentences_list = str(x_text_sentences).split(" ")
+    one_sent = []
+
+    # 补齐
+    for index in range(max_document_length - len(x_text_sentences_list)):
+        x_text_sentences_list.append("as")
+    print("-------padding ",len(x_text_sentences_list))
+    for s_w in x_text_sentences_list:
+        try:
+            word_embedding = model[s_w]
+        except Exception as e:
+            print(repr(e))
+            word_embedding = model["as"]
+        l1 = list(word_embedding)
+        # print(l1)
+        x1 = np.array(l1)
+        one_sent.append(x1)
+    sentences.append(one_sent)
+print("===== sentences")
+# for s in sentences:
+#     print(s)
+x = sentences
+
 logger.info("not vec")
 # logger.info(x_text)
-myLog(x_text)
+# myLog(x_text)
 logger.info("vec")
 # logger.info(x)
-myLog(x)
-logger.info("y")
+# myLog(x)
+logger.info("y=====")
 # logger.info(y)
-myLog(y)
+# myLog(y)
+
+
 # 在不够长度的评价最后加0，样本变成了索引数值矩阵，这里的x已经是索引序列了，n*seq_len的tensor
 # Randomly shuffle data
-np.random.seed(10)
-shuffle_indices = np.random.permutation(np.arange(len(y)))  # 打乱样本
-x_shuffled = x[shuffle_indices]
-y_shuffled = y[shuffle_indices]
-# print("time"+"\t\t"+str(datetime.datetime.now().isoformat()))
-
-# Split train/test set
-# TODO: This is very crude(粗糙), should use cross-validation（交叉验证）
-dev_sample_index = -1 * int(FLAGS.dev_sample_percentage * float(len(y)))
-x_train, x_dev = x_shuffled[:dev_sample_index], x_shuffled[dev_sample_index:]
-y_train, y_dev = y_shuffled[:dev_sample_index], y_shuffled[dev_sample_index:]
-print("Vocabulary Size: {:d}".format(len(vocab_processor.vocabulary_)))
-print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
-
+# x = np.array(x)
+# y = np.array(y)
+# np.random.seed(10)
+# shuffle_indices = np.random.permutation(np.arange(len(y)))  # 打乱样本
+# print("shuffle_indices",shuffle_indices)
+# x_shuffled = x[shuffle_indices]
+# y_shuffled = y[shuffle_indices]
+# # print("time"+"\t\t"+str(datetime.datetime.now().isoformat()))
+#
+# # Split train/test set
+# # # TODO: This is very crude(粗糙), should use cross-validation（交叉验证）
+# dev_sample_index = -1 * int(FLAGS.dev_sample_percentage * float(len(y)))
+# x_train, x_dev = x_shuffled[:dev_sample_index], x_shuffled[dev_sample_index:]
+# y_train, y_dev = y_shuffled[:dev_sample_index], y_shuffled[dev_sample_index:]
+# print("Vocabulary Size: {:d}".format(len(vocab_processor.vocabulary_)))
+# print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
+origin_x = x.copy()
+origin_y = y.copy()
+x,y= data_helpers.batch_iter2(origin_x,origin_y)
 
 # Training Parameters
 learning_rate = 0.001
-training_steps = 2 # 10000
+training_steps = 2000 # 10000
 batch_size = 128 # len(y_train)# 128 这个数字没用，下面重新定义
-display_step = 1
+display_step = 2
 
 # Network Parameters
-word_d = 1 # 一个单词的维度
+word_d =  50 # word2vec之后是50维  1 # 一个单词的维度
 
 num_input = word_d # 28 # 28 MNIST data input (img shape: 28*28) 类比句子的长度
 timesteps = max_document_length # 28 # 28 timesteps                           类比句子的一个单词的维度
 # sentence_len = 40 # 一个句子的长度
 # max_document_length 一个句子的长度
 
-num_hidden = 56 # hidden layer num of features
+num_hidden = 200 # hidden layer num of features
 num_classes = 2  # 10 # 这里是2分类 10 # MNIST total classes (0-9 digits)
 
 # tf Graph input
@@ -280,26 +321,27 @@ with tf.Session().as_default() as sess:
         # batch_x = batch_x.reshape((batch_size, timesteps, num_input))
         # x_train = 1440 =36句子 *40 长度
 
-        shuffle_indices = np.random.permutation(np.arange(len(y)))  # 打乱样本
-        x_shuffled = x[shuffle_indices]
-        y_shuffled = y[shuffle_indices]
+        # shuffle_indices = np.random.permutation(np.arange(len(y)))  # 打乱样本
+        # x_shuffled = x[shuffle_indices]
+        # y_shuffled = y[shuffle_indices]
         # Split train/test set
         # TODO: This is very crude(粗糙), should use cross-validation（交叉验证）
         # dev_sample_index = -1 * int(FLAGS.dev_sample_percentage * float(len(y)))
-        total = int(0.7 * float(len(y)))
-        dev_sample_index = -1 * total  # 取出total来训练
-        x_train, x_dev2 = x_shuffled[:dev_sample_index], x_shuffled[dev_sample_index:]
-        y_train, y_dev2 = y_shuffled[:dev_sample_index], y_shuffled[dev_sample_index:]
-        batch_size = int( float(len(y)))- total
-        if step == 1:
-            print("batch_size:",batch_size)
+        # total = int(0.7 * float(len(y)))
+        # dev_sample_index = -1 * total  # 取出total来训练
+        # x_train, x_dev2 = x_shuffled[:dev_sample_index], x_shuffled[dev_sample_index:]
+        # y_train, y_dev2 = y_shuffled[:dev_sample_index], y_shuffled[dev_sample_index:]
+        # batch_size = int( float(len(y)))- total
+        # if step == 1:
+        #     print("batch_size:",batch_size)
 
 
-
+        x_train, y_train = data_helpers.batch_iter2(origin_x, origin_y)
+        batch_size = len(y_train)
         logger.info("vec x_train")
-        myLog(x_train)
+        # myLog(x_train)
         logger.info("y_train")
-        myLog(y_train)
+        # myLog(y_train)
 
         # print("total x_train ",total,len(x_train))
         # print("y_train ",len(y_train),y_train[0])
@@ -358,25 +400,15 @@ with tf.Session().as_default() as sess:
         if step % display_step == 0 or step == 1:
 
             # Calculate batch loss and accuracy
+
             loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x,
                                                                  Y: batch_y})
-            print("Step " + str(step) + ", Minibatch Loss= " + "{:.4f}".format(loss) + ", Training Accuracy= " + "{:.3f}".format(acc))
+            print("Step " + str(step) + " len :" + str(len(batch_y)) + ", Minibatch Loss= " + "{:.4f}".format(loss) + ", Training Accuracy= " + "{:.3f}".format(acc))
 
 
     print("Optimization Finished!")
-    # 从新取出来一堆做测试
-    shuffle_indices = np.random.permutation(np.arange(len(y)))  # 打乱样本
-    x_shuffled = x[shuffle_indices]
-    y_shuffled = y[shuffle_indices]
-    # Split train/test set
-    # TODO: This is very crude(粗糙), should use cross-validation（交叉验证）
-    # dev_sample_index = -1 * int(FLAGS.dev_sample_percentage * float(len(y)))
-    total = int(0.9 * float(len(y)))
-    dev_sample_index = -1 * total  # 取出total来训练
-    x_train, x_dev2 = x_shuffled[:dev_sample_index], x_shuffled[dev_sample_index:]
-    y_train, y_dev2 = y_shuffled[:dev_sample_index], y_shuffled[dev_sample_index:]
-    batch_size = int(float(len(y))) - total
 
+    x_train, y_train = data_helpers.batch_iter2(origin_x, origin_y)
     # Calculate accuracy for 128 mnist test images
     # test_len = 128
     # test_data = mnist.test.images[:test_len].reshape((-1, timesteps, num_input))

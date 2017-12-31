@@ -6,12 +6,12 @@ import logging
 
 def main():
 	logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-	model = models.Word2Vec.load('en25.model.bin')
+	model = models.Word2Vec.load('rt_polarity.model.bin')
 
 
 	while True:
 		try:
-			print(model["like"])
+			print(model["to"])
 			query = input()
 			q_list = query.split()
 
