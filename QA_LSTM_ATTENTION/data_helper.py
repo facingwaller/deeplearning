@@ -1,5 +1,4 @@
-#coding=utf-8
-
+# coding=utf-8
 import codecs
 import logging
 import numpy as np
@@ -9,6 +8,7 @@ from collections import defaultdict
 
 # define a logger
 logging.basicConfig(format="%(message)s", level=logging.INFO)
+
 
 def load_embedding(filename, embedding_size):
     """
@@ -24,21 +24,22 @@ def load_embedding(filename, embedding_size):
                 idx += 1
                 arr = line.split(" ")
                 if len(arr) != (embedding_size + 2):
-                    logging.error("embedding error, index is:%s"%(idx))
+                    logging.error("embedding error, index is:%s" % (idx))
                     continue
 
-                embedding = [float(val) for val in arr[1 : -1]]
+                embedding = [float(val) for val in arr[1: -1]]
                 word2idx[arr[0]] = len(word2idx)
                 idx2word[len(word2idx)] = arr[0]
                 embeddings.append(embedding)
 
         except Exception as e:
-            logging.error("load embedding Exception," , e)
+            logging.error("load embedding Exception,", e)
         finally:
             rf.close()
 
     logging.info("load embedding finish!")
     return embeddings, word2idx, idx2word
+
 
 def sent_to_idx(sent, word2idx, sequence_len):
     """
@@ -47,6 +48,7 @@ def sent_to_idx(sent, word2idx, sequence_len):
     unknown_id = word2idx.get("UNKNOWN", 0)
     sent2idx = [word2idx.get(word, unknown_id) for word in sent.split("_")[:sequence_len]]
     return sent2idx
+
 
 def load_train_data(filename, word2idx, sequence_len):
     """
@@ -58,7 +60,7 @@ def load_train_data(filename, word2idx, sequence_len):
             for line in rf.readlines():
                 arr = line.strip().split(" ")
                 if len(arr) != 4 or arr[0] != "1":
-                    logging.error("invalid data:%s"%(line))
+                    logging.error("invalid data:%s" % (line))
                     continue
 
                 ori_quest = sent_to_idx(arr[2], word2idx, sequence_len)
@@ -75,6 +77,7 @@ def load_train_data(filename, word2idx, sequence_len):
 
     return ori_quests, cand_quests
 
+
 def create_valid(data, proportion=0.1):
     if data is None:
         logging.error("data is none")
@@ -86,6 +89,7 @@ def create_valid(data, proportion=0.1):
     seperate_idx = int(data_len * (1 - proportion))
     return data[:seperate_idx], data[seperate_idx:]
 
+
 def load_test_data(filename, word2idx, sequence_len):
     """
     load test data
@@ -96,7 +100,7 @@ def load_test_data(filename, word2idx, sequence_len):
             for line in rf.readlines():
                 arr = line.strip().split(" ")
                 if len(arr) != 4:
-                    logging.error("invalid data:%s"%(line))
+                    logging.error("invalid data:%s" % (line))
                     continue
 
                 ori_quest = sent_to_idx(arr[2], word2idx, sequence_len)
@@ -110,18 +114,19 @@ def load_test_data(filename, word2idx, sequence_len):
                 results.append(result)
 
         except Exception as  e:
-            logging.error("load test error," , e)
+            logging.error("load test error,", e)
         finally:
             rf.close()
     logging.info("load test data finish!")
     return ori_quests, cand_quests, labels, results
+
 
 def batch_iter(ori_quests, cand_quests, batch_size, epoches, is_valid=False):
     """
     iterate the data
     """
     data_len = len(ori_quests)
-    batch_num = int(data_len / batch_size) 
+    batch_num = int(data_len / batch_size)
     ori_quests = np.array(ori_quests)
     cand_quests = np.array(cand_quests)
 
@@ -137,11 +142,12 @@ def batch_iter(ori_quests, cand_quests, batch_size, epoches, is_valid=False):
 
             # get negative questions
             if is_valid:
-                neg_quests = cand_quests[start_idx : end_idx]
+                neg_quests = cand_quests[start_idx: end_idx]
             else:
                 randi_list = []
                 while len(randi_list) != act_batch_size:
-                    [randi_list.append(idx) for idx in np.random.randint(0, data_len, 5 * act_batch_size) if start_idx < idx < end_idx and len(randi_list) < act_batch_size]
+                    [randi_list.append(idx) for idx in np.random.randint(0, data_len, 5 * act_batch_size) if
+                     start_idx < idx < end_idx and len(randi_list) < act_batch_size]
                 neg_quests = [cand_quests[idx] for idx in randi_list]
 
-            yield (ori_quests[start_idx : end_idx], cand_quests[start_idx : end_idx], neg_quests)
+            yield (ori_quests[start_idx: end_idx], cand_quests[start_idx: end_idx], neg_quests)

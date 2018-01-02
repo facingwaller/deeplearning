@@ -1,0 +1,14 @@
+www.freebase.com/m/04whkz5	www.freebase.com/book/written_work/subjects	www.freebase.com/m/01cj3p	what is the book e about
+www.freebase.com/m/0tp2p24	www.freebase.com/music/release_track/release	www.freebase.com/m/0sjc7c1	to what release does the release track cardiac arrest come from
+www.freebase.com/m/04j0t75	www.freebase.com/film/film/country	www.freebase.com/m/07ssc	what country was the film the debt from
+www.freebase.com/m/0ftqr	www.freebase.com/music/producer/tracks_produced	www.freebase.com/m/0p600l	what songs have nobuo uematsu produced?
+www.freebase.com/m/036p007	www.freebase.com/music/release/producers	www.freebase.com/m/0677ng	Who produced eve-olution?
+www.freebase.com/m/0ms5mg	www.freebase.com/music/recording/artist	www.freebase.com/m/0mjn2	Which artist recorded most of us are sad?
+www.freebase.com/m/086k8	www.freebase.com/film/production_company/films	www.freebase.com/m/0278x5r	what movie is produced by warner bros.
+www.freebase.com/m/02vnx8y	www.freebase.com/common/topic/notable_types	www.freebase.com/m/01xljrf	What is don graham known as?
+www.freebase.com/m/01smm	www.freebase.com/travel/travel_destination/tourist_attractions	www.freebase.com/m/0328cp	what's there to see in columbus
+www.freebase.com/m/0mgb6cl	www.freebase.com/music/release_track/release	www.freebase.com/m/0f4zk3j	What album was tibet released on
+www.freebase.com/m/02dtg	www.freebase.com/location/location/people_born_here	www.freebase.com/m/01s8mcb	who is a musician born in detroit
+www.freebase.com/m/0275d7v	www.freebase.com/music/artist/origin	www.freebase.com/m/052bw	Which city did the artist ryna originate in
+www.freebase.com/m/0ds46xp	www.freebase.com/film/film/produced_by	www.freebase.com/m/0qdwr	who produced the film rough house rosie
+www.freebase.com/m/0hzqmtk	www.freebase.com/film/film/language	www.freebase.com/m/03k50	what is the language in which mera shikar was filmed in
