@@ -5,8 +5,10 @@ import json
 import os
 import time
 import datetime
+import gzip
 
 import os
+
 
 def get_entity(path="../data/", filename="1001_fourth_avenue_plaza.json"):
     with open(path + filename, encoding='utf-8') as f:
@@ -62,24 +64,24 @@ def read_all_files(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
     index = 0
     for i in range(0, len(list)):
         index += 1
-        if index %10000 == 0:
-            print("hand ",index)
+        if index % 10000 == 0:
+            print("hand ", index)
         path = os.path.join(rootdir, list[i])
         if os.path.isfile(path) and path.endswith(".json"):
             print(path)
             id, ps = find_id_from_file(path)
             # print("=================id")
-            f1_writer.write(id+"\n")
-            f3_writer.write(id+"\t")
+            f1_writer.write(id + "\n")
+            f3_writer.write(id + "\t")
             # print(id)
             # print("=================ps")
             for p in ps:
                 # print(p)
-                f3_writer.write(p+"\t")
+                f3_writer.write(p + "\t")
                 if p not in r_set:
                     r_set.add(p)
                 else:
-                    print("exist ",p)
+                    print("exist ", p)
             f3_writer.write("\n")
         else:
             print("path not exist or not json file ", path)
@@ -87,13 +89,10 @@ def read_all_files(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
     f3_writer.close()
 
     for r1 in r_set:
-        f2_writer.write(r1+"\n")
+        f2_writer.write(r1 + "\n")
     f2_writer.close()
 
     print("finish")
-
-
-
 
 
 def read_all_files2(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
@@ -108,17 +107,18 @@ def read_all_files2(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
     for i in range(0, len(list)):
         index += 1
         if index % 10000 == 0:
-            print("hand ",index)
+            print("hand ", index)
         if list[i].endswith(".gz"):
-            path = "topic-json/"+ list[i]
-            filesize = os.path.getsize("D:\/ZAIZHI\/freebase-data\/"+path)
-                # f4_writer.write("mv "+path+" topic-json-1/\n")
+            path = "topic-json/" + list[i]
+            filesize = os.path.getsize("D:\/ZAIZHI\/freebase-data\/" + path)
+            # f4_writer.write("mv "+path+" topic-json-1/\n")
             # if filesize >200:
             f4_writer.write("gunzip " + path + "\n")
             # else:
             #     f5_writer.write("mv "+path+" topic-json-useless-1/\n")
     f4_writer.close()
     f5_writer.close()
+
 
 def read_all_files3(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
     list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件3
@@ -132,16 +132,26 @@ def read_all_files3(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
     for i in range(0, len(list)):
         index += 1
         if index % 100000 == 0:
-            print("hand ",index)
+            print("hand ", index)
         if list[i].endswith(".json"):
-            path = "topic-json/"+ list[i]
-            f4_writer.write("mv "+path+" topic-json-1/\n")
+            path = "topic-json/" + list[i]
+            f4_writer.write("mv " + path + " topic-json-1/\n")
 
 
+# 直接从gzip中读取rdf
+def read_rdf_from_gzip(file_name=r"../data/freebase/100_classic_book_collection.json.gz"):
+    g = gzip.open(filename=file_name,mode="rt",encoding="utf-8")
+    gs = []
+    for g1 in g:
+        gs.append(str(g1))
+    g2 = "".join(gs)
+    print(g2)
+    g.close()
+    return  g2
 
 
-
-read_all_files2()
+read_rdf_from_gzip()
+# read_all_files2()
 # alias = get_alias()
 
 # alias2 = find_relation(relation="/common/topic/article")
