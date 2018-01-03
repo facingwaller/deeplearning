@@ -83,7 +83,7 @@ def find_fb_by_id2(entity_name):
 def test1():
     # read_files("../data/sq/annotated_fb_data_train-1.txt")
     # read_fb("1111.json")
-    print("1"=="1")
+
     fb1 = free_base()
     fb1.init_fb()
     print(fb1.entitys.__len__())
