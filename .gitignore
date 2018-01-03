@@ -9,3 +9,5 @@
 /word2vec-test/wiki_texts.txt
 /word2vec-test/rt_polarity.model.bin
 /word2vec-test/rt_polarity.txt
+/QA_LSTM_ATTENTION/__pycache__
+/QA_LSTM_ATTENTION/*.log

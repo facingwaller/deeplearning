@@ -1,4 +1,5 @@
 # coding=utf-8
+
 import codecs
 import logging
 import numpy as np
@@ -10,6 +11,7 @@ from collections import defaultdict
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 
 
+# 加载向量化的函数
 def load_embedding(filename, embedding_size):
     """
     load embedding

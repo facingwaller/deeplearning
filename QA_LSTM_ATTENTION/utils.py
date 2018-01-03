@@ -1,6 +1,7 @@
 import tensorflow as tf
 
-#----------------------------- cal attention -------------------------------
+
+# ----------------------------- cal attention -------------------------------
 def feature2cos_sim(feat_q, feat_a):
     norm_q = tf.sqrt(tf.reduce_sum(tf.multiply(feat_q, feat_q), 1))
     norm_a = tf.sqrt(tf.reduce_sum(tf.multiply(feat_a, feat_a), 1))
@@ -8,33 +9,36 @@ def feature2cos_sim(feat_q, feat_a):
     cos_sim_q_a = tf.div(mul_q_a, tf.multiply(norm_q, norm_a))
     return cos_sim_q_a
 
+
 # return 1 output of lstm cells after pooling, lstm_out(batch, step, rnn_size * 2)
 def max_pooling(lstm_out):
-    height, width = int(lstm_out.get_shape()[1]), int(lstm_out.get_shape()[2])       # (step, length of input for one step)
+    height, width = int(lstm_out.get_shape()[1]), int(lstm_out.get_shape()[2])  # (step, length of input for one step)
     # do	 max-pooling to change the (sequence_lenght) tensor to 1-lenght tensor
     lstm_out = tf.expand_dims(lstm_out, -1)
     output = tf.nn.max_pool(
-		lstm_out,
-		ksize=[1, height, 1, 1],
-		strides=[1, 1, 1, 1],
-		padding='VALID')
+        lstm_out,
+        ksize=[1, height, 1, 1],
+        strides=[1, 1, 1, 1],
+        padding='VALID')
     output = tf.reshape(output, [-1, width])
     return output
 
+
 def avg_pooling(lstm_out):
-    height, width = int(lstm_out.get_shape()[1]), int(lstm_out.get_shape()[2])       # (step, length of input for one step)
-    
+    height, width = int(lstm_out.get_shape()[1]), int(lstm_out.get_shape()[2])  # (step, length of input for one step)
+
     # do max-pooling to change the (sequence_lenght) tensor to 1-lenght tensor
     lstm_out = tf.expand_dims(lstm_out, -1)
     output = tf.nn.avg_pool(
-    	lstm_out,
-    	ksize=[1, height, 1, 1],
-    	strides=[1, 1, 1, 1],
-    	padding='VALID')
-    
+        lstm_out,
+        ksize=[1, height, 1, 1],
+        strides=[1, 1, 1, 1],
+        padding='VALID')
+
     output = tf.reshape(output, [-1, width])
-    
+
     return output
+
 
 def cal_loss_and_acc(ori_cand, ori_neg):
     # the target function 
@@ -42,8 +46,8 @@ def cal_loss_and_acc(ori_cand, ori_neg):
     margin = tf.fill(tf.shape(ori_cand), 0.2)
     with tf.name_scope("loss"):
         losses = tf.maximum(zero, tf.subtract(margin, tf.subtract(ori_cand, ori_neg)))
-        loss = tf.reduce_sum(losses) 
-    # cal accurancy
+        loss = tf.reduce_sum(losses)
+        # cal accurancy
     with tf.name_scope("acc"):
         correct = tf.equal(zero, losses)
         acc = tf.reduce_mean(tf.cast(correct, "float"), name="acc")
@@ -63,8 +67,7 @@ def get_feature(input_q, input_a, att_W):
     S = tf.reshape(M, [-1, h_a])
     S = tf.nn.softmax(S)
     S_diag = tf.matrix_diag(S)
-    attention_a = tf.matmul(S_diag, input_a) # 将tf.batch_matmul替换成tf.matmul
+    attention_a = tf.matmul(S_diag, input_a)  # 将tf.batch_matmul替换成tf.matmul
     attention_a = tf.reshape(attention_a, [-1, h_a, w])
     output_a = max_pooling(attention_a)
     return tf.tanh(output_q), tf.tanh(output_a)
-

@@ -1,8 +1,8 @@
 # coding:utf-8
 
 import tensorflow as tf
-from tensorflow.python.ops import rnn, rnn_cell 
-## define lstm model and reture related features
+from tensorflow.python.ops import rnn, rnn_cell
+# define lstm model and reture related features
 
 
 # return n outputs of the n lstm cells

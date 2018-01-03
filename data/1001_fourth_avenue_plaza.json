@@ -1,0 +1,835 @@
+{
+ "id": "/m/0421j2d",
+ "property": {
+  "/architecture/building/floors": {
+   "valuetype": "int",
+   "values": [
+    {
+     "text": "50",
+     "lang": "en",
+     "value": 50.0,
+     "creator": "/user/mw_template_bot",
+     "timestamp": "2010-08-21T06:54:17.000Z"
+    }
+   ],
+   "count": 1.0
+  },
+  "/architecture/structure/height_meters": {
+   "valuetype": "float",
+   "values": [
+    {
+     "text": "192.0",
+     "lang": "en",
+     "value": 192.0,
+     "creator": "/user/jon",
+     "timestamp": "2012-06-27T21:56:36.000Z"
+    }
+   ],
+   "count": 1.0
+  },
+  "/architecture/structure/opened": {
+   "valuetype": "datetime",
+   "values": [
+    {
+     "text": "1969",
+     "lang": "",
+     "value": "1969",
+     "creator": "/user/mw_template_bot",
+     "timestamp": "2011-05-04T18:23:43.001Z"
+    }
+   ],
+   "count": 1.0
+  },
+  "/common/topic/alias": {
+   "valuetype": "string",
+   "values": [
+    {
+     "text": "1001 Fourth Avenue Plaza, Seattle First National Bank Building",
+     "lang": "en",
+     "value": "1001 Fourth Avenue Plaza, Seattle First National Bank Building",
+     "creator": "/user/jon",
+     "project": "freebase",
+     "dataset": "/m/0w2pd4r",
+     "citation": {
+      "provider": "Council on Tall Buildings and Urban Habitat",
+      "statement": "Council on Tall Buildings and Urban Habitat",
+      "uri": "http://www.ctbuh.org/"
+     },
+     "timestamp": "2013-08-01T03:25:23.000Z"
+    }
+   ],
+   "count": 1.0
+  },
+  "/common/topic/article": {
+   "valuetype": "compound",
+   "values": [
+    {
+     "text": "Safeco Plaza, previously 1001 Fourth Avenue Plaza, and the Seattle-First National Bank Building,...",
+     "lang": "en",
+     "id": "/m/0421j2j",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2008-05-08T00:34:32.008Z",
+     "property": {
+      "/common/document/source_uri": {
+       "valuetype": "uri",
+       "values": [
+        {
+         "text": "http://wp/en/17098278",
+         "lang": "",
+         "value": "http://wp/en/17098278",
+         "creator": "/user/mwcl_wikipedia_en",
+         "timestamp": "2008-05-08T00:34:32.008Z"
+        }
+       ],
+       "count": 1.0
+      },
+      "/common/document/text": {
+       "valuetype": "string",
+       "values": [
+        {
+         "text": "Safeco Plaza, previously 1001 Fourth Avenue Plaza, and the Seattle-First National Bank Building,...",
+         "lang": "en",
+         "value": "Safeco Plaza, previously 1001 Fourth Avenue Plaza, and the Seattle-First National Bank Building, is a 50-floor building in downtown Seattle, Washington. Locals nicknamed it \"The Box the Space Needle Came In\". When this 192 m (630 ft) office building was built in 1968–1969, it dwarfed Smith Tower, which had reigned as downtown's tallest building since 1914, and edged out the Space Needle (1962) in Seattle Center by 25 feet (7.6 m). It was also the first Class A office building in Seattle.\nSafeco Insurance Company of America leased the building May 23, 2006 to be its headquarters, and renamed it Safeco Plaza.",
+         "creator": "/user/mwcl_wikipedia_en",
+         "timestamp": "2008-05-08T00:34:32.008Z"
+        }
+       ],
+       "count": 1.0
+      },
+      "/type/object/attribution": {
+       "valuetype": "object",
+       "values": [
+        {
+         "text": "Freebase Data Team",
+         "lang": "",
+         "id": "/m/0gs8",
+         "creator": "/user/mwcl_wikipedia_en",
+         "timestamp": "2008-05-08T00:34:32.008Z"
+        }
+       ],
+       "count": 1.0
+      },
+      "/type/object/type": {
+       "valuetype": "object",
+       "values": [
+        {
+         "text": "Document",
+         "lang": "",
+         "id": "/common/document",
+         "creator": "/user/mwcl_wikipedia_en",
+         "timestamp": "2008-05-08T00:34:32.008Z"
+        }
+       ],
+       "count": 1.0
+      }
+     }
+    }
+   ],
+   "count": 1.0
+  },
+  "/common/topic/description": {
+   "valuetype": "string",
+   "values": [
+    {
+     "text": "Safeco Plaza, previously 1001 Fourth Avenue Plaza, and the Seattle-First National Bank Building,...",
+     "lang": "en",
+     "value": "Safeco Plaza, previously 1001 Fourth Avenue Plaza, and the Seattle-First National Bank Building, is a 50-story, 192 m skyscraper in downtown Seattle, Washington. Locals nicknamed it \"The Box the Space Needle Came In\". When the tower was completed in 1969, it dwarfed Smith Tower, which had reigned as downtown's tallest building since 1914, and edged out the Space Needle in Seattle Center by 25 ft. It was the first class-A office building in Seattle.\nSafeco Insurance Company of America leased the building May 23, 2006 to be its headquarters, and renamed it Safeco Plaza.",
+     "creator": "/user/wikirecon_bot",
+     "project": "wikirecon",
+     "dataset": "/m/0kj4zz_",
+     "citation": {
+      "provider": "Wikipedia",
+      "statement": "Description licensed under the Creative Commons Attribution-ShareAlike License (http://en.wikipedia.org/wiki/Wikipedia:Text_of_Creative_Commons_Attribution-ShareAlike_3.0_Unported_License).",
+      "uri": "http://en.wikipedia.org/wiki/Safeco_Plaza_(Seattle)"
+     }
+    }
+   ],
+   "count": 2.0
+  },
+  "/common/topic/image": {
+   "valuetype": "object",
+   "values": [
+    {
+     "text": "1001 Fourth Avenue Seattle Washington",
+     "lang": "en",
+     "id": "/m/05lpm5g",
+     "creator": "/user/mwcl_images",
+     "timestamp": "2009-03-17T23:35:12.000Z"
+    }
+   ],
+   "count": 1.0
+  },
+  "/common/topic/notable_for": {
+   "valuetype": "object",
+   "values": [
+    {
+     "text": "Skyscraper",
+     "lang": "en",
+     "id": "/architecture/skyscraper"
+    }
+   ],
+   "count": 1.0
+  },
+  "/common/topic/notable_types": {
+   "valuetype": "object",
+   "values": [
+    {
+     "text": "Skyscraper",
+     "lang": "en",
+     "id": "/architecture/skyscraper"
+    }
+   ],
+   "count": 1.0
+  },
+  "/common/topic/topic_equivalent_webpage": {
+   "valuetype": "uri",
+   "values": [
+    {
+     "text": "http://en.wikipedia.org/wiki/index.html?curid=17098278",
+     "lang": "",
+     "value": "http://en.wikipedia.org/wiki/index.html?curid=17098278",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2008-05-08T00:34:32.008Z"
+    },
+    {
+     "text": "http://en.wikipedia.org/wiki/Safeco_Plaza_(Seattle)",
+     "lang": "",
+     "value": "http://en.wikipedia.org/wiki/Safeco_Plaza_(Seattle)",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2012-06-26T19:41:49.000Z"
+    },
+    {
+     "text": "http://cs.wikipedia.org/wiki/Safeco_Plaza",
+     "lang": "",
+     "value": "http://cs.wikipedia.org/wiki/Safeco_Plaza",
+     "creator": "/user/wikirecon_bot",
+     "timestamp": "2013-04-20T14:17:36.006Z"
+    },
+    {
+     "text": "http://cs.wikipedia.org/wiki/index.html?curid=591051",
+     "lang": "",
+     "value": "http://cs.wikipedia.org/wiki/index.html?curid=591051",
+     "creator": "/user/wikirecon_bot",
+     "timestamp": "2013-04-20T14:17:41.004Z"
+    }
+   ],
+   "count": 4.0
+  },
+  "/freebase/object_profile/object_generation_time": {
+   "valuetype": "datetime",
+   "values": [
+    {
+     "text": "2014-01-06T08:13:13.000Z",
+     "lang": "",
+     "value": "2014-01-06T08:13:13.000Z"
+    }
+   ],
+   "count": 1.0
+  },
+  "/location/location/containedby": {
+   "valuetype": "object",
+   "values": [
+    {
+     "text": "Seattle",
+     "lang": "en",
+     "id": "/m/0d9jr",
+     "creator": "/user/jon",
+     "project": "freebase",
+     "dataset": "/m/0w2pd4r",
+     "citation": {
+      "provider": "Council on Tall Buildings and Urban Habitat",
+      "statement": "Council on Tall Buildings and Urban Habitat",
+      "uri": "http://www.ctbuh.org/"
+     },
+     "timestamp": "2013-08-01T03:21:01.000Z"
+    },
+    {
+     "text": "United States of America",
+     "lang": "en",
+     "id": "/m/09c7w0",
+     "creator": "/user/jon",
+     "timestamp": "2013-08-02T01:25:49.000Z"
+    }
+   ],
+   "count": 2.0
+  },
+  "/location/location/geolocation": {
+   "valuetype": "compound",
+   "values": [
+    {
+     "text": "47.6622 - -122.33376 - Spreadsheet Upload about CTBUH Building data - Geocode",
+     "lang": "en",
+     "id": "/m/0wfbl5v",
+     "creator": "/user/jon",
+     "project": "freebase",
+     "dataset": "/m/0w2pd4r",
+     "citation": {
+      "provider": "Council on Tall Buildings and Urban Habitat",
+      "statement": "Council on Tall Buildings and Urban Habitat",
+      "uri": "http://www.ctbuh.org/"
+     },
+     "timestamp": "2013-08-01T03:24:12.000Z",
+     "property": {
+      "/location/geocode/latitude": {
+       "valuetype": "float",
+       "values": [
+        {
+         "text": "47.6622",
+         "lang": "en",
+         "value": 47.6622,
+         "creator": "/user/jon",
+         "project": "freebase",
+         "dataset": "/m/0w2pd4r",
+         "citation": {
+          "provider": "Council on Tall Buildings and Urban Habitat",
+          "statement": "Council on Tall Buildings and Urban Habitat",
+          "uri": "http://www.ctbuh.org/"
+         },
+         "timestamp": "2013-08-01T03:24:12.000Z"
+        }
+       ],
+       "count": 1.0
+      },
+      "/location/geocode/longitude": {
+       "valuetype": "float",
+       "values": [
+        {
+         "text": "-122.33376",
+         "lang": "en",
+         "value": -122.33376,
+         "creator": "/user/jon",
+         "project": "freebase",
+         "dataset": "/m/0w2pd4r",
+         "citation": {
+          "provider": "Council on Tall Buildings and Urban Habitat",
+          "statement": "Council on Tall Buildings and Urban Habitat",
+          "uri": "http://www.ctbuh.org/"
+         },
+         "timestamp": "2013-08-01T03:24:12.000Z"
+        }
+       ],
+       "count": 1.0
+      },
+      "/type/object/attribution": {
+       "valuetype": "object",
+       "values": [
+        {
+         "text": "Spreadsheet Upload about CTBUH Building data",
+         "lang": "en",
+         "id": "/m/0wf961f",
+         "creator": "/user/jon",
+         "project": "freebase",
+         "dataset": "/m/0w2pd4r",
+         "citation": {
+          "provider": "Council on Tall Buildings and Urban Habitat",
+          "statement": "Council on Tall Buildings and Urban Habitat",
+          "uri": "http://www.ctbuh.org/"
+         },
+         "timestamp": "2013-08-01T03:24:12.000Z"
+        }
+       ],
+       "count": 1.0
+      },
+      "/type/object/type": {
+       "valuetype": "object",
+       "values": [
+        {
+         "text": "Geocode",
+         "lang": "en",
+         "id": "/location/geocode",
+         "creator": "/user/jon",
+         "project": "freebase",
+         "dataset": "/m/0w2pd4r",
+         "citation": {
+          "provider": "Council on Tall Buildings and Urban Habitat",
+          "statement": "Council on Tall Buildings and Urban Habitat",
+          "uri": "http://www.ctbuh.org/"
+         },
+         "timestamp": "2013-08-01T03:24:12.000Z"
+        }
+       ],
+       "count": 1.0
+      }
+     }
+    }
+   ],
+   "count": 1.0
+  },
+  "/location/location/street_address": {
+   "valuetype": "compound",
+   "values": [
+    {
+     "text": "1001 Fourth Avenue - Spreadsheet Upload about CTBUH Building data - Address",
+     "lang": "en",
+     "id": "/m/0wfblg6",
+     "creator": "/user/jon",
+     "project": "freebase",
+     "dataset": "/m/0w2pd4r",
+     "citation": {
+      "provider": "Council on Tall Buildings and Urban Habitat",
+      "statement": "Council on Tall Buildings and Urban Habitat",
+      "uri": "http://www.ctbuh.org/"
+     },
+     "timestamp": "2013-08-01T03:25:45.000Z",
+     "property": {
+      "/location/mailing_address/street_address": {
+       "valuetype": "string",
+       "values": [
+        {
+         "text": "1001 Fourth Avenue",
+         "lang": "en",
+         "value": "1001 Fourth Avenue",
+         "creator": "/user/jon",
+         "project": "freebase",
+         "dataset": "/m/0w2pd4r",
+         "citation": {
+          "provider": "Council on Tall Buildings and Urban Habitat",
+          "statement": "Council on Tall Buildings and Urban Habitat",
+          "uri": "http://www.ctbuh.org/"
+         },
+         "timestamp": "2013-08-01T03:25:45.000Z"
+        }
+       ],
+       "count": 1.0
+      },
+      "/type/object/attribution": {
+       "valuetype": "object",
+       "values": [
+        {
+         "text": "Spreadsheet Upload about CTBUH Building data",
+         "lang": "en",
+         "id": "/m/0wf961f",
+         "creator": "/user/jon",
+         "project": "freebase",
+         "dataset": "/m/0w2pd4r",
+         "citation": {
+          "provider": "Council on Tall Buildings and Urban Habitat",
+          "statement": "Council on Tall Buildings and Urban Habitat",
+          "uri": "http://www.ctbuh.org/"
+         },
+         "timestamp": "2013-08-01T03:25:45.000Z"
+        }
+       ],
+       "count": 1.0
+      },
+      "/type/object/type": {
+       "valuetype": "object",
+       "values": [
+        {
+         "text": "Address",
+         "lang": "en",
+         "id": "/location/mailing_address",
+         "creator": "/user/jon",
+         "project": "freebase",
+         "dataset": "/m/0w2pd4r",
+         "citation": {
+          "provider": "Council on Tall Buildings and Urban Habitat",
+          "statement": "Council on Tall Buildings and Urban Habitat",
+          "uri": "http://www.ctbuh.org/"
+         },
+         "timestamp": "2013-08-01T03:25:45.000Z"
+        }
+       ],
+       "count": 1.0
+      }
+     }
+    }
+   ],
+   "count": 1.0
+  },
+  "/type/object/attribution": {
+   "valuetype": "object",
+   "values": [
+    {
+     "text": "Freebase Data Team",
+     "lang": "en",
+     "id": "/m/0gs8",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2008-05-08T00:34:32.007Z"
+    }
+   ],
+   "count": 1.0
+  },
+  "/type/object/key": {
+   "valuetype": "key",
+   "values": [
+    {
+     "text": "/wikipedia/en_id/17098278",
+     "lang": "",
+     "value": "/wikipedia/en_id/17098278",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2008-05-08T00:34:32.008Z"
+    },
+    {
+     "text": "/en/1001_fourth_avenue_plaza",
+     "lang": "",
+     "value": "/en/1001_fourth_avenue_plaza",
+     "creator": "/user/topicns_loader",
+     "timestamp": "2009-02-28T14:07:40.000Z"
+    },
+    {
+     "text": "/wikipedia/en_title/Safeco_Plaza_$0028Seattle$0029",
+     "lang": "",
+     "value": "/wikipedia/en_title/Safeco_Plaza_$0028Seattle$0029",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2012-06-26T19:41:49.000Z"
+    },
+    {
+     "text": "/wikipedia/en/Seattle-First_National_Bank_Building",
+     "lang": "",
+     "value": "/wikipedia/en/Seattle-First_National_Bank_Building",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2012-06-26T19:41:54.000Z"
+    },
+    {
+     "text": "/wikipedia/en/Seattle_First_National_Bank_Building",
+     "lang": "",
+     "value": "/wikipedia/en/Seattle_First_National_Bank_Building",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2012-06-26T19:41:57.001Z"
+    },
+    {
+     "text": "/wikipedia/en/Safeco_Plaza_$0028Seattle$0029",
+     "lang": "",
+     "value": "/wikipedia/en/Safeco_Plaza_$0028Seattle$0029",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2012-06-26T19:42:04.000Z"
+    },
+    {
+     "text": "/wikipedia/en/Seafirst_Building",
+     "lang": "",
+     "value": "/wikipedia/en/Seafirst_Building",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2012-06-26T19:42:09.000Z"
+    },
+    {
+     "text": "/wikipedia/en/1001_Fourth_Avenue_Plaza",
+     "lang": "",
+     "value": "/wikipedia/en/1001_Fourth_Avenue_Plaza",
+     "creator": "/user/mwcl_wikipedia_en",
+     "timestamp": "2012-06-26T19:42:19.000Z"
+    },
+    {
+     "text": "/wikipedia/cs_title/Safeco_Plaza",
+     "lang": "",
+     "value": "/wikipedia/cs_title/Safeco_Plaza",
+     "creator": "/user/wikirecon_bot",
+     "timestamp": "2013-04-20T14:17:36.006Z"
+    },
+    {
+     "text": "/wikipedia/cs/Safeco_Plaza",
+     "lang": "",
+     "value": "/wikipedia/cs/Safeco_Plaza",
+     "creator": "/user/wikirecon_bot",
+     "timestamp": "2013-04-20T14:17:38.000Z"
+    },
+    {
+     "text": "/wikipedia/cs_id/591051",
+     "lang": "",
+     "value": "/wikipedia/cs_id/591051",
+     "creator": "/user/wikirecon_bot",
+     "timestamp": "2013-04-20T14:17:41.004Z"
+    },
+    {
+     "text": "/wikipedia/cs/1001_Fourth_Avenue_Plaza",
+     "lang": "",
+     "value": "/wikipedia/cs/1001_Fourth_Avenue_Plaza",
+     "creator": "/user/wikirecon_bot",
+     "timestamp": "2013-04-20T14:17:53.004Z"
+    }
+   ],
+   "count": 12.0
+  },
+  "/type/object/mid": {
+   "valuetype": "key",
+   "values": [
+    {
+     "text": "/m/0421j2d",
+     "lang": "",
+     "value": "/m/0421j2d"
+    }
+   ],
+   "count": 1.0
+  },
+  "/type/object/name": {
+   "valuetype": "string",
+   "values": [
+    {
+     "text": "Safeco Plaza",
+     "lang": "en",
+     "value": "Safeco Plaza",
+     "creator": "/user/wikirecon_bot",
+     "timestamp": "2013-04-20T14:18:04.007Z"
+    }
+   ],
+   "count": 2.0
+  },
+  "/type/object/type": {
+   "valuetype": "object",
+   "values": [
+    {
+     "text": "Structure",
+     "lang": "en",
+     "id": "/architecture/structure",
+     "creator": "/user/obuenaflor",
+     "timestamp": "2009-09-10T13:12:14.000Z"
+    },
+    {
+     "text": "Project focus",
+     "lang": "en",
+     "id": "/projects/project_focus",
+     "creator": "/user/obuenaflor",
+     "timestamp": "2009-09-10T13:12:14.000Z"
+    },
+    {
+     "text": "Location",
+     "lang": "en",
+     "id": "/location/location",
+     "creator": "/user/obuenaflor",
+     "timestamp": "2009-09-10T13:12:14.000Z"
+    },
+    {
+     "text": "Building",
+     "lang": "en",
+     "id": "/architecture/building",
+     "creator": "/user/srividhya",
+     "timestamp": "2009-10-26T18:33:54.000Z"
+    },
+    {
+     "text": "Skyscraper",
+     "lang": "en",
+     "id": "/architecture/skyscraper",
+     "creator": "/user/mw_template_bot",
+     "timestamp": "2011-07-01T21:39:35.000Z"
+    },
+    {
+     "text": "Topic",
+     "lang": "en",
+     "id": "/common/topic",
+     "creator": "/user/mwcl_wikipedia_en"
+    }
+   ],
+   "count": 6.0
+  },
+  "/type/object/guid": {
+   "valuetype": "string",
+   "values": [
+    {
+     "text": "#9202a8c04000641f800000000820c04c",
+     "lang": "",
+     "value": "#9202a8c04000641f800000000820c04c"
+    }
+   ],
+   "count": 1.0
+  },
+  "/type/object/id": {
+   "valuetype": "key",
+   "values": [
+    {
+     "text": "/en/1001_fourth_avenue_plaza",
+     "lang": "",
+     "value": "/en/1001_fourth_avenue_plaza"
+    }
+   ],
+   "count": 1.0
+  },
+  "/type/object/creator": {
+   "valuetype": "object",
+   "values": [
+    {
+     "text": "mwcl_wikipedia_en",
+     "lang": "",
+     "id": "/user/mwcl_wikipedia_en",
+     "timestamp": "2008-05-08T00:34:32.007Z"
+    }
+   ],
+   "count": 1.0
+  },
+  "/type/object/timestamp": {
+   "valuetype": "datetime",
+   "values": [
+    {
+     "text": "2008-05-08T00:34:32.007Z",
+     "lang": "en",
+     "value": "2008-05-08T00:34:32.007Z"
+    }
+   ],
+   "count": 1.0
+  },
+  "/type/object/permission": {
+   "valuetype": "object",
+   "values": [
+    {
+     "text": "/boot/all_permission",
+     "lang": "",
+     "id": "/boot/all_permission"
+    }
+   ],
+   "count": 1.0
+  },
+  "/freebase/object_profile/linkcount": {
+   "type": "custom",
+   "values": [
+    {
+     "id": "/type",
+     "count": 22,
+     "values": [
+      {
+       "id": "/type/object",
+       "count": 22,
+       "values": [
+        {
+         "id": "/type/object/key",
+         "count": 12
+        },
+        {
+         "id": "/type/object/type",
+         "count": 6
+        },
+        {
+         "id": "/type/object/name",
+         "count": 2
+        },
+        {
+         "id": "/type/object/mid",
+         "count": 1
+        },
+        {
+         "id": "/type/object/attribution",
+         "count": 1
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "/common",
+     "count": 11,
+     "values": [
+      {
+       "id": "/common/topic",
+       "count": 11,
+       "values": [
+        {
+         "id": "/common/topic/topic_equivalent_webpage",
+         "count": 4
+        },
+        {
+         "id": "/common/topic/description",
+         "count": 2
+        },
+        {
+         "id": "/common/topic/notable_types",
+         "count": 1
+        },
+        {
+         "id": "/common/topic/article",
+         "count": 1
+        },
+        {
+         "id": "/common/topic/image",
+         "count": 1
+        },
+        {
+         "id": "/common/topic/notable_for",
+         "count": 1
+        },
+        {
+         "id": "/common/topic/alias",
+         "count": 1
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "/location",
+     "count": 4,
+     "values": [
+      {
+       "id": "/location/location",
+       "count": 4,
+       "values": [
+        {
+         "id": "/location/location/containedby",
+         "count": 2
+        },
+        {
+         "id": "/location/location/geolocation",
+         "count": 1
+        },
+        {
+         "id": "/location/location/street_address",
+         "count": 1
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "/architecture",
+     "count": 3,
+     "values": [
+      {
+       "id": "/architecture/structure",
+       "count": 2,
+       "values": [
+        {
+         "id": "/architecture/structure/height_meters",
+         "count": 1
+        },
+        {
+         "id": "/architecture/structure/opened",
+         "count": 1
+        }
+       ]
+      },
+      {
+       "id": "/architecture/building",
+       "count": 1,
+       "values": [
+        {
+         "id": "/architecture/building/floors",
+         "count": 1
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "/freebase",
+     "count": 1,
+     "values": [
+      {
+       "id": "/freebase/object_profile",
+       "count": 1,
+       "values": [
+        {
+         "id": "/freebase/object_profile/object_generation_time",
+         "count": 1
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "/dataworld",
+     "count": 1,
+     "values": [
+      {
+       "id": "/dataworld/gardening_hint",
+       "count": 1,
+       "values": [
+        {
+         "id": "!/dataworld/gardening_hint/last_referenced_by",
+         "count": 1
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ }
+}
+

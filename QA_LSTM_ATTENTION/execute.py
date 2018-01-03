@@ -50,6 +50,7 @@ logger.addHandler(fh)
 
 # ------------------------------------load data -------------------------------
 embedding, word2idx, idx2word = load_embedding(FLAGS.embedding_file, FLAGS.embedding_size)
+# ori_quests 问题  ,cand_quests 候选问题
 ori_quests, cand_quests = load_train_data(FLAGS.train_file, word2idx, FLAGS.num_unroll_steps)
 
 test_ori_quests, test_cand_quests, labels, results = load_test_data(FLAGS.test_file, word2idx, FLAGS.num_unroll_steps)
@@ -140,8 +141,9 @@ def valid_model(sess, lstm, valid_ori_quests, valid_cand_quests, labels, results
 # ----------------------------------- begin to train -----------------------------------
 with tf.Graph().as_default():
     with tf.device("/cpu:0"):
-        # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_options)
-        # session_conf = tf.ConfigProto(allow_soft_placement=FLAGS.allow_soft_placement, log_device_placement=FLAGS.log_device_placement, gpu_options=gpu_options)
+        # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_options) session_conf =
+        # tf.ConfigProto(allow_soft_placement=FLAGS.allow_soft_placement,
+        # log_device_placement=FLAGS.log_device_placement, gpu_options=gpu_options)
         with tf.Session().as_default() as sess:
             lstm = LSTM_QA(FLAGS.batch_size, FLAGS.num_unroll_steps, embedding, FLAGS.embedding_size, FLAGS.rnn_size,
                            FLAGS.num_rnn_layers, FLAGS.max_grad_norm, FLAGS.attention_matrix_size)
