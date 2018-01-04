@@ -9,6 +9,7 @@ Links:
 
 Author: Aymeric Damien
 Project: https://github.com/aymericdamien/TensorFlow-Examples/
+# 这个版本是能跑的
 """
 
 from __future__ import print_function
@@ -31,8 +32,8 @@ from gensim.models import word2vec
 from gensim import models
 
 ''' 日志  '''
-LOG_FILE = 'log2/'+str(time.time())+'.txt'
-handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024*1024, backupCount=5)  # 实例化handler
+LOG_FILE = 'log2/' + str(time.time()) + '.txt'
+handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024 * 1024, backupCount=5)  # 实例化handler
 fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(message)s'
 formatter = logging.Formatter(fmt)  # 实例化formatter
 handler.setFormatter(formatter)  # 为handler添加formatter
@@ -41,13 +42,17 @@ logger.addHandler(handler)  # 为logger添加handler
 logger.setLevel(logging.DEBUG)
 logger.info('==================================')
 
+
 def prn_obj(obj):
     logger.info('\n'.join(['%s:%s' % item for item in obj.__dict__.items()]))
+
+
 def myLog(obj):
     logger.info("obj begin===========================" + str(len(obj)))
     for l1 in obj:
         # print(l1)
         logger.info(l1)
+
 
 ''' 预定义变量
 '''
@@ -90,7 +95,7 @@ for x_text_sentences in x_text:
     # 补齐
     for index in range(max_document_length - len(x_text_sentences_list)):
         x_text_sentences_list.append("as")
-    print("-------padding ",len(x_text_sentences_list))
+    print("-------padding ", len(x_text_sentences_list))
     for s_w in x_text_sentences_list:
         try:
             word_embedding = model[s_w]
@@ -140,31 +145,31 @@ total_len = len(y)
 total_index = total_len * 0.9
 rate = 0.8
 # 训练的部分
-origin_x,test_x = data_helpers.capNums(x.copy()) # x.copy()
-origin_y,test_y = data_helpers.capNums(y.copy()) # y.copy()
-x,y= data_helpers.batch_iter2(origin_x,origin_y)
+origin_x, test_x = data_helpers.capNums(x.copy())  # x.copy()
+origin_y, test_y = data_helpers.capNums(y.copy())  # y.copy()
+x, y = data_helpers.batch_iter2(origin_x, origin_y)
 # 测试的部分
 
 
 # Training Parameters
 learning_rate = 0.001
-training_steps = 100 # 10000
-batch_size = 128 # len(y_train)# 128 这个数字没用，下面重新定义
+training_steps = 100  # 10000
+batch_size = 128  # len(y_train)# 128 这个数字没用，下面重新定义
 display_step = 10
 
 # Network Parameters
-word_d =  50 # word2vec之后是50维  1 # 一个单词的维度
-num_input = word_d # 28 # 28 MNIST data input (img shape: 28*28) 类比句子的长度
-timesteps = max_document_length # 28 # 28 timesteps                           类比句子的一个单词的维度
+word_d = 50  # word2vec之后是50维  1 # 一个单词的维度
+num_input = word_d  # 28 # 28 MNIST data input (img shape: 28*28) 类比句子的长度
+timesteps = max_document_length  # 28 # 28 timesteps                           类比句子的一个单词的维度
 # sentence_len = 40 # 一个句子的长度
 # max_document_length 一个句子的长度
-num_hidden = 200 # hidden layer num of features
+num_hidden = 200  # hidden layer num of features
 num_classes = 2  # 10 # 这里是2分类 10 # MNIST total classes (0-9 digits)
 
 # tf Graph input
 with tf.name_scope("input_X_Y"):
     X = tf.placeholder("float", [None, timesteps, num_input])
-    Y = tf.placeholder("float", [None, num_classes])    # 2 ··· 10分类
+    Y = tf.placeholder("float", [None, num_classes])  # 2 ··· 10分类
 
 # Define weights
 #  生成一个带可展开符号的一个域，并且支持嵌套操作
@@ -173,19 +178,18 @@ with tf.name_scope("weights1"):
 with tf.name_scope("biases1"):
     biases1 = tf.Variable(tf.random_normal([num_classes]))
 
-tf.summary.histogram( "weights1", weights1)  # 可视化观看变量
-tf.summary.histogram( "biases1", biases1)  # 可视化观看变量
+tf.summary.histogram("weights1", weights1)  # 可视化观看变量
+tf.summary.histogram("biases1", biases1)  # 可视化观看变量
 
 
 # X [None, timesteps, num_input]
 def rnnFun(x, weights, biases):
-
     # Prepare data shape to match `rnn` function requirements
     # Current data input shape: (batch_size, timesteps, n_input)
     # Required shape: 'timesteps' tensors list of shape (batch_size, n_input)
 
     # Unstack to get a list of 'timesteps' tensors of shape (batch_size, n_input)
-    print("x1:",x)
+    print("x1:", x)
     # 将x按行拆成num行，
     x = tf.unstack(x, timesteps, 1)
     print("x2:", x)
@@ -202,13 +206,13 @@ def rnnFun(x, weights, biases):
     outputs, states = rnn.static_rnn(lstm_cell, x, dtype=tf.float32)
 
     # Linear activation, using rnn inner loop last output
-    return tf.matmul(outputs[-1], weights) + biases,x
+    return tf.matmul(outputs[-1], weights) + biases, x
 
 
-logits,_X1 = rnnFun(X, weights1, biases1)  # 将输入，权重和偏置值都传进去，需要设定好隐藏层数量
+logits, _X1 = rnnFun(X, weights1, biases1)  # 将输入，权重和偏置值都传进去，需要设定好隐藏层数量
 # logits 10维的向量
 prediction = tf.nn.softmax(logits)
-tf.summary.histogram( "prediction1", prediction)  # 可视化观看变量
+tf.summary.histogram("prediction1", prediction)  # 可视化观看变量
 # tf.summary.scalar( "_X1", _X1)  # 可视化观看变量
 # logger.info("============X1-SATART")
 # myLog(_X1)
@@ -245,7 +249,9 @@ init = tf.global_variables_initializer()
 
 merged = tf.summary.merge_all()
 
-def runAndLog(batch_x,batch_y,writer,step,merged, prediction, logits, prediction_argmax, Y_argmax, X, correct_pred, accuracy, loss_op):
+
+def runAndLog(batch_x, batch_y, writer, step, merged, prediction, logits, prediction_argmax, Y_argmax, X, correct_pred,
+              accuracy, loss_op):
     summary, _prediction1, _logits1, _prediction_argmax1, _Y_argmax1, _X2, _correct_pred1, _accuracy1, _loss_op1 = \
         sess.run([merged, prediction, logits, prediction_argmax, Y_argmax, X, correct_pred, accuracy, loss_op],
                  feed_dict={X: batch_x, Y: batch_y})
@@ -269,6 +275,7 @@ def runAndLog(batch_x,batch_y,writer,step,merged, prediction, logits, prediction
         logger.info("_accuracy1 " + str(_accuracy1))
         logger.info("_loss_op1 " + str(_loss_op1))
 
+
 # Start training
 with tf.Session().as_default() as sess:
     writer = tf.summary.FileWriter("log/", sess.graph)
@@ -278,12 +285,12 @@ with tf.Session().as_default() as sess:
     sess.run(init)
     index = 0
     # batches = data_helpers.batch_iter(  list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
-    for step in range(1, training_steps+1):
+    for step in range(1, training_steps + 1):
         # if step == 1:
-            # print("查看x_train ===============================")
-            # x_train 句子个数*句子长度
-           # print("x_train len", len(x_train),x_train)  # 40 * 0.9 = 36
-           # print("y_train len", len(y_train),y_train)
+        # print("查看x_train ===============================")
+        # x_train 句子个数*句子长度
+        # print("x_train len", len(x_train),x_train)  # 40 * 0.9 = 36
+        # print("y_train len", len(y_train),y_train)
         # Generate batches
 
         # batches1 = batches.__next__()
@@ -330,11 +337,11 @@ with tf.Session().as_default() as sess:
 
         # print("total x_train ",total,len(x_train))
         # print("y_train ",len(y_train),y_train[0])
-        x_train = x_train.reshape((batch_size,max_document_length, word_d))
+        x_train = x_train.reshape((batch_size, max_document_length, word_d))
         # if step == 1:
-            # print("batch_x d1,d2,d3 ", len(batch_x), len(batch_x[0]), len(batch_x[0][0]))
-            # # print("batch_x 1 :", batch_x[0])
-            # print("batch_x 1 len:", len(batch_x[0]))
+        # print("batch_x d1,d2,d3 ", len(batch_x), len(batch_x[0]), len(batch_x[0][0]))
+        # # print("batch_x 1 :", batch_x[0])
+        # print("batch_x 1 len:", len(batch_x[0]))
         # Run optimization op (backprop)
         # batch_x 是128 * 28 的矩阵
         # batch_y 是128 * 10 的矩阵
@@ -350,7 +357,8 @@ with tf.Session().as_default() as sess:
         # summary,_ = sess.run([merged,train_op], feed_dict={X: batch_x, Y: batch_y})
         # _train_op1,_logits1,_prediction1 = sess.run([train_op, logits, prediction]
 
-        runAndLog(batch_x,batch_y,writer,step,merged, prediction, logits, prediction_argmax, Y_argmax, X, correct_pred, accuracy, loss_op)
+        runAndLog(batch_x, batch_y, writer, step, merged, prediction, logits, prediction_argmax, Y_argmax, X,
+                  correct_pred, accuracy, loss_op)
         # summary, _prediction1, _logits1,_prediction_argmax1,_Y_argmax1,_X2,_correct_pred1,_accuracy1,_loss_op1= \
         #     sess.run( [merged,prediction,logits,prediction_argmax,Y_argmax,X,correct_pred,accuracy,loss_op] ,
         #               feed_dict={X: batch_x, Y: batch_y})
@@ -374,22 +382,21 @@ with tf.Session().as_default() as sess:
         #     logger.info("_accuracy1 "+str(_accuracy1))
         #     logger.info("_loss_op1 "+str(_loss_op1))
 
-            # logger.info(_prediction1)
-            # prn_obj(_logits1)
+        # logger.info(_prediction1)
+        # prn_obj(_logits1)
         # writer.add_summary(prediction_Ret, step)
-            # print("prediction_Ret ",prediction_Ret)
+        # print("prediction_Ret ",prediction_Ret)
         # writer
         # print(weights1_ret)
 
         # writer.add_summary(weights1_ret,step)
         if step % display_step == 0 or step == 1:
-
             # Calculate batch loss and accuracy
 
             loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x,
                                                                  Y: batch_y})
-            print("Step " + str(step) + " len :" + str(len(batch_y)) + ", Minibatch Loss= " + "{:.4f}".format(loss) + ", Training Accuracy= " + "{:.3f}".format(acc))
-
+            print("Step " + str(step) + " len :" + str(len(batch_y)) + ", Minibatch Loss= " + "{:.4f}".format(
+                loss) + ", Training Accuracy= " + "{:.3f}".format(acc))
 
     print("Optimization Finished!")
 
@@ -401,11 +408,7 @@ with tf.Session().as_default() as sess:
     # test_data = mnist.test.images[:test_len].reshape((-1, timesteps, num_input))
     # test_label = mnist.test.labels[:test_len]
     test_data = x_train.reshape((-1, timesteps, num_input))
-    print("test_data ",len(test_data))
+    print("test_data ", len(test_data))
     test_label = y_train
     ac1 = sess.run(accuracy, feed_dict={X: test_data, Y: test_label})
-    print("Testing Accuracy:",ac1)
-
-
-
-
+    print("Testing Accuracy:", ac1)
