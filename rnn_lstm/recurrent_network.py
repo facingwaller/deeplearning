@@ -28,7 +28,7 @@ handle 28 sequences of 28 steps for every sample.
 
 # Training Parameters
 learning_rate = 0.001
-training_steps = 5
+training_steps = 50
 batch_size = 128
 display_step = 2
 
@@ -94,11 +94,16 @@ with tf.Session() as sess:
     # sess.add_tensor_filter("has_inf_or_nan", tfdbg.has_inf_or_nan)
 
     for step in range(1, training_steps+1):
+
         batch_x, batch_y = mnist.train.next_batch(batch_size)
-        print("batch_y ",batch_y)
-        print("batch_y 0 ", batch_y[0])
+
+        # print("batch_y ",batch_y)
+        # print("batch_y 0 ", batch_y[0])
         # Reshape data to get 28 seq of 28 elements
+
         batch_x = batch_x.reshape((batch_size, timesteps, num_input))
+        # print(batch_x.get_shape())
+        # print(batch_y.get_shape())
 
         # Run optimization op (backprop)
         _train_op1,_logits1,_prediction1 = sess.run([train_op, logits, prediction], feed_dict={X: batch_x, Y: batch_y})
@@ -119,4 +124,5 @@ with tf.Session() as sess:
 
     print("Testing Accuracy:", \
         sess.run(accuracy, feed_dict={X: test_data, Y: test_label}))
+
 
