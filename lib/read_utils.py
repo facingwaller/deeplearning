@@ -21,12 +21,12 @@ def batch_generator(arr, n_seqs, n_steps):
 
 
 class TextConverter(object):
-    def __init__(self, text=None, max_vocab=5000, filename=None):
+    def __init__(self, text=None, max_vocab=50000, filename=None):
         if filename is not None:
             with open(filename, 'rb') as f:
                 self.vocab = pickle.load(f)
         else:
-            vocab = set(text) # python的set和其他语言类似, 是一个无序不重复元素集, 基本功能包括关系测试和消除重复元素
+            vocab = set(text)
             print(len(vocab))
             # max_vocab_process
             vocab_count = {}
