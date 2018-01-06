@@ -69,6 +69,11 @@ class TextConverter(object):
         for word in text:
             arr.append(self.word_to_int(word))
         return np.array(arr)
+    def text_to_arr_list(self, text):
+        arr = []
+        for word in text:
+            arr.append(self.word_to_int(word))
+        return arr
 
     def arr_to_text(self, arr):
         words = []
@@ -79,3 +84,7 @@ class TextConverter(object):
     def save_to_file(self, filename):
         with open(filename, 'wb') as f:
             pickle.dump(self.vocab, f)
+    def save_to_file_raw(self, filename):
+        with open(filename, 'w') as f:
+            for w in self.vocab:
+                f.write(w+"\n")

@@ -189,10 +189,12 @@ def rnnFun(x, weights, biases):
     # Required shape: 'timesteps' tensors list of shape (batch_size, n_input)
 
     # Unstack to get a list of 'timesteps' tensors of shape (batch_size, n_input)
+    # Tensor("input_X_Y/Placeholder:0", shape=(?, 56, 50), dtype=float32)
     print("x1:", x)
     # 将x按行拆成num行，
     x = tf.unstack(x, timesteps, 1)
     print("x2:", x)
+    # x2: 56个 [<tf.Tensor 'unstack:0' shape=(?, 50) dtype=float32>,
     # Define a lstm cell with tensorflow
     # Define a lstm cell with tensorflow
     # http://blog.csdn.net/qiqiaiairen/article/details/53239506

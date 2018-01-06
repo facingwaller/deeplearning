@@ -7,6 +7,12 @@ import json
 import numpy as np
 import os
 import lib.read_utils as read_utils
+import random
+from tensorflow.contrib import learn
+import datetime
+import lib.my_log as mylog
+
+mylog.logger.info("test")
 
 
 # 从文件中读取问题集合
@@ -67,7 +73,7 @@ def test1():
 # =======================================================================simple questions
 def test2():
     d = DataClass()
-    d.init_simple_questions()
+    print(d.batch_iter(2))
 
 
 def read_file(file_name):
@@ -96,37 +102,98 @@ class DataClass:
     train_path = "../data/simple_questions/annotated_fb_data_train-1.txt"
     entity1_list = []  # id
     entity1_value_list = []  # 值
-    relation_list = []
+
+    relation_list = []  # 单词版
     entity2_list = []
     question_list = []
+    question_list_index = []  # 数字索引版
+    relation_list_index = []
+
+    train_question_list_index = []  # 数字索引版
+    train_relation_list_index = []
+    test_question_list_index = []  # 数字索引版
+    test_relation_list_index = []
+
     fb = []
+
+    # ----------------------分割数据，预处理，转换成index形式
+
+    def get_split_list(self, sentence_list):
+        """
+        将句子列表的所有空格隔开的单词全部取出来
+        :param sentence:
+        :return:
+        """
+        q_words = []
+        for q in sentence_list:
+            # q = str(q).replace("\n\r", " ")
+            q_words_list = q.split(" ")
+            for word in q_words_list:
+                q_words.append(word)
+        return q_words
+
+    def get_split_list_per_line(self, sentence_list):
+        """
+        将句子列表中的空格隔开的字符串改成以list形式
+        :param sentence_list:
+        :return:
+        """
+        all_stence = []
+        for sentence in sentence_list:
+            one_sentence = []
+            # q = str(q).replace("\n\r", " ")
+            q_words_list = sentence.split(" ")
+            for word in q_words_list:
+                one_sentence.append(word)
+            all_stence.append(one_sentence)
+        return all_stence
 
     def __init__(self):
         self.init_simple_questions()
         self.init_fb()
         print("init finish!")
-
-
         # 将问题和关系的字符串变成以空格隔开的一个单词的list
 
-
-        q_words = []
         # total_list = self.question_list + self.relation_list
-        for q in self.question_list:
-            q = str(q).replace("\n\r", " ")
-            q_words_list = q.split(" ")
-            for word in q_words_list:
-                q_words.append(word)
-
-        for q in self.relation_list:
-            q = str(q).replace("/", "_")
-            q_words_list = q.split("_")
-            for word in q_words_list:
-                q_words.append(word)
+        q_words = self.get_split_list(self.question_list)
+        q_words.extend(self.get_split_list(self.relation_list))
 
         self.converter = read_utils.TextConverter(q_words)
-        # converter.save_to_file("model/converter.pkl")
+        self.converter.save_to_file_raw(
+            "../data/vocab/" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
+        # self.converter.save_to_file("model/converter.pkl")
         # print(self.converter)
+
+        # 将问题/关系转换成index的系列表示
+        self.max_document_length = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
+        # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
+
+        self.question_list_split = self.get_split_list_per_line(self.question_list)
+        self.relation_list_split = self.get_split_list_per_line(self.relation_list)
+        for q_l_s in self.question_list_split:
+            self.question_list_index.append(self.converter.text_to_arr_list(q_l_s))
+        # self.relation_list_index = self.converter.text_to_arr(self.relation_list_split)
+        for _ in self.relation_list_split:
+            self.relation_list_index.append(self.converter.text_to_arr_list(_))
+        # 第一版本先padding到max长度
+        for s in self.question_list_index:
+            padding = self.max_document_length - len(s)
+            for index in range(padding):
+                s.append(self.max_document_length - 1)  # 用最后一个单词 补齐
+            s = np.array(s)
+        for s in self.relation_list_index:
+            padding = self.max_document_length - len(s)
+            for index in range(padding):
+                s.append(self.max_document_length - 1)  # 用最后一个单词 补齐
+            s = np.array(s)
+            # print(1)
+        # 按比例分割训练和测试集
+        rate = 0.8
+        self.train_question_list_index, self.test_question_list_index = \
+            self.cap_nums(self.question_list_index, rate)
+        self.train_relation_list_index, self.test_relation_list_index = \
+            self.cap_nums(self.relation_list_index, rate)
+        print(1)
 
     # ---------------------load_all_train_data
     def load_all_train_data(self):
@@ -162,7 +229,7 @@ class DataClass:
                     line_seg = line.split('\t')
                     # www.freebase.com/m/04whkz5
                     entity1 = line_seg[0].split('/')[2]
-                    relation1 = line_seg[1].replace("www.freebase.com/", "")
+                    relation1 = line_seg[1].replace("www.freebase.com/", "").replace("/", "_").replace("_", " ")
                     entity2 = line_seg[2].split('/')[2]
                     question = line_seg[3].replace("\r\n", "")
 
@@ -205,19 +272,64 @@ class DataClass:
                 print(e1, id)
         return exist
 
+    # --------------------生成batch
+    def batch_iter(self, question_list_index,relation_list_index,batch_size=100):
+        """
+        生成指定batch_size的数据
+        :param batch_size:
+        :return:
+        """
+        x = question_list_index.copy()
+        y = relation_list_index.copy()
+        x_new = []
+        y_new = []
+        z_new = []
+        length = len(x)
+        shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
+        # print("shuffle_indices", str(shuffle_indices))
+        total = 0
+        for index in shuffle_indices:
+            x_new.append(x[index])
+            y_new.append(y[index])
+            total += 1
+            if total >= batch_size:
+                break
+        # 根据y 生成z，也就是错误的关系,当前先做1:1的比例
+        # rate = 1
+        r_si = reversed(shuffle_indices)
+        r_si = list(r_si)
+        # print(r_si)
+        total = 0
+        for index in r_si:
+            z_new.append(y[index])
+            total += 1
+            if total >= batch_size:
+                break
+        print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
 
-def train_batch_iter(data, batch_size):
-    """
-    获得batch_size个样本以及他们的label
-    :param data:数据源
-    :param batch_size:样本个数
-    :return: x = []  # [[一个question],[]]
-              y = []  # label [[e1,r,e2],] e1,e2是实体，r是关系
-    """
-    x = []  # [[一个question],[]]
-    y = []  # label [[e1,r,e2],] e1,e2是实体，r是关系
+        return np.array(x_new), np.array(y_new), np.array(z_new)
 
-    return x, y
+    # --------------------按比例分割
+    def cap_nums(self, y, rate=0.8):
+        y = y.copy()
+        y = np.array(y)
+        s = 0
+        total_len = len(y)
+        total_index = total_len * rate + 1
+        e = int(total_index)
+
+        reverseIndex = int(total_len - total_index)
+        # print(reverseIndex)
+        # 正向截取
+        # 逆向
+        y1 = y[s:e]  # [ > s and <= e  ]
+        # print(type(y1))
+
+        y2 = y[:reverseIndex]
+
+        # print(total_len)
+        print("split into 2 " + str(len(y1)) + " " + str(len(y2)))
+        return y1, y2
 
 
 if __name__ == "__main__":
