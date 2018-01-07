@@ -90,7 +90,7 @@ def main():
     lstm = mynn.CustomNetwork(max_document_length=dh.max_document_length,  # timesteps
                               word_d=1,  # 一个单词的维度
                               num_classes=FLAGS.num_classes,  # 这个就是最终得出结果的维度
-                              num_hidden=FLAGS.num_hidden,  # 这个就是最终得出结果的维度
+                              num_hidden=FLAGS.num_hidden,  # 这个是隐藏层的维度
                               embedding_size=FLAGS.embedding_size,  # embedding时候的W的大小embedding_size
                               rnn_size=FLAGS.rnn_size)
     # 4 ----------------------------------- 设定loss-----------------------------------

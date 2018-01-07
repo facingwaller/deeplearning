@@ -11,3 +11,8 @@
 /word2vec-test/rt_polarity.txt
 /QA_LSTM_ATTENTION/__pycache__
 /QA_LSTM_ATTENTION/*.log
+__pycache__
+/QA/runs
+/QA/log2
+/QA/*.log
+/data/freebase/freebase_entity.txt

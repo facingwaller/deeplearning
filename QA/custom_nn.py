@@ -5,8 +5,8 @@
 
 import tensorflow as tf
 from tensorflow.contrib import rnn
-from QA_LSTM_ATTENTION.bilstm import biLSTM
-from QA_LSTM_ATTENTION.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature
+from QA.bilstm import biLSTM
+from QA.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature
 
 
 class CustomNetwork:
@@ -32,13 +32,12 @@ class CustomNetwork:
             # [num_seqs,num_steps] 等价于 [timesteps, num_input]
         with tf.device("/cpu:0"), tf.name_scope("embedding_layer"):
             # 方法1，char-rnn中的办法,如果报错就改成方法2，随机初始化一个W / embedding
-            self.embedding = tf.get_variable('embedding', [self.num_classes, self.embedding_size], trainable=True)
+            self.embedding = tf.get_variable('embedding', [self.num_hidden, self.embedding_size], trainable=True)
             # embedding = tf.Variable(tf.random_normal([self.num_classes, self.embedding_size]))
             # 方法2，QA_LSTM中的方法
             # embeddings 是一个list(大小为词汇的数量)，list中每个成员也是一个list（大小是单个词的维度）;
             # embeddings = [vob_size * word_d]
             # W = tf.Variable(tf.to_float(self.embeddings), trainable=True, name="W")
-
             self.ori_quests = tf.nn.embedding_lookup(self.embedding, self.ori_input_quests)
             self.cand_quests = tf.nn.embedding_lookup(self.embedding, self.cand_input_quests)
             self.neg_quests = tf.nn.embedding_lookup(self.embedding, self.neg_input_quests)
