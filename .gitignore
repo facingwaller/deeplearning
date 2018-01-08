@@ -16,3 +16,6 @@ __pycache__
 /QA/log2
 /QA/*.log
 /data/freebase/freebase_entity.txt
+/data/freebase/freebase_relation.txt
+/data/freebase/freebase_rdf.txt
+/data/freebase/freebase.zip

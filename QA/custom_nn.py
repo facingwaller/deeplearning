@@ -5,7 +5,7 @@
 
 import tensorflow as tf
 from tensorflow.contrib import rnn
-from QA.bilstm import biLSTM
+from QA.bilstm import biLSTM,biLSTM2
 from QA.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature
 
 
@@ -32,7 +32,8 @@ class CustomNetwork:
             # [num_seqs,num_steps] 等价于 [timesteps, num_input]
         with tf.device("/cpu:0"), tf.name_scope("embedding_layer"):
             # 方法1，char-rnn中的办法,如果报错就改成方法2，随机初始化一个W / embedding
-            self.embedding = tf.get_variable('embedding', [self.num_hidden, self.embedding_size], trainable=True)
+
+            self.embedding = tf.get_variable('embedding', [self.embedding_size,self.num_hidden ], trainable=True)
             # embedding = tf.Variable(tf.random_normal([self.num_classes, self.embedding_size]))
             # 方法2，QA_LSTM中的方法
             # embeddings 是一个list(大小为词汇的数量)，list中每个成员也是一个list（大小是单个词的维度）;
@@ -43,11 +44,11 @@ class CustomNetwork:
             self.neg_quests = tf.nn.embedding_lookup(self.embedding, self.neg_input_quests)
 
     def build_LSTM_network(self):
-        with tf.variable_scope("LSTM_scope", reuse=None):  # 为什么要强调 reuse = None
-            self.ori_q = biLSTM(self.ori_quests, self.rnn_size)  # embedding size 之前设定是300
-
-        with tf.variable_scope("LSTM_scope", reuse=True):
+        with tf.variable_scope("LSTM_scope1", reuse=None) as scop1:  # 为什么要强调 reuse = None
+            self.ori_q = biLSTM(self.ori_quests, self.rnn_size,reuse=None)  # embedding size 之前设定是300
+        with tf.variable_scope("LSTM_scope2", reuse=True) as scop2:
             self.cand_a = biLSTM(self.cand_quests, self.rnn_size)
+        with tf.variable_scope("LSTM_scope3", reuse=True) as scop3:
             self.neg_a = biLSTM(self.neg_quests, self.rnn_size)
 
     def cos_sim(self):

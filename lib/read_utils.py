@@ -85,6 +85,6 @@ class TextConverter(object):
         with open(filename, 'wb') as f:
             pickle.dump(self.vocab, f)
     def save_to_file_raw(self, filename):
-        with open(filename, 'w') as f:
+        with open(filename, 'w',encoding="utf-8") as f:
             for w in self.vocab:
                 f.write(w+"\n")
