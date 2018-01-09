@@ -165,9 +165,9 @@ class DataClass:
         self.question_list = []
         if mode == "test":
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_valid.txt")
-            self.init_fb("../data/freebase/")
+            # self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
+            # self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_valid.txt")
+            # self.init_fb("../data/freebase/")
         elif mode == "small":
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-small.txt")
             self.init_fb("../data/freebase/")

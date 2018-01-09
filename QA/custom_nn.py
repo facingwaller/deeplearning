@@ -10,7 +10,11 @@ from QA.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature
 
 
 class CustomNetwork:
-    def __init__(self, max_document_length, word_d, num_classes, num_hidden, embedding_size, rnn_size):
+    def init_config(self,model):
+        if model == "debug":
+            self.need_cal_attention = True
+        print(1)
+    def __init__(self, max_document_length, word_d, num_classes, num_hidden, embedding_size, rnn_size,model):
         # ===================初始化参数
         self.timesteps = max_document_length  # max_document_length，这个就是那个维度？
         self.num_input = word_d  # 类比句子的长度,在这里就是一个单词要向量化的维度？
@@ -18,10 +22,14 @@ class CustomNetwork:
         self.num_hidden = num_hidden
         self.embedding_size = embedding_size or 100  # 对标 保险QA的 100维度试试
         self.rnn_size = rnn_size or 300  # 对标 保险QA的 300维度试试
+        self.attention_matrix_size = embedding_size  # 是要embedding的大小
+        self.init_config(model)
         # ======================占位符
 
         self.build_inputs()
         self.build_LSTM_network()
+        if self.need_cal_attention:
+            self.cal_attention()
         self.cos_sim()
 
     def build_inputs(self):
@@ -46,10 +54,29 @@ class CustomNetwork:
     def build_LSTM_network(self):
         with tf.variable_scope("LSTM_scope1", reuse=None) as scop1:  # 为什么要强调 reuse = None
             self.ori_q = biLSTM(self.ori_quests, self.rnn_size,reuse=None)  # embedding size 之前设定是300
-        with tf.variable_scope("LSTM_scope2", reuse=True) as scop2:
+        with tf.variable_scope("LSTM_scope1", reuse=True) as scop2:
             self.cand_a = biLSTM(self.cand_quests, self.rnn_size)
-        with tf.variable_scope("LSTM_scope3", reuse=True) as scop3:
+        with tf.variable_scope("LSTM_scope1", reuse=True) as scop3:
             self.neg_a = biLSTM(self.neg_quests, self.rnn_size)
+
+    def cal_attention(self):
+        with tf.name_scope("att_weight"):
+            # attention params
+            # 设定权重分布 # attention_matrix_size = embedding size
+            # 对bilstm的输出 2 * self.rnn_size 大小的的output每一位做一个权重
+            att_W = {
+                'Wam': tf.Variable(tf.truncated_normal(
+                    [2 * self.rnn_size, self.attention_matrix_size], stddev=0.1)),
+                'Wqm': tf.Variable(tf.truncated_normal(
+                    [2 * self.rnn_size, self.attention_matrix_size], stddev=0.1)),
+                'Wms': tf.Variable(tf.truncated_normal(
+                    [self.attention_matrix_size, 1], stddev=0.1))
+            }
+            # 获取特征
+            ori_q_feat, cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W)
+            ori_nq_feat, neg_q_feat = get_feature(self.ori_q, self.neg_a, att_W)
+            # test_q_out, test_a_out = get_feature(self.test_q_out, self.test_a_out, att_W)
+        print("cal_attention")
 
     def cos_sim(self):
         self.ori_cand = feature2cos_sim(self.ori_q, self.cand_a)

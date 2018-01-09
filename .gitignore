@@ -19,3 +19,4 @@ __pycache__
 /data/freebase/freebase_relation.txt
 /data/freebase/freebase_rdf.txt
 /data/freebase/freebase.zip
+/test/t_read_gzip.py

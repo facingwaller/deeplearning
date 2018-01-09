@@ -61,11 +61,16 @@ class LSTM_QA(object):
 
         with tf.name_scope("att_weight"):
             # attention params
+            # 设定权重分布 # attention_matrix_size = embedding size
             att_W = {
-                'Wam': tf.Variable(tf.truncated_normal([2 * self.rnn_size, attention_matrix_size], stddev=0.1)),
-                'Wqm': tf.Variable(tf.truncated_normal([2 * self.rnn_size, attention_matrix_size], stddev=0.1)),
-                'Wms': tf.Variable(tf.truncated_normal([attention_matrix_size, 1], stddev=0.1))
+                'Wam': tf.Variable(tf.truncated_normal(
+                    [2 * self.rnn_size, attention_matrix_size], stddev=0.1)),
+                'Wqm': tf.Variable(tf.truncated_normal(
+                    [2 * self.rnn_size, attention_matrix_size], stddev=0.1)),
+                'Wms': tf.Variable(tf.truncated_normal(
+                    [attention_matrix_size, 1], stddev=0.1))
             }
+            # 获取特征
             ori_q_feat, cand_q_feat = get_feature(ori_q, cand_a, att_W)
             ori_nq_feat, neg_q_feat = get_feature(ori_q, neg_a, att_W)
             test_q_out, test_a_out = get_feature(test_q_out, test_a_out, att_W)

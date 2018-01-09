@@ -20,17 +20,17 @@ import lib.my_log as mylog
 
 # -----------------------------------定义变量
 FLAGS = tf.flags.FLAGS
-tf.flags.DEFINE_string("batch_size", "", 'path')
+
 tf.flags.DEFINE_string('input_file_train', '../data/simple_questions/annotated_fb_data_train-1.txt',
                        'utf8 encoded text file')
 tf.flags.DEFINE_string('input_file_test', '', 'utf8 encoded text file')
 tf.flags.DEFINE_string('input_file_freebase', '', 'utf8 encoded text file')
-tf.flags.DEFINE_integer("epoches", 30, "epoches")
+tf.flags.DEFINE_integer("epoches", 1, "epoches")
 tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
 tf.flags.DEFINE_integer("rnn_size", 300, "LSTM 隐藏层的大小与num_hidden如何区分？")
-
+tf.flags.DEFINE_integer("batch_size", 200, "embedding_size")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "embedding size")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 
@@ -61,22 +61,24 @@ def run_step(sess, ori_batch, cand_batch, neg_batch, lstm, dropout=1.):
 
     return cur_loss, ori_cand_score
 
-def run_one_time(sess,lstm,step,train_op,train_q, train_cand, train_neg):
 
+def run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg):
     # print("--------------begin")
     # print(train_q)
     # print(train_cand)
     # print(train_neg)
     # print("--------------end")
-    l1, acc1, embedding1,train_op1 = sess.run(
-        [lstm.loss, lstm.acc, lstm.embedding,train_op],
+    l1, acc1, embedding1, train_op1 = sess.run(
+        [lstm.loss, lstm.acc, lstm.embedding, train_op],
         feed_dict={lstm.ori_input_quests: train_q,
                    lstm.cand_input_quests: train_cand,
                    lstm.neg_input_quests: train_neg})
     # mylog.log_list(embedding1)
     # embeddings.append(embedding1)
-    print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1)  )
+    print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
     print(1)
+
+
 #  ----------------------------------- checkpoint-----------------------------------
 def checkpoint():
     # Output directory for models and summaries
@@ -90,10 +92,12 @@ def checkpoint():
         os.makedirs(checkpoint_dir)
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
 
+
 # 主流程
 def main():
-    model = "1"
-    print(tf.__version__) # 1.1.0
+    # test 是完整的; small 是少量 ; debug 只是一次
+    model = "debug"
+    print(tf.__version__)  # 1.2.0
     mylog.logger.info(model)
     # 1 读取所有的数据,返回一批数据标记好的数据{data.x,data.label}
     # batch_size 是1个bath，questions的个数，
@@ -104,13 +108,14 @@ def main():
     # dh.load_test_data() # 加载测试数据
 
     # 3 构造模型LSTM类
-    print("dh.max_document_length "+str(dh.max_document_length)+"   "+str(dh.converter.vocab_size))
+    print("dh.max_document_length " + str(dh.max_document_length) + "   " + str(dh.converter.vocab_size))
     lstm = mynn.CustomNetwork(max_document_length=dh.max_document_length,  # timesteps
                               word_d=1,  # 一个单词的维度
                               num_classes=FLAGS.num_classes,  # 这个就是最终得出结果的维度
                               num_hidden=FLAGS.num_hidden,  # 这个是隐藏层的维度
                               embedding_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
-                              rnn_size=FLAGS.rnn_size)
+                              rnn_size=FLAGS.rnn_size,
+                              model=model)
     # 4 ----------------------------------- 设定loss-----------------------------------
     global_step = tf.Variable(0, name="globle_step", trainable=False)
     tvars = tf.trainable_variables()
@@ -129,20 +134,22 @@ def main():
         embeddings = []
         # -------------------------train
         for step in range(FLAGS.epoches):
-
-            train_q, train_cand, train_neg =\
-                dh.batch_iter(dh.train_question_list_index,dh.train_relation_list_index,100)  # 一次读取2个batch
+            train_q, train_cand, train_neg = \
+                dh.batch_iter(dh.train_question_list_index, dh.train_relation_list_index,
+                              batch_size=FLAGS.batch_size)  # 一次读取2个batch
             # print("--------------begin")
             # print(train_q)
             # print(train_cand)
             # print(train_neg)
             # print("--------------end")
-            run_one_time(sess,lstm,step,train_op, train_q, train_cand, train_neg)
+            run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg)
         # e1 = embeddings[0] == embeddings[1]  # 通过这个可以看到确实改变了部分
         # mylog.log_list(e1)
         # -------------------------test
         test_q, test_cand, test_neg = \
             dh.batch_iter(dh.test_question_list_index, dh.test_relation_list_index, 100)  # 一次读取2个batch
-        run_one_time(sess, lstm, 0,train_op, test_q, test_cand, test_neg)
+        run_one_time(sess, lstm, 0, train_op, test_q, test_cand, test_neg)
+
+
 if __name__ == '__main__':
     main()

@@ -88,19 +88,37 @@ def cal_loss_and_acc(ori_cand, ori_neg):
 
 
 def get_feature(input_q, input_a, att_W):
-    h_q, w = int(input_q.get_shape()[1]), int(input_q.get_shape()[2])
+    # Tensor("LSTM_scope1/transpose_1:0", shape=(?, 11, 600), dtype=float32)
+    w = int(input_q.get_shape()[2])
+    #  w = 600 = 300 * 2  = rnn_size * 2
     h_a = int(input_a.get_shape()[1])
+    # h_a = 11 (max_length ) ; 
     output_q = max_pooling(input_q)
+    # Tensor("att_weight/Reshape:0", shape=(?, 600), dtype=float32)
     reshape_q = tf.expand_dims(output_q, 1)
+    # Tensor("att_weight/ExpandDims_1:0", shape=(?, 1, 600), dtype=float32)
     reshape_q = tf.tile(reshape_q, [1, h_a, 1])
+    # Tensor("att_weight/Tile:0", shape=(?, 11, 600), dtype=float32)
     reshape_q = tf.reshape(reshape_q, [-1, w])
+    # Tensor("att_weight/Reshape_1:0", shape=(?, 600), dtype=float32)
     reshape_a = tf.reshape(input_a, [-1, w])
+    # Tensor("att_weight/Reshape_2:0", shape=(?, 600), dtype=float32)
     M = tf.tanh(tf.add(tf.matmul(reshape_q, att_W['Wqm']), tf.matmul(reshape_a, att_W['Wam'])))
+    # Tensor("att_weight/Tanh:0", shape=(?, 93), dtype=float32)
     M = tf.matmul(M, att_W['Wms'])
+    # Tensor("att_weight/MatMul_2:0", shape=(?, 1), dtype=float32)
     S = tf.reshape(M, [-1, h_a])
+    # Tensor("att_weight/Reshape_3:0", shape=(?, 11), dtype=float32)
     S = tf.nn.softmax(S)
+    # Tensor("att_weight/Softmax:0", shape=(?, 11), dtype=float32)
     S_diag = tf.matrix_diag(S)
+    # Tensor("att_weight/MatrixDiag:0", shape=(?, 11, 11), dtype=float32)
     attention_a = tf.matmul(S_diag, input_a)  # 将tf.batch_matmul替换成tf.matmul
+    # Tensor("att_weight/MatMul_3:0", shape=(?, 11, 600), dtype=float32)
     attention_a = tf.reshape(attention_a, [-1, h_a, w])
+    # Tensor("att_weight/Reshape_4:0", shape=(?, 11, 600), dtype=float32)
     output_a = max_pooling(attention_a)
+    # Tensor("att_weight/Reshape_5:0", shape=(?, 600), dtype=float32)
     return tf.tanh(output_q), tf.tanh(output_a)
+    # Tensor("att_weight/Tanh_2:0", shape=(?, 600), dtype=float32)
+    # Tensor("att_weight/Tanh_1:0", shape=(?, 600), dtype=float32)
