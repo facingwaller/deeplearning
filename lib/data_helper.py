@@ -71,7 +71,8 @@ def read_rdf_from_gzip(file_name=r"../data/freebase/100_classic_book_collection.
 # =======================================================================simple questions
 def test2():
     d = DataClass("test")
-    d.compare()
+    d.find_both_in_sq_and_freebase()
+    # d.compare()
     # d = DataClass("debug")
     # e1 = d.find_entity("100_classic_book_collection"+".json.gz")
     # print(e1)
@@ -152,7 +153,7 @@ class DataClass:
             all_stence.append(one_sentence)
         return all_stence
 
-    def __init__(self,mode = "debug"):
+    def __init__(self, mode="debug"):
         """
         mode = debug(1行数据调试);test(测试模式);small();
 
@@ -163,11 +164,13 @@ class DataClass:
         self.relation_list = []
         self.entity2_list = []
         self.question_list = []
+
+        self.rdf_list = []
         if mode == "test":
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
-            # self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
-            # self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_valid.txt")
-            # self.init_fb("../data/freebase/")
+            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
+            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_valid.txt")
+            self.init_fb("../data/freebase/")
         elif mode == "small":
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-small.txt")
             self.init_fb("../data/freebase/")
@@ -180,7 +183,6 @@ class DataClass:
         # total_list = self.question_list + self.relation_list
         q_words = self.get_split_list(self.question_list)
         q_words.extend(self.get_split_list(self.relation_list))
-
 
         self.converter = read_utils.TextConverter(q_words)
         self.converter.save_to_file_raw(
@@ -244,14 +246,16 @@ class DataClass:
                     line_seg = line.split('\t')
                     # www.freebase.com/m/04whkz5
                     entity1 = line_seg[0].split('/')[2]
-                    relation1 = line_seg[1].replace("www.freebase.com/", "").replace("/", "_").replace("_", " ")
+                    relation1 = line_seg[1].replace("www.freebase.com/", "").\
+                        replace("/", "_").replace("_", " ").strip()
                     entity2 = line_seg[2].split('/')[2]
                     question = line_seg[3].replace("\r\n", "")
 
                     self.entity1_list.append(entity1)
                     self.relation_list.append(relation1)
-                    self.entity2_list.append(entity2)
+                    self.entity1_list.append(entity2)
                     self.question_list.append(question)
+                    self.rdf_list.append([entity1, relation1, entity2])
                     # check it
                     line_list.append(line)
             except Exception as e:
@@ -263,16 +267,16 @@ class DataClass:
     def init_fb(self, file_name="../data/freebase/"):
         file_name1 = "freebase_entity.txt"
         file_name2 = "freebase_rdf.txt"
-        file_name3 = "freebase_relation_clear.txt"
+        file_name3 = "freebase_relation_clear.txt" # // /location/location/containedby
         # 装载entity_id
-        with codecs.open(file_name+file_name1, mode="r", encoding="utf-8") as read_file:
+        with codecs.open(file_name + file_name1, mode="r", encoding="utf-8") as read_file:
             for line in read_file.readlines():
-                self.entitys.append(line.replace("\n", "").replace("/m/",""))
-        print("entitys len:"+str(len(self.entitys)))
+                self.entitys.append(line.replace("\n", "").replace("/m/", ""))
+        print("entitys len:" + str(len(self.entitys)))
         # 装载freebase的关系
-        with codecs.open(file_name+file_name3, mode="r", encoding="utf-8") as read_file:
+        with codecs.open(file_name + file_name3, mode="r", encoding="utf-8") as read_file:
             for line in read_file.readlines():
-                self.relations.append(line.replace("\n", "").replace("/"," ").replace("_"," "))
+                self.relations.append(line.replace("\n", "").replace("/", " ").replace("_", " ").strip())
         print("relations len:" + str(len(self.relations)))
 
     def compare(self):
@@ -281,12 +285,55 @@ class DataClass:
         for e1 in self.entity1_list:
             if e1 not in self.entitys:
                 print(e1)
-                self.just_log("../data/simple_questions/entitys_not_in_fb.txt",e1)
+                self.just_log("../data/simple_questions/entitys_not_in_fb.txt", e1)
         print("compare============r1")
         for e1 in self.relation_list:
             if e1 not in self.relations:
                 self.just_log("../data/simple_questions/relations_not_in_fb.txt", e1)
         print("compare============")
+
+    def find_both_in_sq_and_freebase(self):
+        # 寻找simple questions 不在freebase中的
+        print("compare============rdf")
+        index = 0
+        for rdf in self.rdf_list:
+            index += 1
+            if ((index % 10000) == 0):
+                print("index %d " % index)
+            r1 = rdf[0] not in self.entitys
+            r2 = False
+            # r2 = rdf[1] not in self.relations
+            # r3 = rdf[2] not in self.entitys
+            # r2 直接去 entity里面找
+            #         # m.02hvp4r.json.gz
+            id = ""
+            try:
+                id,ps =self.find_entity("m."+rdf[0]+".json.gz")
+            except Exception as e1:
+                print(e1)
+
+            if id =="":
+                r2 = False
+            else:
+                for p in ps:
+                    p1 = str(p).replace("www.freebase.com/", "").\
+                        replace("/", "_").replace("_", " ").strip()
+                    if p1 == rdf[1]:
+                        r2=True
+                    else:
+                        r2=False
+            if r1:
+                print(rdf[0])
+            elif r2:
+                print(rdf[1])
+
+
+            if r1 or r2 :
+                self.just_log("../data/simple_questions/rdf_not_in_fb.txt", str(rdf[0]) + "\t" + str(index))
+            else:
+                self.just_log("../data/simple_questions/rdf_in_fb.txt", str(rdf[0]) + "\t" + str(index))
+        print("compare============end")
+
     def init_relation_fb(self, file_name="../data/freebase/freebase_relation_clear.txt"):
         """
         从文件中加载所有的关系然后作为词汇的候选列表
@@ -299,13 +346,14 @@ class DataClass:
                 # print("init_relation_fb")
 
     # 根据entity_id获取entity
-    def find_entity(self,entity_id):
+    def find_entity(self, entity_id):
         """
         从文件系统中获取实体
         :return:
         """
         file_path = r"D:\ZAIZHI\freebase-data\topic-json"
-        file_txt = read_rdf_from_gzip(file_path+"\\"+entity_id)
+
+        file_txt = read_rdf_from_gzip(file_path + "\\" + entity_id)
         json_file = json.loads(file_txt)
         id = ""
         ps = []
@@ -319,14 +367,14 @@ class DataClass:
         finally:
             return id, ps
 
-    def get_relations_except_one(self,entity_id,ps_to_except):
+    def get_relations_except_one(self, entity_id, ps_to_except):
         """
         获取除了指定关系外的所有关系
         :param entity_id:
         :param ps:
         :return:
         """
-        id,ps=self.find_entity(entity_id)
+        id, ps = self.find_entity(entity_id)
         if id == "":
             return []
         ps_to_return = []
@@ -336,21 +384,21 @@ class DataClass:
         return ps_to_return
 
     # 获取除了指定关系外的随机一个关系
-    def get_one_relations_except_ps(self,entity_id,ps_to_except):
+    def get_one_relations_except_ps(self, entity_id, ps_to_except):
         """
         获取除了指定关系外的随机一个关系
         :param entity_id:
         :param ps:
         :return:
         """
-        id,ps=self.find_entity(entity_id)
+        id, ps = self.find_entity(entity_id)
         if id == "":
             return []
         ps_to_return = []
         for p in ps:
             if p not in ps_to_except:
                 ps_to_return.append(p)
-        index = random.randint(0,len(ps_to_return)-1)
+        index = random.randint(0, len(ps_to_return) - 1)
         return ps_to_return[index]
 
     def exist_in_fb_by_id(self, id):
@@ -365,6 +413,7 @@ class DataClass:
                 exist = True
                 print(e1, id)
         return exist
+
     # --------------------- 在annotated_fb_data_train等三个文件中找出所有的id然后去 entity_id里面找
 
     # --------------------生成batch
@@ -425,11 +474,13 @@ class DataClass:
         # print(total_len)
         print("split into 2 " + str(len(y1)) + " " + str(len(y2)))
         return y1, y2
-    def just_log(self,file_name,msg):
+
+    def just_log(self, file_name, msg):
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
-        print(1)
+        # print(1)
+
 
 # =======================================================================clear data
 def clear_relation():
