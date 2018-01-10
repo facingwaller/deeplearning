@@ -9,6 +9,11 @@ import gzip
 import os
 
 
+def just_log( file_name, msg):
+    f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
+    f1_writer.write(msg + "\n")
+    f1_writer.close()
+
 def get_entity(path="../data/", filename="1001_fourth_avenue_plaza.json"):
     with open(path + filename, encoding='utf-8') as f:
         return json.load(f)
@@ -158,6 +163,24 @@ def find_id_ps_from_file(json_file):
     finally:
         return value_v, ps
 
+# 获取指定entity的某个值及其类型
+def find_id_ps_json_from_file(json_file):
+    value_v = ""
+
+    json_file = json.loads(json_file)
+    ps = []
+    try:
+        # get_entity(path=,filename=)
+        # print(json_file)
+        # json_file = json_file
+        value_v = json_file["id"]
+        property_list = json_file["property"]
+        for p in property_list:
+            ps.append(p)
+    except Exception as e1:
+        print("error ", e1)
+    finally:
+        return value_v, ps,json_file
 
 def find_relation_from_file(json_file="", relation="values", value_type="text"):
     # //设置以utf-8解码模式读取文件，encoding参数必须设置，
@@ -189,8 +212,6 @@ def read_rdf_from_gzip(file_name=r"../data/freebase/100_classic_book_collection.
         g.close()
     except  Exception as e1:
         print(e1)
-
-
     return g2
 
 
@@ -217,8 +238,7 @@ def excat_rdf_from_dir(rootdir=r'F:\3_Server\freebase-data\topic-json'):
         index += 1
         if index % 1000 == 0:
             print("hand ", index)
-        if index <= 882000:
-            continue
+
         if list[i].endswith(".gz"):
             path2 = rootdir + "\\" + list[i]
             # print(path2)
@@ -246,8 +266,57 @@ def excat_rdf_from_dir(rootdir=r'F:\3_Server\freebase-data\topic-json'):
     f3_writer.close()
     print(1)
 
+def excat_rdf_full_from_dir(rootdir=r'F:\3_Server\freebase-data\topic-json'):
+    """
+    从指定目录抽取
+    :param rootdir:
+    :return:
+    """
+    f1 = "../data/freebase/freebase_entity_1.txt"
+    f2 = "../data/freebase/freebase_relation_1.txt"
+    f3 = "../data/freebase/freebase_rdf_1.txt"
+    f1_writer = codecs.open(f1, mode="w", encoding="utf-8")
+    f2_writer = codecs.open(f2, mode="w", encoding="utf-8")
+    f3_writer = codecs.open(f3, mode="w", encoding="utf-8")
+    list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件3
+    f4 = "../data/mv-2.sh"
+    f4_writer = codecs.open(f4, mode="w", encoding="utf-8")
+    realations = []
+    r_set = set()
+    index = 0
+    print("total:" + str(len(list)))
+    for i in range(0, len(list)):
+        index += 1
+        if index % 1000 == 0:
+            print("hand ", index)
 
-excat_rdf_from_dir()
+        if list[i].endswith(".gz"):
+            path2 = rootdir + "\\" + list[i]
+            # print(path2)
+            filesize = os.path.getsize(path2)
+            if filesize > 200:
+                freebase_obj = read_rdf_from_gzip(path2)
+                if freebase_obj == "":
+                    print("bad gzip")
+                    continue
+                id , ps =find_id_ps_from_file(freebase_obj)
+                f1_writer.write(id + "\n")
+                # f3_writer.write(id + "\t")
+                # 读取后将对应属性保存到指定位置
+                for p in ps:
+                    # print(p)
+                    f3_writer.write(p + "\t")
+                    f2_writer.write(p+"\n")
+                f3_writer.write("\n")
+            else:
+                print("less 200 "+str(path2))
+
+                # f4_writer.write("mv " + path + " topic-json-1/\n")
+    f1_writer.close()
+    f2_writer.close()
+    f3_writer.close()
+    print(1)
+# excat_rdf_from_dir()
 # read_all_files2()
 # alias = get_alias()
 
