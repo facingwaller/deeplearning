@@ -11,6 +11,7 @@ import random
 from tensorflow.contrib import learn
 import datetime
 import lib.my_log as mylog
+from lib.ct import ct
 
 mylog.logger.info("test")
 
@@ -107,6 +108,7 @@ class DataClass:
     # ---------------------web questions
     relation_path = []  # 原始路径
     relation_path_clear = []  # 处理后的路径
+    relation_path_one = []  # 处理后的只有随机的一个关系的路径
     # ---------------------freebase
     entitys = []
     relations = []
@@ -491,26 +493,25 @@ class DataClass:
         # print(1)
 
     # -------------------init web questions
-    def add_relation_path_rs(self,relation_path_rs):
+    def add_relation_path_rs(self, relation_path_rs):
         rs = []
         for i in relation_path_rs:
             rs.append(i)
         return rs
+
     # brazil	/m/015fr@@1~/m/03385m^/location/country/currency_used@@1~text
     # Brazilian real	what type of money does brazil have?
     def init_web_questions(self, fname=r'../data/web_questions/rdf.txt'):
         with codecs.open(fname, mode='r', encoding='utf-8') as read_file:
             for line in read_file.readlines():
-                #line = f1.readline()
+                # line = f1.readline()
                 entity1 = line.split('\t')[0]
                 relation_path = line.split('\t')[1]
                 answer = line.split('\t')[2]
                 question = line.split('\t')[3]
 
                 self.entity1_list.append(entity1)
-                # self.relation_list.append(relation1)
                 self.relation_path.append(relation_path)
-                # self.entity1_list.append(entity2)
                 self.question_list.append(question)
 
                 if relation_path.__contains__("###"):
@@ -524,7 +525,7 @@ class DataClass:
                 index = 0
                 # 构建1或者2跳的关系路径，如果是下一跳没有上一跳深度则重新入容器
                 # 最后组织成路径容器，然后随机选择路径?
-                relation_path_rs_all = [] # 路径集合的 容器
+                relation_path_rs_all = []  # 路径集合的 容器
 
                 for r1 in r_relation:
                     index += 1
@@ -543,15 +544,88 @@ class DataClass:
 
                     relation_path_rs.append(a)
 
-                if len(relation_path_rs) > 0:  # 清空之前的存储
+                if len(relation_path_rs) > 0:  # 清理掉存储
                     relation_path_rs_all.append(self.add_relation_path_rs(relation_path_rs))
 
+                one_relation = ct.random_get_one_from_list(relation_path_rs_all)
 
+                self.relation_path_one.append(one_relation)
+                # 处理一下添加到这里
+                # self.relation_list 这个格式是 空格隔开的单词
                 self.relation_path_clear.append(relation_path_rs_all)
             print("end")
 
+    # --------------------训练web questions 数据集时候的初始化函数
+    def init_wq(self, mode="debug"):
+        """
+        mode = debug(1行数据调试);test(测试模式);small();
 
+        :param mode:
+        """
+        # ---------------------初始化实体
+        self.entity1_list = []
+        self.relation_list = []
+        self.entity2_list = []
+        self.question_list = []
 
+        self.rdf_list = []
+        if mode == "test":
+            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
+            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
+            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_valid.txt")
+            self.init_fb("../data/freebase/")
+        elif mode == "small":
+            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-small.txt")
+            self.init_fb("../data/freebase/")
+        elif mode == "wq":
+            self.init_web_questions()
+        else:
+            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
+            self.init_fb("../data/freebase/")
+
+        # 将问题和关系的字符串变成以空格隔开的一个单词的list
+
+        # total_list = self.question_list + self.relation_list
+        q_words = self.get_split_list(self.question_list)
+        # self.relation_list 具体的类型需要调试看看
+        q_words.extend(self.get_split_list(self.relation_list))
+
+        self.converter = read_utils.TextConverter(q_words)
+        self.converter.save_to_file_raw(
+            "../data/vocab/" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
+        # self.converter.save_to_file("model/converter.pkl")
+        # print(self.converter)
+
+        # 将问题/关系转换成index的系列表示
+        self.max_document_length = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
+        # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
+
+        self.question_list_split = self.get_split_list_per_line(self.question_list)
+        self.relation_list_split = self.get_split_list_per_line(self.relation_list)
+        for q_l_s in self.question_list_split:
+            self.question_list_index.append(self.converter.text_to_arr_list(q_l_s))
+        # self.relation_list_index = self.converter.text_to_arr(self.relation_list_split)
+        for _ in self.relation_list_split:
+            self.relation_list_index.append(self.converter.text_to_arr_list(_))
+        # 第一版本先padding到max长度
+        for s in self.question_list_index:
+            padding = self.max_document_length - len(s)
+            for index in range(padding):
+                s.append(self.max_document_length - 1)  # 用最后一个单词 补齐
+            s = np.array(s)
+        for s in self.relation_list_index:
+            padding = self.max_document_length - len(s)
+            for index in range(padding):
+                s.append(self.max_document_length - 1)  # 用最后一个单词 补齐
+            s = np.array(s)
+            # print(1)
+        # 按比例分割训练和测试集
+        rate = 0.8
+        self.train_question_list_index, self.test_question_list_index = \
+            self.cap_nums(self.question_list_index, rate)
+        self.train_relation_list_index, self.test_relation_list_index = \
+            self.cap_nums(self.relation_list_index, rate)
+        print("init finish!")
 
 
 # =======================================================================clear data
