@@ -70,8 +70,8 @@ def read_rdf_from_gzip(file_name=r"../data/freebase/100_classic_book_collection.
 
 # =======================================================================simple questions
 def test2():
-    d = DataClass("test")
-    d.find_both_in_sq_and_freebase()
+    d = DataClass("wq")
+    # d.find_both_in_sq_and_freebase()
     # d.compare()
     # d = DataClass("debug")
     # e1 = d.find_entity("100_classic_book_collection"+".json.gz")
@@ -98,8 +98,15 @@ def read_file(file_name):
     return lines
 
 
+class classObject:
+    pass
+
+
 # =======================================================================DataClass
 class DataClass:
+    # ---------------------web questions
+    relation_path = []  # 原始路径
+    relation_path_clear = []  # 处理后的路径
     # ---------------------freebase
     entitys = []
     relations = []
@@ -174,6 +181,8 @@ class DataClass:
         elif mode == "small":
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-small.txt")
             self.init_fb("../data/freebase/")
+        elif mode == "wq":
+            self.init_web_questions()
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
             self.init_fb("../data/freebase/")
@@ -231,13 +240,14 @@ class DataClass:
 
         return self.question_list, self.relation_list
 
-    # ---------------------web questions
+    # ---------------------simple questions
 
     def init_simple_questions(self, file_name):
         line_list = []
         idx = 0
 
-        # www.freebase.com/m/04whkz5	www.freebase.com/book/written_work/subjects	www.freebase.com/m/01cj3p
+        # www.freebase.com/m/04whkz5	www.freebase.com/book/written_work/subjects
+        # www.freebase.com/m/01cj3p
         # what is the book e about
         with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
             try:
@@ -246,7 +256,7 @@ class DataClass:
                     line_seg = line.split('\t')
                     # www.freebase.com/m/04whkz5
                     entity1 = line_seg[0].split('/')[2]
-                    relation1 = line_seg[1].replace("www.freebase.com/", "").\
+                    relation1 = line_seg[1].replace("www.freebase.com/", ""). \
                         replace("/", "_").replace("_", " ").strip()
                     entity2 = line_seg[2].split('/')[2]
                     question = line_seg[3].replace("\r\n", "")
@@ -267,7 +277,7 @@ class DataClass:
     def init_fb(self, file_name="../data/freebase/"):
         file_name1 = "freebase_entity.txt"
         file_name2 = "freebase_rdf.txt"
-        file_name3 = "freebase_relation_clear.txt" # // /location/location/containedby
+        file_name3 = "freebase_relation_clear.txt"  # // /location/location/containedby
         # 装载entity_id
         with codecs.open(file_name + file_name1, mode="r", encoding="utf-8") as read_file:
             for line in read_file.readlines():
@@ -308,27 +318,26 @@ class DataClass:
             #         # m.02hvp4r.json.gz
             id = ""
             try:
-                id,ps =self.find_entity("m."+rdf[0]+".json.gz")
+                id, ps = self.find_entity("m." + rdf[0] + ".json.gz")
             except Exception as e1:
                 print(e1)
 
-            if id =="":
+            if id == "":
                 r2 = False
             else:
                 for p in ps:
-                    p1 = str(p).replace("www.freebase.com/", "").\
+                    p1 = str(p).replace("www.freebase.com/", ""). \
                         replace("/", "_").replace("_", " ").strip()
                     if p1 == rdf[1]:
-                        r2=True
+                        r2 = True
                     else:
-                        r2=False
+                        r2 = False
             if r1:
                 print(rdf[0])
             elif r2:
                 print(rdf[1])
 
-
-            if r1 or r2 :
+            if r1 or r2:
                 self.just_log("../data/simple_questions/rdf_not_in_fb.txt", str(rdf[0]) + "\t" + str(index))
             else:
                 self.just_log("../data/simple_questions/rdf_in_fb.txt", str(rdf[0]) + "\t" + str(index))
@@ -480,6 +489,69 @@ class DataClass:
         f1_writer.write(msg + "\n")
         f1_writer.close()
         # print(1)
+
+    # -------------------init web questions
+    def add_relation_path_rs(self,relation_path_rs):
+        rs = []
+        for i in relation_path_rs:
+            rs.append(i)
+        return rs
+    # brazil	/m/015fr@@1~/m/03385m^/location/country/currency_used@@1~text
+    # Brazilian real	what type of money does brazil have?
+    def init_web_questions(self, fname=r'../data/web_questions/rdf.txt'):
+        with codecs.open(fname, mode='r', encoding='utf-8') as read_file:
+            for line in read_file.readlines():
+                #line = f1.readline()
+                entity1 = line.split('\t')[0]
+                relation_path = line.split('\t')[1]
+                answer = line.split('\t')[2]
+                question = line.split('\t')[3]
+
+                self.entity1_list.append(entity1)
+                # self.relation_list.append(relation1)
+                self.relation_path.append(relation_path)
+                # self.entity1_list.append(entity2)
+                self.question_list.append(question)
+
+                if relation_path.__contains__("###"):
+                    self.relation_path_clear.append(["###"])
+                    continue
+
+                r_entity = relation_path.split('^')[0].split('~')
+                r_relation = relation_path.split('^')[1].split('~')
+
+                relation_path_rs = []  # 关系路径中的关系集合
+                index = 0
+                # 构建1或者2跳的关系路径，如果是下一跳没有上一跳深度则重新入容器
+                # 最后组织成路径容器，然后随机选择路径?
+                relation_path_rs_all = [] # 路径集合的 容器
+
+                for r1 in r_relation:
+                    index += 1
+                    # r1.split("@@")[0] # 关系
+                    # r1.split("@@")[1] # 深度
+                    a = classObject()
+                    try:
+                        a.relation = r1.split("@@")[0]
+                        a.deep = r1.split("@@")[1]
+                    except Exception as e1:
+                        print(e1)
+                    if int(a.deep) == 1 and len(relation_path_rs) > 0:  # 清空之前的存储
+                        relation_path_rs_all.append(self.add_relation_path_rs(relation_path_rs))
+                        # relation_path_rs.clear()  # 清空
+                        relation_path_rs = []
+
+                    relation_path_rs.append(a)
+
+                if len(relation_path_rs) > 0:  # 清空之前的存储
+                    relation_path_rs_all.append(self.add_relation_path_rs(relation_path_rs))
+
+
+                self.relation_path_clear.append(relation_path_rs_all)
+            print("end")
+
+
+
 
 
 # =======================================================================clear data

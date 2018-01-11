@@ -210,8 +210,10 @@ def read_rdf_from_gzip(file_name=r"../data/freebase/100_classic_book_collection.
         g2 = "".join(gs)
         # print(g2)
         g.close()
-    except  Exception as e1:
-        print(e1)
+    except Exception as e1:
+        a = 1
+        # print(e1)
+
     return g2
 
 
@@ -323,3 +325,7 @@ def excat_rdf_full_from_dir(rootdir=r'F:\3_Server\freebase-data\topic-json'):
 # alias2 = find_relation(relation="/common/topic/article")
 # print(alias2)
 # print(  find_relation(relation="/common/topic/alias") )
+
+if __name__ == "__main__":
+    p = r"D:\ZAIZHI\freebase-data\topic-json\m.01npcy7.json.gz"
+    print(read_rdf_from_gzip(p))
