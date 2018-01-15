@@ -186,6 +186,7 @@ class DataClass:
             # self.init_fb("../data/freebase/")
         elif mode == "wq":
             self.init_web_questions()
+            self.init_fb("../data/freebase/")
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
             self.init_fb("../data/freebase/")
@@ -194,7 +195,8 @@ class DataClass:
 
         # total_list = self.question_list + self.relation_list
         q_words = self.get_split_list(self.question_list)
-        q_words.extend(self.get_split_list(self.relation_list))
+        q_words.extend(self.get_split_list(self.relations))  # freebase里面的关系
+        # 应该再加上问题里面的关系集合
 
         self.converter = read_utils.TextConverter(q_words)
         self.converter.save_to_file_raw(
@@ -203,7 +205,9 @@ class DataClass:
         # print(self.converter)
 
         # 将问题/关系转换成index的系列表示
-        self.max_document_length = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
+        max_document_length1 = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
+        max_document_length2 = max([len(x.split(" ")) for x in self.relation_list])  # 获取单行的最大的长度
+        self.max_document_length = max(max_document_length1, max_document_length2)
         # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
 
         self.question_list_split = self.get_split_list_per_line(self.question_list)
@@ -223,7 +227,12 @@ class DataClass:
             padding = self.max_document_length - len(s)
             for index in range(padding):
                 s.append(self.max_document_length - 1)  # 用最后一个单词 补齐
+            # 截断不用，等待改成 relation_list_index[index] = xx的形式
+            # if len(s) > self.max_document_length:
+            #     s = s[0:self.max_document_length]
             s = np.array(s)
+            # 截断
+
             # print(1)
         # 按比例分割训练和测试集
         rate = 0.8
@@ -284,7 +293,7 @@ class DataClass:
         # 装载entity_id
         with codecs.open(file_name + file_name1, mode="r", encoding="utf-8") as read_file:
             for line in read_file.readlines():
-                self.entitys.append(line.replace("\n", "").replace("/m/", ""))
+                self.entitys.append(line.replace("\n", "").replace("/m/", "").replace("\r", ""))
         print("entitys len:" + str(len(self.entitys)))
         # 装载freebase的关系
         with codecs.open(file_name + file_name3, mode="r", encoding="utf-8") as read_file:
@@ -465,6 +474,48 @@ class DataClass:
 
         return np.array(x_new), np.array(y_new), np.array(z_new)
 
+    # --------------------生成batch
+    def batch_iter_wq(self, question_list_index, relation_list_index, batch_size=100):
+        """
+        web questions 的生成反例的办法
+        生成指定batch_size的数据
+        :param batch_size:
+        :return:
+        """
+        x = question_list_index.copy()
+        y = relation_list_index.copy()
+        x_new = []
+        y_new = []
+        z_new = []
+        length = len(x)
+        shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
+        # print("shuffle_indices", str(shuffle_indices))
+        total = 0
+        for index in shuffle_indices:
+            x_new.append(x[index])
+            y_new.append(y[index])
+            # 对于z_new 加进去
+            # TODO: 根据index，寻找entity里面非relaiton的relation[]
+
+
+            total += 1
+            if total >= batch_size:
+                break
+        # 根据y 生成z，也就是错误的关系,当前先做1:1的比例
+        # rate = 1
+        r_si = reversed(shuffle_indices)
+        r_si = list(r_si)
+        # print(r_si)
+        # total = 0
+        # for index in r_si:
+        #     z_new.append(y[index])
+        #     total += 1
+        #     if total >= batch_size:
+        #         break
+        print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
+
+        return np.array(x_new), np.array(y_new), np.array(z_new)
+
     # --------------------按比例分割
     def cap_nums(self, y, rate=0.8):
         y = y.copy()
@@ -513,10 +564,11 @@ class DataClass:
 
                 self.entity1_list.append(entity1)
                 self.relation_path.append(relation_path)
-                self.question_list.append(question)
+                self.question_list.append(question.replace("\n", ""))
 
                 if relation_path.__contains__("###"):
                     self.relation_path_clear.append(["###"])
+                    self.relation_list.append("###")
                     continue
 
                 r_entity = relation_path.split('^')[0].split('~')
@@ -551,9 +603,15 @@ class DataClass:
                 one_relation = ct.random_get_one_from_list(relation_path_rs_all)
 
                 self.relation_path_one.append(one_relation)
+                # 展开一个关系，加入
+                temp_relation = ""
+                for o_r in one_relation:
+                    temp_relation += str(o_r.relation + " ").replace("/", " ").replace("_", " ")
+                self.relation_list.append(temp_relation)
                 # 处理一下添加到这里
                 # self.relation_list 这个格式是 空格隔开的单词
                 self.relation_path_clear.append(relation_path_rs_all)
+
             print("end")
 
     # --------------------训练web questions 数据集时候的初始化函数
@@ -580,6 +638,7 @@ class DataClass:
             # self.init_fb("../data/freebase/")
         elif mode == "wq":
             self.init_web_questions()
+            self.init_fb("../data/freebase/")
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
             self.init_fb("../data/freebase/")
@@ -650,6 +709,7 @@ def clear_relation():
 
 
 if __name__ == "__main__":
-    clear_relation()
+    print("----d h")
+    # clear_relation()
     # test2()
     # clear_relation()

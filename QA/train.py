@@ -78,7 +78,7 @@ def run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg,merg
     # embeddings.append(embedding1)
     writer.add_summary(summary, step)
     print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
-    print(1)
+    # print(1)
     # checkpoint(sess)
 
 
@@ -100,8 +100,8 @@ def checkpoint(sess):
 # 主流程
 def main():
     # test 是完整的; small 是少量 ; debug 只是一次
-    model = "small"
-    print(tf.__version__)  # 1.2.0
+    model = "wq"
+    # print(tf.__version__)  # 1.2.0
     mylog.logger.info(model)
     # 1 读取所有的数据,返回一批数据标记好的数据{data.x,data.label}
     # batch_size 是1个bath，questions的个数，
