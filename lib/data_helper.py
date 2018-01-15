@@ -69,6 +69,39 @@ def read_rdf_from_gzip(file_name=r"../data/freebase/100_classic_book_collection.
     return g2
 
 
+def read_rdf_from_gzip_or_alias(path, file_name):
+    """
+    从gzip或者gzip_txt中读取内容
+    """
+    g2 = ""
+    read_from_gzip_error = False
+    try:
+        with gzip.open(filename=path + "\/" + file_name + ".json.gz", mode="rt", encoding="utf-8") as g:
+            gs = []
+            for g1 in g:
+                gs.append(str(g1))
+            g2 = "".join(gs)
+            # print(g2)
+    except Exception as e1:
+        mylog.logger.info(e1)
+        read_from_gzip_error = True
+
+    if read_from_gzip_error:
+        tj_txt = codecs.open(path + "\/" + file_name + ".json.gz", mode="r", encoding='utf-8')
+        file_name = tj_txt.readline().replace("\n", "")
+
+    try:
+        with gzip.open(filename=path + "\/" + file_name, mode="rt", encoding="utf-8") as g:
+            gs = []
+            for g1 in g:
+                gs.append(str(g1))
+            g2 = "".join(gs)
+    except Exception as e1:
+        mylog.logger.info(e1)
+
+    return g2
+
+
 # =======================================================================simple questions
 def test2():
     # d = DataClass("wq")
@@ -367,14 +400,14 @@ class DataClass:
                 # print("init_relation_fb")
 
     # 根据entity_id获取entity
-    def find_entity(self, entity_id):
+    def find_entity(self, path, entity_id):
         """
         从文件系统中获取实体
         :return:
         """
         file_path = r"D:\ZAIZHI\freebase-data\topic-json"
 
-        file_txt = read_rdf_from_gzip(file_path + "\\" + entity_id)
+        file_txt = read_rdf_from_gzip_or_alias(file_path, entity_id)
         json_file = json.loads(file_txt)
         id = ""
         ps = []
@@ -388,14 +421,14 @@ class DataClass:
         finally:
             return id, ps
 
-    def get_relations_except_one(self, entity_id, ps_to_except):
+    def get_relations_except_one(self, path, entity_id, ps_to_except):
         """
         获取除了指定关系外的所有关系
         :param entity_id:
         :param ps:
         :return:
         """
-        id, ps = self.find_entity(entity_id)
+        id, ps = self.read_rdf_from_gzip_or_alias(path, entity_id)
         if id == "":
             return []
         ps_to_return = []
@@ -496,6 +529,25 @@ class DataClass:
             y_new.append(y[index])
             # 对于z_new 加进去
             # TODO: 根据index，寻找entity里面非relaiton的relation[]
+            # s1 获取entity;这个index是问句的index，问句对应了entity-name
+            # （self.entity1_list）
+            # s2 根据entity-name直接读取entity-id的gzip
+            # 现在有2种方法，1 直接读取；2 或者
+            name = self.entity1_list[index]
+            print(name)
+            ps_to_except1 = self.relation_path[index]
+            length = len(x[index])
+            r1 = self.get_one_relations_except_ps(entity_id=name, ps_to_except=ps_to_except1)
+            # self.entitys[index]
+            print(r1)
+            # r1 需要转换格式（去掉/和_ ）;
+            # 然后取数字
+            # 补齐
+            r1 = ct.clear_relation(r1)
+            r1 = self.converter.text_to_arr(r1)
+            r1 = ct.padding_line(r1,self.max_document_length,length)
+
+            z_new.append(r1)
 
 
             total += 1
@@ -710,6 +762,8 @@ def clear_relation():
 
 if __name__ == "__main__":
     print("----d h")
+    # a = read_rdf_from_gzip_or_alias(path=r"F:\3_Server\freebase-data\topic-json", file_name="1")
+    # print(a)
     # clear_relation()
     # test2()
     # clear_relation()
