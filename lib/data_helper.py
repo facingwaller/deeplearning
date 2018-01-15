@@ -71,10 +71,11 @@ def read_rdf_from_gzip(file_name=r"../data/freebase/100_classic_book_collection.
 
 # =======================================================================simple questions
 def test2():
+    # d = DataClass("wq")
     d = DataClass("wq")
-    # d.find_both_in_sq_and_freebase()
+    d.find_both_in_sq_and_freebase()
     # d.compare()
-    # d = DataClass("debug")
+    d = DataClass("debug")
     # e1 = d.find_entity("100_classic_book_collection"+".json.gz")
     # print(e1)
     # print(d.batch_iter(2))
@@ -182,7 +183,7 @@ class DataClass:
             self.init_fb("../data/freebase/")
         elif mode == "small":
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-small.txt")
-            self.init_fb("../data/freebase/")
+            # self.init_fb("../data/freebase/")
         elif mode == "wq":
             self.init_web_questions()
         else:
@@ -575,8 +576,8 @@ class DataClass:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_valid.txt")
             self.init_fb("../data/freebase/")
         elif mode == "small":
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-small.txt")
-            self.init_fb("../data/freebase/")
+            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
+            # self.init_fb("../data/freebase/")
         elif mode == "wq":
             self.init_web_questions()
         else:
@@ -649,5 +650,6 @@ def clear_relation():
 
 
 if __name__ == "__main__":
-    test2()
+    clear_relation()
+    # test2()
     # clear_relation()

@@ -13,8 +13,10 @@ class CustomNetwork:
     def init_config(self,model):
         if model == "debug":
             self.need_cal_attention = True
+        else:
+            self.need_cal_attention = False
         print(1)
-    def __init__(self, max_document_length, word_d, num_classes, num_hidden, embedding_size, rnn_size,model):
+    def __init__(self, max_document_length, word_d, num_classes, num_hidden, embedding_size, rnn_size,model,need_cal_attention):
         # ===================初始化参数
         self.timesteps = max_document_length  # max_document_length，这个就是那个维度？
         self.num_input = word_d  # 类比句子的长度,在这里就是一个单词要向量化的维度？
@@ -50,6 +52,8 @@ class CustomNetwork:
             self.ori_quests = tf.nn.embedding_lookup(self.embedding, self.ori_input_quests)
             self.cand_quests = tf.nn.embedding_lookup(self.embedding, self.cand_input_quests)
             self.neg_quests = tf.nn.embedding_lookup(self.embedding, self.neg_input_quests)
+
+            tf.summary.histogram("embedding", self.embedding)  # 可视化观看变量
 
     def build_LSTM_network(self):
         with tf.variable_scope("LSTM_scope1", reuse=None) as scop1:  # 为什么要强调 reuse = None
