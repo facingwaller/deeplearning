@@ -29,11 +29,12 @@ tf.flags.DEFINE_integer("epoches", 100, "epoches")
 tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
-tf.flags.DEFINE_integer("rnn_size", 300, "LSTM 隐藏层的大小与num_hidden如何区分？")
-tf.flags.DEFINE_integer("batch_size", 100, "embedding_size")
+tf.flags.DEFINE_integer("rnn_size", 300, "LSTM 隐藏层的大小 ")
+tf.flags.DEFINE_integer("batch_size", 10, "batch_size")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "embedding size")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
-tf.flags.DEFINE_boolean("need_cal_attention", False, "Number of checkpoints to store (default: 5)")
+tf.flags.DEFINE_boolean("need_cal_attention", False, "need_cal_attention ")
+tf.flags.DEFINE_integer("check", 50, "Number of checkpoints to store (default: 5)")
 
 
 # ----------------------------------- execute train model ---------------------------------
@@ -79,7 +80,8 @@ def run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg,merg
     writer.add_summary(summary, step)
     print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
     # print(1)
-    # checkpoint(sess)
+    if step %FLAGS.check == 0:
+        checkpoint(sess)
 
 
 #  ----------------------------------- checkpoint-----------------------------------

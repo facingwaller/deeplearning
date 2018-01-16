@@ -2,7 +2,7 @@ import gzip
 import json
 import codecs
 from lib.data_hander import read_rdf_from_gzip, find_id_ps_json_from_file, just_log
-
+from lib.ct import ct
 
 def is_in_list_case(list, arg):
     for l in list:
@@ -125,6 +125,8 @@ def extract_entity_relations_from_webquestions(dir=r'D:\ZAIZHI\freebase-data'):
 
     for topic in topic_set:
         index += 1
+
+        # --------------------------文件读取
         is_gzip = False
         is_txt = False
         fname = r'%s\topic-json\%s.json.gz' % (dir, topic)
@@ -156,6 +158,8 @@ def extract_entity_relations_from_webquestions(dir=r'D:\ZAIZHI\freebase-data'):
         if tj_gzip == "":
             relations.append("####")
             continue
+
+        # ------------------------json解析
         id, ps_name_list, json_file = find_id_ps_json_from_file(tj_gzip)
 
         if not id.startswith('/m/'):

@@ -103,15 +103,7 @@ def read_rdf_from_gzip_or_alias(path, file_name):
 
 
 # =======================================================================simple questions
-def test2():
-    # d = DataClass("wq")
-    d = DataClass("wq")
-    d.find_both_in_sq_and_freebase()
-    # d.compare()
-    d = DataClass("debug")
-    # e1 = d.find_entity("100_classic_book_collection"+".json.gz")
-    # print(e1)
-    # print(d.batch_iter(2))
+
 
 
 def read_file(file_name):
@@ -143,9 +135,11 @@ class DataClass:
     relation_path = []  # 原始路径
     relation_path_clear = []  # 处理后的路径
     relation_path_one = []  # 处理后的只有随机的一个关系的路径
+    relation_path_clear_str_all = []  # 处理后的路径集合，string格式
     # ---------------------freebase
     entitys = []
     relations = []
+    freebase_data_path = r"D:\ZAIZHI\freebase-data\topic-json"
     # ---------------------DataClass
     train_path = "../data/simple_questions/annotated_fb_data_train-1.txt"
     entity1_list = []  # id
@@ -240,7 +234,12 @@ class DataClass:
         # 将问题/关系转换成index的系列表示
         max_document_length1 = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
         max_document_length2 = max([len(x.split(" ")) for x in self.relation_list])  # 获取单行的最大的长度
-        self.max_document_length = max(max_document_length1, max_document_length2)
+        gth = []
+        for x in self.relation_path_clear_str_all:
+            for x1 in x:
+                gth.append(len(x1.split(" ")))
+        max_document_length3 = max(gth)  # 获取单行的最大的长度
+        self.max_document_length = max(max_document_length1, max_document_length2, max_document_length3)
         # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
 
         self.question_list_split = self.get_split_list_per_line(self.question_list)
@@ -333,6 +332,7 @@ class DataClass:
             for line in read_file.readlines():
                 self.relations.append(line.replace("\n", "").replace("/", " ").replace("_", " ").strip())
         print("relations len:" + str(len(self.relations)))
+        # relation_path_clear_str_all
 
     def compare(self):
         # 寻找simple questions 不在freebase中的
@@ -405,9 +405,9 @@ class DataClass:
         从文件系统中获取实体
         :return:
         """
-        file_path = r"D:\ZAIZHI\freebase-data\topic-json"
+        # file_path = r"D:\ZAIZHI\freebase-data\topic-json"
 
-        file_txt = read_rdf_from_gzip_or_alias(file_path, entity_id)
+        file_txt = read_rdf_from_gzip_or_alias(path, entity_id)
         json_file = json.loads(file_txt)
         id = ""
         ps = []
@@ -445,7 +445,8 @@ class DataClass:
         :param ps:
         :return:
         """
-        id, ps = self.find_entity(entity_id)
+        # file_path = r"D:\ZAIZHI\freebase-data\topic-json"
+        id, ps = self.find_entity(path=self.freebase_data_path, entity_id=entity_id)
         if id == "":
             return []
         ps_to_return = []
@@ -535,20 +536,17 @@ class DataClass:
             # 现在有2种方法，1 直接读取；2 或者
             name = self.entity1_list[index]
             print(name)
-            ps_to_except1 = self.relation_path[index]
+            ps_to_except1 = self.relation_path_clear_str_all[index]  # 应该从另一个关系集合获取
             length = len(x[index])
-            r1 = self.get_one_relations_except_ps(entity_id=name, ps_to_except=ps_to_except1)
+            r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
             # self.entitys[index]
             print(r1)
-            # r1 需要转换格式（去掉/和_ ）;
-            # 然后取数字
-            # 补齐
-            r1 = ct.clear_relation(r1)
-            r1 = self.converter.text_to_arr(r1)
-            r1 = ct.padding_line(r1,self.max_document_length,length)
+            # r1 需要 取数字   补齐
+            # r1 = ct.clear_relation(r1)
+            r1 = self.converter.text_to_arr_list(r1)
+            r1 = ct.padding_line(r1, self.max_document_length, length)
 
             z_new.append(r1)
-
 
             total += 1
             if total >= batch_size:
@@ -664,6 +662,17 @@ class DataClass:
                 # self.relation_list 这个格式是 空格隔开的单词
                 self.relation_path_clear.append(relation_path_rs_all)
 
+                # 将处理后的路径集合，转换成string格式加入relation_path_clear_str_all
+                relation_path_rs_str_all = []
+                for x in relation_path_rs_all:
+                    temp_relation = ""
+                    for o_r in x:
+                        temp_relation += str(o_r.relation + " ").replace("/", " ").replace("_", " ")
+                    # 增加关系
+                    relation_path_rs_str_all.append(temp_relation)
+
+                self.relation_path_clear_str_all.append(relation_path_rs_str_all)
+
             print("end")
 
     # --------------------训练web questions 数据集时候的初始化函数
@@ -740,6 +749,34 @@ class DataClass:
         print("init finish!")
 
 
+
+
+    def find_entity_and_relations_paths(self, path, entity_id):
+        """
+        从文件系统中获取实体
+        :return:
+        """
+        # file_path = r"D:\ZAIZHI\freebase-data\topic-json"
+
+        file_txt = read_rdf_from_gzip_or_alias(path, entity_id)
+        json_file = json.loads(file_txt)
+        id = ""
+        ps = []
+        if not id.startswith('/m/'):
+            print(id)
+            return id, ps
+        try:
+            id = json_file["id"]
+            property_list = json_file["property"]
+            for p in property_list:
+                ps.append(p)
+
+            # 判断当前层是否
+
+        except Exception as e1:
+            print("error ", e1)
+        finally:
+            return id, ps
 # =======================================================================clear data
 def clear_relation():
     print("-->clear_relation")
@@ -760,10 +797,25 @@ def clear_relation():
     print(1)
 
 
+def test2():
+    # d = DataClass("wq")
+    d = DataClass("wq")
+    # id, ps = d.find_entity_and_relations_paths(path=r"D:\ZAIZHI\freebase-data\topic-json", entity_id="012bg5")
+    # print(id)
+    # print(ps)
+    d.batch_iter_wq(d.train_question_list_index, d.train_relation_list_index,
+                       batch_size=10)
+    # d.compare()
+    # d = DataClass("debug")
+    # e1 = d.find_entity("100_classic_book_collection"+".json.gz")
+    # print(e1)
+    # print(d.batch_iter(2))
+
+
 if __name__ == "__main__":
     print("----d h")
     # a = read_rdf_from_gzip_or_alias(path=r"F:\3_Server\freebase-data\topic-json", file_name="1")
     # print(a)
     # clear_relation()
-    # test2()
+    test2()
     # clear_relation()

@@ -14,8 +14,8 @@ import datetime
 import pickle
 import logging
 import logging.handlers
-from gensim.models import word2vec
-from gensim import models
+# from gensim.models import word2vec
+# from gensim import models
 
 ''' 日志  '''
 LOG_FILE = 'log2/' + str(time.time()) + '.txt'

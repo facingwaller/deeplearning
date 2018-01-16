@@ -56,12 +56,12 @@ def find_id_from_file(path):
     finally:
         return value_v, ps
 
-
-def read_all_files(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
+# 读取所有的json文件，然后解析出里面所有的entity和relaiton
+def read_all_files(rootdir=r'D:\ZAIZHI\freebase-data\topic-json2'):
     list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件3
-    f1 = "../data/freebase/freebase_entity.txt"
-    f2 = "../data/freebase/freebase_relation.txt"
-    f3 = "../data/freebase/freebase_rdf.txt"
+    f1 = "../data/freebase-1/freebase_entity.txt"
+    f2 = "../data/freebase-1/freebase_relation.txt"
+    f3 = "../data/freebase-1/freebase_rdf.txt"
     f1_writer = codecs.open(f1, mode="w", encoding="utf-8")
     f2_writer = codecs.open(f2, mode="w", encoding="utf-8")
     f3_writer = codecs.open(f3, mode="w", encoding="utf-8")
@@ -73,7 +73,7 @@ def read_all_files(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
         if index % 10000 == 0:
             print("hand ", index)
         path = os.path.join(rootdir, list[i])
-        if os.path.isfile(path) and path.endswith(".json"):
+        if os.path.isfile(path) and path.endswith(".json.gz"):
             print(path)
             id, ps = find_id_from_file(path)
             # print("=================id")
@@ -81,6 +81,8 @@ def read_all_files(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
             f3_writer.write(id + "\t")
             # print(id)
             # print("=================ps")
+            ps = ct.ct.read_entity_and_get_all_relations(list[i].replace(".json.gz",""))
+
             for p in ps:
                 # print(p)
                 f3_writer.write(p + "\t")
@@ -100,46 +102,46 @@ def read_all_files(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
 
     print("finish")
 
-
-def read_all_files2(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
-    print(rootdir)
-    list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件3
-    f4 = "../data/gunzip-2.sh"
-    # f4 = "../data/mv-1.sh"
-    f4_writer = codecs.open(f4, mode="w", encoding="utf-8")
-    f5_writer = codecs.open("../data/mv-useless-2.sh", mode="w", encoding="utf-8")
-    index = 0
-    print(len(list))
-    for i in range(0, len(list)):
-        index += 1
-        if index % 10000 == 0:
-            print("hand ", index)
-        if list[i].endswith(".gz"):
-            path = "topic-json/" + list[i]
-            filesize = os.path.getsize("D:\/ZAIZHI\/freebase-data\/" + path)
-            # f4_writer.write("mv "+path+" topic-json-1/\n")
-            # if filesize >200:
-            f4_writer.write("gunzip " + path + "\n")
-            # else:
-            #     f5_writer.write("mv "+path+" topic-json-useless-1/\n")
-    f4_writer.close()
-    f5_writer.close()
-
-
-def read_all_files3(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
-    list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件3
-    f4 = "../data/mv-2.sh"
-    f4_writer = codecs.open(f4, mode="w", encoding="utf-8")
-    realations = []
-    r_set = set()
-    index = 0
-    for i in range(0, len(list)):
-        index += 1
-        if index % 100000 == 0:
-            print("hand ", index)
-        if list[i].endswith(".json"):
-            path = "topic-json/" + list[i]
-            f4_writer.write("mv " + path + " topic-json-1/\n")
+#
+# def read_all_files2(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
+#     print(rootdir)
+#     list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件3
+#     f4 = "../data/gunzip-2.sh"
+#     # f4 = "../data/mv-1.sh"
+#     f4_writer = codecs.open(f4, mode="w", encoding="utf-8")
+#     f5_writer = codecs.open("../data/mv-useless-2.sh", mode="w", encoding="utf-8")
+#     index = 0
+#     print(len(list))
+#     for i in range(0, len(list)):
+#         index += 1
+#         if index % 10000 == 0:
+#             print("hand ", index)
+#         if list[i].endswith(".gz"):
+#             path = "topic-json/" + list[i]
+#             filesize = os.path.getsize("D:\/ZAIZHI\/freebase-data\/" + path)
+#             # f4_writer.write("mv "+path+" topic-json-1/\n")
+#             # if filesize >200:
+#             f4_writer.write("gunzip " + path + "\n")
+#             # else:
+#             #     f5_writer.write("mv "+path+" topic-json-useless-1/\n")
+#     f4_writer.close()
+#     f5_writer.close()
+#
+#
+# def read_all_files3(rootdir=r'D:\ZAIZHI\freebase-data\topic-json'):
+#     list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件3
+#     f4 = "../data/mv-2.sh"
+#     f4_writer = codecs.open(f4, mode="w", encoding="utf-8")
+#     realations = []
+#     r_set = set()
+#     index = 0
+#     for i in range(0, len(list)):
+#         index += 1
+#         if index % 100000 == 0:
+#             print("hand ", index)
+#         if list[i].endswith(".json"):
+#             path = "topic-json/" + list[i]
+#             f4_writer.write("mv " + path + " topic-json-1/\n")
 
 
 # ==========================================
@@ -274,16 +276,15 @@ def excat_rdf_full_from_dir(rootdir=r'F:\3_Server\freebase-data\topic-json'):
     :param rootdir:
     :return:
     """
-    f1 = "../data/freebase/freebase_entity_1.txt"
-    f2 = "../data/freebase/freebase_relation_1.txt"
-    f3 = "../data/freebase/freebase_rdf_1.txt"
+    f1 = "../data/freebase-1/freebase_entity_1.txt"
+    f2 = "../data/freebase-1/freebase_relation_1.txt"
+    f3 = "../data/freebase-1/freebase_rdf_1.txt"
     f1_writer = codecs.open(f1, mode="w", encoding="utf-8")
     f2_writer = codecs.open(f2, mode="w", encoding="utf-8")
     f3_writer = codecs.open(f3, mode="w", encoding="utf-8")
     list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件3
-    f4 = "../data/mv-2.sh"
-    f4_writer = codecs.open(f4, mode="w", encoding="utf-8")
-    realations = []
+
+    realations = set()
     r_set = set()
     index = 0
     print("total:" + str(len(list)))
@@ -291,29 +292,38 @@ def excat_rdf_full_from_dir(rootdir=r'F:\3_Server\freebase-data\topic-json'):
         index += 1
         if index % 1000 == 0:
             print("hand ", index)
+        if index <= 888000:
+            continue
 
         if list[i].endswith(".gz"):
             path2 = rootdir + "\\" + list[i]
             # print(path2)
-            filesize = os.path.getsize(path2)
-            if filesize > 200:
-                freebase_obj = read_rdf_from_gzip(path2)
-                if freebase_obj == "":
-                    print("bad gzip")
-                    continue
-                id , ps =find_id_ps_from_file(freebase_obj)
-                f1_writer.write(id + "\n")
-                # f3_writer.write(id + "\t")
-                # 读取后将对应属性保存到指定位置
-                for p in ps:
-                    # print(p)
-                    f3_writer.write(p + "\t")
-                    f2_writer.write(p+"\n")
-                f3_writer.write("\n")
-            else:
-                print("less 200 "+str(path2))
+            # filesize = os.path.getsize(path2)
+            # if filesize > 200:
+            # freebase_obj = read_rdf_from_gzip(path2)
+            # if freebase_obj == "":
+            #     print("bad gzip")
+            #     continue
+            # id , ps =find_id_ps_from_file(freebase_obj)
+            # f1_writer.write(id + "\n")
+            # f3_writer.write(id + "\t")
+            # 读取后将对应属性保存到指定位置
+
+            ps = ct.ct.read_entity_and_get_all_relations(list[i].replace(".json.gz", ""))
+            for p in ps:
+                # print(p)
+                for p_r in p:
+                    # f3_writer.write(p_r.relation + "\t")
+                    # f2_writer.write(p_r.relation+"\n")
+                    realations.add(p_r.relation)
+            # f3_writer.write("\n")
+            # else:
+            #     print("less 200 "+str(path2))
 
                 # f4_writer.write("mv " + path + " topic-json-1/\n")
+    for _ in realations:
+        f2_writer.write(_ + "\n")
+
     f1_writer.close()
     f2_writer.close()
     f3_writer.close()
@@ -327,5 +337,6 @@ def excat_rdf_full_from_dir(rootdir=r'F:\3_Server\freebase-data\topic-json'):
 # print(  find_relation(relation="/common/topic/alias") )
 
 if __name__ == "__main__":
-    p = r"D:\ZAIZHI\freebase-data\topic-json\m.01npcy7.json.gz"
-    print(read_rdf_from_gzip(p))
+    # p = r"D:\ZAIZHI\freebase-data\topic-json\m.01npcy7.json.gz"
+    # print(read_rdf_from_gzip(p))
+    excat_rdf_full_from_dir(r"D:\ZAIZHI\freebase-data\topic-json")
