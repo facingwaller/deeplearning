@@ -221,27 +221,55 @@ class ct:
         relation_path_rs_all = []
         relation_path_rs = []
         relation_path_rs_str_all = []
-        for r1 in r_relation:
+        #for r1 in r_relation:
+        a0 = classObject() # shang yi ge
+        for index in range(0,len(r_relation)):
             # r1.split("@@")[0] # 关系
             # r1.split("@@")[1] # 深度
-            a = classObject()
+            a = classObject() # current
+            r1 = r_relation[index]
             try:
                 a.relation = r1.split("@@")[0]
                 a.deep = r1.split("@@")[1]
             except Exception as e1:
                 print(e1)
-            if int(a.deep) == 1 and len(relation_path_rs) > 0:  # 清空之前的存储
-                relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
-                # relation_path_rs.clear()  # 清空
-                relation_path_rs = []
 
+            if index == 0:  # 第一个直接加入
+                relation_path_rs.append(a)
+                a0=a # as  a0
+                continue
+            else:
+                r0 = r_relation[index - 1]  # 上一个
+                a0 = classObject()
+                a0.relation = r0.split("@@")[0]
+                a0.deep = r0.split("@@")[1]
+
+            # a1.deep < a0.deep
+            # 不存储且输出，且清空
+            # a1.deep == a0.deep
+            # 不存储且输出，不清空
+            # a1.deep > a0.deep
+            # 存储不输出，不清空
+            if int(a.deep) < int(a0.deep) :  # 不存储且输出，且清空
+                # relation_path_rs_all.append()
+                # ct.add_relation_path_rs(relation_path_rs)
+                # 输出
+                temp_r = []
+                for _r1 in relation_path_rs:
+                    temp_r.append(_r1)  # add into temp_r
+                relation_path_rs = []  # 清空
+            elif int(a.deep) == int(a0.deep) : #  不存储且输出，不清空
+                print(1)
+            elif int(a.deep) > int(a0.deep):
+                print(1)
+            else:
+                print("...")
             relation_path_rs.append(a)
 
         if len(relation_path_rs) > 0:  # 清理掉存储
             relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
 
-        # 开展一个关系
-
+        # 展开一个关系
         for x in relation_path_rs_all:
             temp_relation = ""
             for o_r in x:
@@ -279,6 +307,7 @@ class ct:
         # print("# 5 剔除掉指定关系后随机获得一个,临时取前2个排除后随机取一个")
         ps_to_except = ps_to_except or relation_path_rs_str_all[0:2]
         r3 = ct.get_one_relations_except_ps(relation_path_rs_str_all, ps_to_except)
+        print(r3)
         # print(relations)
         # print(r3)
         return r3
@@ -288,11 +317,7 @@ class ct:
     def read_entity_and_get_all_relations(entity_id="10th_of_august"):
         # 1 读取json
         path = r"D:\ZAIZHI\freebase-data\topic-json"
-        if entity_id == 'm.0ghl8st':
-            print(11)
         tj_gzip = ct.read_rdf_from_gzip_or_alias(path, entity_id)
-        if tj_gzip =="":
-            print(2)
         # 2 转换成json
         id, ps_name_list, json_file = ct.find_id_ps_json_from_file(tj_gzip)
         # 3 从json中提取出关系路径
