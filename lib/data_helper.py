@@ -226,20 +226,26 @@ class DataClass:
         # 应该再加上问题里面的关系集合
         # q_words = [str(x).replace(".","") for x in q_words ]
         self.converter = read_utils.TextConverter(q_words)
-        self.converter.save_to_file_raw(
-            "../data/vocab/" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
+        # self.converter.save_to_file_raw(
+        #     "../data/vocab/" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
+
         # self.converter.save_to_file("model/converter.pkl")
         # print(self.converter)
 
         # 将问题/关系转换成index的系列表示
         max_document_length1 = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
-        max_document_length2 = max([len(x.split(" ")) for x in self.relation_list])  # 获取单行的最大的长度
-        gth = []
-        for x in self.relation_path_clear_str_all:
-            for x1 in x:
-                gth.append(len(x1.split(" ")))
-        max_document_length3 = max(gth)  # 获取单行的最大的长度
-        self.max_document_length = max(max_document_length1, max_document_length2, max_document_length3)
+        # max_document_length2 = max([len(x.split(" ")) for x in self.relation_list])  # 获取单行的最大的长度
+        # gth = []
+        # for x in self.relation_path_clear_str_all:
+        #     for x1 in x:
+        #         gth.append(len(x1.split(" ")))
+        # max_document_length3 = max(gth)  # 获取单行的最大的长度
+        # 计算出平均的长度
+        # mean_of_quesitons = np.mean([len(x.split(" ")) for x in self.question_list])
+        # print(mean_of_quesitons)
+
+        self.max_document_length = max_document_length1
+        # max(max_document_length1, max_document_length2, max_document_length3)
         # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
 
         self.question_list_split = self.get_split_list_per_line(self.question_list)
@@ -251,12 +257,14 @@ class DataClass:
             self.relation_list_index.append(self.converter.text_to_arr_list(_))
         # 第一版本先padding到max长度
         padding_num = self.converter.vocab_size - 1
-        for s in self.question_list_index:
-            s = ct.padding_line(s,self.max_document_length,padding_num)
-            s = np.array(s)
-        for s in self.relation_list_index:
-            s = ct.padding_line(s,self.max_document_length,padding_num)
-            s = np.array(s)
+        for index in range(0,len(self.question_list_index)):
+            self.question_list_index[index] = \
+                ct.padding_line(self.question_list_index[index],self.max_document_length,padding_num)
+        for index in range(0,len(self.relation_list_index)):
+            self.relation_list_index[index] = \
+                ct.padding_line(self.relation_list_index[index],self.max_document_length,padding_num)
+        # for s in self.relation_list_index:
+        #     s = ct.padding_line(s,self.max_document_length,padding_num)
             # 截断
         # 按比例分割训练和测试集
         rate = 0.8
@@ -544,8 +552,8 @@ class DataClass:
             total += 1
             if total >= batch_size:
                 break
-        print("show shuffle_indices")
-        print(shuffle_indices[0:batch_size])
+        # print("show shuffle_indices")
+        # print(shuffle_indices[0:batch_size])
         # 根据y 生成z，也就是错误的关系,当前先做1:1的比例
         # rate = 1
         # r_si = reversed(shuffle_indices)
@@ -880,6 +888,11 @@ def test2():
     # print(id)
     # print(ps)
     x, y, z = d.batch_iter_wq_test_one(d.train_question_list_index, d.train_relation_list_index,
+                              batch_size=10)
+    d.batch_iter(d.train_question_list_index, d.train_relation_list_index,
+                              batch_size=10)
+
+    d.batch_iter_wq(d.train_question_list_index, d.train_relation_list_index,
                               batch_size=10)
     print(z)
 

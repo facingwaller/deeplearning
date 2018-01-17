@@ -27,7 +27,7 @@ tf.flags.DEFINE_string('input_file_train', '../data/simple_questions/annotated_f
                        'utf8 encoded text file')
 tf.flags.DEFINE_string('input_file_test', '', 'utf8 encoded text file')
 tf.flags.DEFINE_string('input_file_freebase', '', 'utf8 encoded text file')
-tf.flags.DEFINE_integer("epoches", 20, "epoches")
+tf.flags.DEFINE_integer("epoches", 200, "epoches")
 tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
@@ -37,8 +37,8 @@ tf.flags.DEFINE_integer("max_grad_norm", 5, "embedding size")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_boolean("need_cal_attention", False, "need_cal_attention ")
 tf.flags.DEFINE_integer("check", 500000, "Number of checkpoints to store (default: 5)")
-tf.flags.DEFINE_integer("evaluate_every", 5, "evaluate_every")
-
+tf.flags.DEFINE_integer("evaluate_every", 10, "evaluate_every")
+tf.flags.DEFINE_integer("test_batchsize", 10, "test_batchsize ")
 
 # ----------------------------------- execute train model ---------------------------------
 # --不用
@@ -97,11 +97,18 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
         lstm.cand_input_quests: train_cand,  # cand_batch
         lstm.neg_input_quests: train_neg  # neg_batch
     }
+
+    # ct.check_len(train_q,15)
+    # ct.check_len(train_cand, 15)
+    # ct.check_len(train_neg, 15)
     summary, l1, acc1, embedding1, train_op1, \
-    ori_cand_score, ori_neg_score = sess.run(
+    ori_cand_score, ori_neg_score, loss_t= sess.run(
         [merged, lstm.loss, lstm.acc, lstm.embedding, train_op,
-         lstm.ori_cand, lstm.ori_neg],
+         lstm.ori_cand, lstm.ori_neg,
+         lstm.loss_tmp],
         feed_dict=feed_dict)
+    # print(loss_t)
+    mylog.log_list(loss_t)
     time_str = datetime.datetime.now().isoformat()
     right, wrong, score = [0.0] * 3
     for i in range(0, len(train_q)):
@@ -166,8 +173,9 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         better_index = st.index
         # 根据对应的关系数组找到对应的文字
         r1 = dh.converter.arr_to_text(test_r[better_index])
-        # 输出对应的文字
         print(r1)
+        # 输出对应的文字
+        # print(r1)
     # test_r[best_index]
     is_right = False
     if st_list_sort[0].index == 0:
@@ -191,7 +199,8 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 def valid_batch(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
     test_q, test_r, labels = \
         dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index)
-    right, wrong = [0.0] * 3
+    right = 0
+    wrong = 0
     for i in range(batchsize):
         ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
         if ok:
@@ -202,7 +211,7 @@ def valid_batch(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
     return acc
 
 
-print(1)
+
 
 
 # --
@@ -289,10 +298,11 @@ def main():
                 # test_q, test_r, labels = \
                 #     dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index,
                 #                               100)  # 一次读取2个batch
-                test_batchsize =100
-                acc = valid_batch(sess, lstm, 0, train_op,  merged, writer, dh,batchsize=test_batchsize)
-                print("test_batchsize:%d  acc:%d "%(test_batchsize,acc))
+                test_batchsize = 10
+                acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
+                print("test_batchsize:%d  acc:%d " % (test_batchsize, acc))
 
 
 if __name__ == '__main__':
     main()
+

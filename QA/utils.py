@@ -56,6 +56,35 @@ def avg_pooling(lstm_out):
     return output
 
 
+def cal_loss_and_acc_new(ori_cand, ori_neg):
+    """
+     losses  = max(zero , 0.2的矩阵-(ori_cand - ori_neg))
+     acc = loss 是 0 的比例
+    :param ori_cand:
+    :param ori_neg:
+    :return:
+    """
+    # the target function
+    # tf.fill(dims, value, name=None)
+    # 创建一个维度为dims，值为value的tensor对象．该操作会创建一个维度为dims的tensor对象，
+    # 并将其值设置为value，该tensor对象中的值类型和value一致
+    zero = tf.fill(tf.shape(ori_cand), 0.0)
+    margin = tf.fill(tf.shape(ori_cand), 0.2)
+    with tf.name_scope("loss"):
+        # tf.maximum(a,b),返回的是a,b之间的最大值
+        # subtract 减法
+        # losses = tf.maximum(zero, tf.subtract(margin, tf.subtract(ori_cand, ori_neg)))
+        loss_temp1 = tf.subtract(ori_cand, ori_neg)
+        # losses = tf.negative( tf.abs(tf.subtract(margin, loss_temp1)))
+        losses = tf.negative(tf.abs(loss_temp1))
+        # tf.reduce_sum 加和每一位
+        loss = tf.reduce_sum(losses)
+    with tf.name_scope("acc"):
+        correct = tf.equal(zero, losses)
+        acc = tf.reduce_mean(tf.cast(correct, "float"), name="acc")
+    return loss, acc, loss_temp1
+
+
 def cal_loss_and_acc(ori_cand, ori_neg):
     """
      losses  = max(zero , 0.2的矩阵-(ori_cand - ori_neg))
@@ -85,6 +114,35 @@ def cal_loss_and_acc(ori_cand, ori_neg):
         correct = tf.equal(zero, losses)
         acc = tf.reduce_mean(tf.cast(correct, "float"), name="acc")
     return loss, acc
+
+
+def cal_loss_and_acc_try(ori_cand, ori_neg):
+    """
+     losses  = max(zero , 0.2的矩阵-(ori_cand - ori_neg))
+     acc = loss 是 0 的比例
+    :param ori_cand:
+    :param ori_neg:
+    :return:
+    """
+    # the target function
+
+    # tf.fill(dims, value, name=None)
+    # 创建一个维度为dims，值为value的tensor对象．该操作会创建一个维度为dims的tensor对象，
+    # 并将其值设置为value，该tensor对象中的值类型和value一致
+    zero = tf.fill(tf.shape(ori_cand), 0.0)
+    margin = tf.fill(tf.shape(ori_cand), 0.2)
+    with tf.name_scope("loss"):
+        # tf.maximum(a,b),返回的是a,b之间的最大值
+        loss_tmp = tf.subtract(ori_cand, ori_neg)
+        losses = tf.maximum(zero, tf.subtract(margin, tf.subtract(ori_cand, ori_neg)))
+        # losses = tf.maximum(zero, tf.abs(tf.subtract(margin, tf.subtract(ori_cand, ori_neg))))
+        loss = tf.reduce_sum(losses)
+        # loss_tmp = tf.subtract(ori_cand, ori_neg)
+
+    with tf.name_scope("acc"):
+        correct = tf.equal(zero, losses)
+        acc = tf.reduce_mean(tf.cast(correct, "float"), name="acc")
+    return loss, acc,loss_tmp
 
 
 def get_feature(input_q, input_a, att_W):
@@ -121,7 +179,7 @@ def get_feature(input_q, input_a, att_W):
     # Tensor("att_weight/Reshape_3:0", shape=(?, 11), dtype=float32)
     S = tf.nn.softmax(S)
     # Tensor("att_weight/Softmax:0", shape=(?, 11), dtype=float32)
-    S_diag = tf.matrix_diag(S) # 如果输入时一个向量，那就生成二维的对角矩阵
+    S_diag = tf.matrix_diag(S)  # 如果输入时一个向量，那就生成二维的对角矩阵
     # Tensor("att_weight/MatrixDiag:0", shape=(?, 11, 11), dtype=float32)
     attention_a = tf.matmul(S_diag, input_a)  #
     # Tensor("att_weight/MatMul_3:0", shape=(?, 11, 600), dtype=float32)
@@ -133,7 +191,6 @@ def get_feature(input_q, input_a, att_W):
     # Tensor("att_weight/Tanh_2:0", shape=(?, 600), dtype=float32)
     # Tensor("att_weight/Tanh_1:0", shape=(?, 600), dtype=float32)
 
+
 def test1():
-
-
     print(1)

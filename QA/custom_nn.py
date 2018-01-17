@@ -6,7 +6,7 @@
 import tensorflow as tf
 from tensorflow.contrib import rnn
 from QA.bilstm import biLSTM, biLSTM2
-from QA.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature
+from QA.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature,cal_loss_and_acc_try
 
 
 class CustomNetwork:
@@ -103,9 +103,7 @@ class CustomNetwork:
         # self.ori_neg = feature2cos_sim(self.ori_q_feat, self.neg_q_feat)
         # print("ori_neg-----------")
         # print(self.ori_neg)
-
-        self.loss, self.acc = cal_loss_and_acc(self.ori_cand, self.ori_neg)
-
+        self.loss, self.acc,self.loss_tmp = cal_loss_and_acc_try(self.ori_cand, self.ori_neg)
         # 计算问题和关系的相似度
         self.test_q_r = feature2cos_sim( self.test_q_out , self.test_r_out)
 

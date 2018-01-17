@@ -332,7 +332,7 @@ class ct:
     @staticmethod
     def read_entity_and_get_neg_relation(entity_id="10th_of_august", ps_to_except=[]):
         # 1 读取json
-        path = r"D:\ZAIZHI\freebase-data\topic-json"
+        path = ct.get_topic_path()
         tj_gzip = ct.read_rdf_from_gzip_or_alias(path, entity_id)
         # 2 转换成json
         id, ps_name_list, json_file = ct.find_id_ps_json_from_file(tj_gzip)
@@ -416,8 +416,18 @@ class ct:
     # ---去掉头尾空格，变成全小写，去掉?和.
     @staticmethod
     def clean_str_simple(string):
-        return str(string).strip().lower().replace("?","").replace(".","")
+        return str(string).strip().lower().replace("?","").replace(".","").replace("'s","")
 
+    @staticmethod
+    def check_len(list,len):
+        try:
+            for l1  in list:
+                 if l1.size != len:
+                        print(1)
+                        return False
+        except Exception as e1:
+            print(e1)
+        return True
 
 
 if __name__ == "__main__":
