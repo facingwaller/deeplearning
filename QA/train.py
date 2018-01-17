@@ -18,6 +18,7 @@ import codecs
 import numpy as np
 import lib.my_log as mylog
 from lib.ct import ct
+import lib.config as config
 
 # -----------------------------------定义变量
 FLAGS = tf.flags.FLAGS
@@ -26,17 +27,17 @@ tf.flags.DEFINE_string('input_file_train', '../data/simple_questions/annotated_f
                        'utf8 encoded text file')
 tf.flags.DEFINE_string('input_file_test', '', 'utf8 encoded text file')
 tf.flags.DEFINE_string('input_file_freebase', '', 'utf8 encoded text file')
-tf.flags.DEFINE_integer("epoches", 5, "epoches")
+tf.flags.DEFINE_integer("epoches", 20, "epoches")
 tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
 tf.flags.DEFINE_integer("rnn_size", 300, "LSTM 隐藏层的大小 ")
-tf.flags.DEFINE_integer("batch_size", 2, "batch_size")
+tf.flags.DEFINE_integer("batch_size", 100, "batch_size")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "embedding size")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_boolean("need_cal_attention", False, "need_cal_attention ")
 tf.flags.DEFINE_integer("check", 500000, "Number of checkpoints to store (default: 5)")
-tf.flags.DEFINE_integer("evaluate_every", 2, "evaluate_every")
+tf.flags.DEFINE_integer("evaluate_every", 5, "evaluate_every")
 
 
 # ----------------------------------- execute train model ---------------------------------
@@ -158,7 +159,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     st_list.reverse()
     st_list_sort = st_list[0:5]
     for st in st_list_sort:  # 取5个
-        print("index:%d ,score= %f "%(st.index, st.score))
+        print("index:%d ,score= %f " % (st.index, st.score))
         # 得到得分排序前X的index
         # 根据index找到对应的关系数组
         # 得到得分最高的关系跟labels做判断是否是正确答案，加入统计
@@ -174,7 +175,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         is_right = True
     else:
         print("error relation")
- 
+
     time_elapsed = time.time() - start_time
     # mylog.logger.info("%s: step %s, score %s, wrong %s, %6.7f secs/batch" % (
     #     time_str, step,   score, wrong, time_elapsed))
@@ -186,6 +187,22 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     # print(1)
     return is_right
 
+
+def valid_batch(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
+    test_q, test_r, labels = \
+        dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index)
+    right, wrong = [0.0] * 3
+    for i in range(batchsize):
+        ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
+        if ok:
+            right += 1
+        else:
+            wrong += 1
+    acc = right / (right + wrong)
+    return acc
+
+
+print(1)
 
 
 # --
@@ -269,10 +286,12 @@ def main():
             # mylog.log_list(e1)
             # -------------------------test
             if step % FLAGS.evaluate_every == 0 and step != 0:
-                test_q, test_r, labels = \
-                    dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index,
-                                              100)  # 一次读取2个batch
-                is_right = valid_step(sess, lstm, 0, train_op, test_q, test_r, labels, merged, writer, dh)
+                # test_q, test_r, labels = \
+                #     dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index,
+                #                               100)  # 一次读取2个batch
+                test_batchsize =100
+                acc = valid_batch(sess, lstm, 0, train_op,  merged, writer, dh,batchsize=test_batchsize)
+                print("test_batchsize:%d  acc:%d "%(test_batchsize,acc))
 
 
 if __name__ == '__main__':

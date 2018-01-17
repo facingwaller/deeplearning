@@ -213,7 +213,7 @@ class DataClass:
             # self.init_fb("../data/freebase/")
         elif mode == "wq":
             self.init_web_questions()
-            # self.init_fb("../data/freebase/")
+            self.init_fb("../data/freebase/")
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
             self.init_fb("../data/freebase/")
@@ -224,7 +224,7 @@ class DataClass:
         q_words = self.get_split_list(self.question_list)
         q_words.extend(self.get_split_list(self.relations))  # freebase里面的关系
         # 应该再加上问题里面的关系集合
-
+        # q_words = [str(x).replace(".","") for x in q_words ]
         self.converter = read_utils.TextConverter(q_words)
         self.converter.save_to_file_raw(
             "../data/vocab/" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
@@ -250,22 +250,14 @@ class DataClass:
         for _ in self.relation_list_split:
             self.relation_list_index.append(self.converter.text_to_arr_list(_))
         # 第一版本先padding到max长度
+        padding_num = self.converter.vocab_size - 1
         for s in self.question_list_index:
-            padding = self.max_document_length - len(s)
-            for index in range(padding):
-                s.append(self.max_document_length - 1)  # 用最后一个单词 补齐
+            s = ct.padding_line(s,self.max_document_length,padding_num)
             s = np.array(s)
         for s in self.relation_list_index:
-            padding = self.max_document_length - len(s)
-            for index in range(padding):
-                s.append(self.max_document_length - 1)  # 用最后一个单词 补齐
-            # 截断不用，等待改成 relation_list_index[index] = xx的形式
-            # if len(s) > self.max_document_length:
-            #     s = s[0:self.max_document_length]
+            s = ct.padding_line(s,self.max_document_length,padding_num)
             s = np.array(s)
             # 截断
-
-            # print(1)
         # 按比例分割训练和测试集
         rate = 0.8
         self.train_question_list_index, self.test_question_list_index = \
@@ -529,7 +521,7 @@ class DataClass:
             x_new.append(x[index])
             y_new.append(y[index])
             # 对于z_new 加进去
-            # TODO: 根据index，寻找entity里面非relaiton的relation[]
+            #   根据index，寻找entity里面非relaiton的relation[]
             # s1 获取entity;这个index是问句的index，问句对应了entity-name
             # （self.entity1_list）
             # s2 根据entity-name直接读取entity-id的gzip
@@ -690,6 +682,7 @@ class DataClass:
         with codecs.open(fname, mode='r', encoding='utf-8') as read_file:
             for line in read_file.readlines():
                 # line = f1.readline()
+                line = ct.clean_str_simple(line)
                 entity1 = line.split('\t')[0]
                 relation_path = line.split('\t')[1]
                 answer = line.split('\t')[2]
@@ -759,78 +752,78 @@ class DataClass:
             print("end")
 
     # --------------------训练web questions 数据集时候的初始化函数
-    def init_wq(self, mode="debug"):
-        """
-        mode = debug(1行数据调试);test(测试模式);small();
-
-        :param mode:
-        """
-        # ---------------------初始化实体
-        self.entity1_list = []
-        self.relation_list = []
-        self.entity2_list = []
-        self.question_list = []
-
-        self.rdf_list = []
-        if mode == "test":
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_valid.txt")
-            self.init_fb("../data/freebase/")
-        elif mode == "small":
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
-            # self.init_fb("../data/freebase/")
-        elif mode == "wq":
-            self.init_web_questions()
-            self.init_fb("../data/freebase/")
-        else:
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
-            self.init_fb("../data/freebase/")
-
-        # 将问题和关系的字符串变成以空格隔开的一个单词的list
-
-        # total_list = self.question_list + self.relation_list
-        q_words = self.get_split_list(self.question_list)
-        # self.relation_list 具体的类型需要调试看看
-        q_words.extend(self.get_split_list(self.relation_list))
-
-        self.converter = read_utils.TextConverter(q_words)
-        self.converter.save_to_file_raw(
-            "../data/vocab/" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
-        # self.converter.save_to_file("model/converter.pkl")
-        # print(self.converter)
-
-        # 将问题/关系转换成index的系列表示
-        self.max_document_length = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
-        # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
-
-        self.question_list_split = self.get_split_list_per_line(self.question_list)
-        self.relation_list_split = self.get_split_list_per_line(self.relation_list)
-        for q_l_s in self.question_list_split:
-            self.question_list_index.append(self.converter.text_to_arr_list(q_l_s))
-        # self.relation_list_index = self.converter.text_to_arr(self.relation_list_split)
-        for _ in self.relation_list_split:
-            self.relation_list_index.append(self.converter.text_to_arr_list(_))
-        # 第一版本先padding到max长度
-        padding_num = self.converter.vocab_size - 1
-        for s in self.question_list_index:
-            padding = self.max_document_length - len(s)
-            for index in range(padding):
-                s.append(padding_num)  # 用最后一个单词 补齐
-            s = np.array(s)
-        for s in self.relation_list_index:
-            padding = self.max_document_length - len(s)
-            for index in range(padding):
-                s.append(padding_num)  # 用最后一个单词 补齐
-            s = np.array(s)
-            # print(1)
-        # 按比例分割训练和测试集
-        rate = 0.8
-        self.train_question_list_index, self.test_question_list_index = \
-            self.cap_nums(self.question_list_index, rate)
-        self.train_relation_list_index, self.test_relation_list_index = \
-            self.cap_nums(self.relation_list_index, rate)
-        print("init finish!")
+    # def init_wq(self, mode="debug"):
+    #     """
+    #     mode = debug(1行数据调试);test(测试模式);small();
+    #
+    #     :param mode:
+    #     """
+    #     # ---------------------初始化实体
+    #     self.entity1_list = []
+    #     self.relation_list = []
+    #     self.entity2_list = []
+    #     self.question_list = []
+    #
+    #     self.rdf_list = []
+    #     if mode == "test":
+    #         self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
+    #         self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
+    #         self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_valid.txt")
+    #         self.init_fb("../data/freebase/")
+    #     elif mode == "small":
+    #         self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
+    #         # self.init_fb("../data/freebase/")
+    #     elif mode == "wq":
+    #         self.init_web_questions()
+    #         self.init_fb("../data/freebase/")
+    #     else:
+    #         self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
+    #         self.init_fb("../data/freebase/")
+    #
+    #     # 将问题和关系的字符串变成以空格隔开的一个单词的list
+    #
+    #     # total_list = self.question_list + self.relation_list
+    #     q_words = self.get_split_list(self.question_list)
+    #     # self.relation_list 具体的类型需要调试看看
+    #     q_words.extend(self.get_split_list(self.relation_list))
+    #
+    #     self.converter = read_utils.TextConverter(q_words)
+    #     self.converter.save_to_file_raw(
+    #         "../data/vocab/" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
+    #     # self.converter.save_to_file("model/converter.pkl")
+    #     # print(self.converter)
+    #
+    #     # 将问题/关系转换成index的系列表示
+    #     self.max_document_length = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
+    #     # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
+    #
+    #     self.question_list_split = self.get_split_list_per_line(self.question_list)
+    #     self.relation_list_split = self.get_split_list_per_line(self.relation_list)
+    #     for q_l_s in self.question_list_split:
+    #         self.question_list_index.append(self.converter.text_to_arr_list(q_l_s))
+    #     # self.relation_list_index = self.converter.text_to_arr(self.relation_list_split)
+    #     for _ in self.relation_list_split:
+    #         self.relation_list_index.append(self.converter.text_to_arr_list(_))
+    #     # 第一版本先padding到max长度
+    #     padding_num = self.converter.vocab_size - 1
+    #     for s in self.question_list_index:
+    #         padding = self.max_document_length - len(s)
+    #         for index in range(padding):
+    #             s.append(padding_num)  # 用最后一个单词 补齐
+    #         s = np.array(s)
+    #     for s in self.relation_list_index:
+    #         padding = self.max_document_length - len(s)
+    #         for index in range(padding):
+    #             s.append(padding_num)  # 用最后一个单词 补齐
+    #         s = np.array(s)
+    #         # print(1)
+    #     # 按比例分割训练和测试集
+    #     rate = 0.8
+    #     self.train_question_list_index, self.test_question_list_index = \
+    #         self.cap_nums(self.question_list_index, rate)
+    #     self.train_relation_list_index, self.test_relation_list_index = \
+    #         self.cap_nums(self.relation_list_index, rate)
+    #     print("init finish!")
 
     def find_entity_and_relations_paths(self, path, entity_id):
         """

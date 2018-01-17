@@ -3,13 +3,18 @@ import json
 import gzip
 import codecs
 import numpy as np
-
+import re
 
 class classObject:
     pass
-
+from lib.config import config
 
 class ct:
+    # -------------------配置
+    @staticmethod
+    def get_topic_path():
+        return config.get_config_path()
+
     # 新建一个简单的结构体
     @staticmethod
     def new_struct():
@@ -346,9 +351,10 @@ class ct:
         return r3
 
     # 读取实体的所有的neg关系
+    @staticmethod
     def read_entity_and_get_all_neg_relations(entity_id="10th_of_august", ps_to_except=[]):
         # 1 读取json
-        path = r"D:\ZAIZHI\freebase-data\topic-json"
+        path = ct.get_topic_path()
         tj_gzip = ct.read_rdf_from_gzip_or_alias(path, entity_id)
         # 2 转换成json
         id, ps_name_list, json_file = ct.find_id_ps_json_from_file(tj_gzip)
@@ -372,7 +378,7 @@ class ct:
     @staticmethod
     def read_entity_and_get_all_relations(entity_id="10th_of_august"):
         # 1 读取json
-        path = r"D:\ZAIZHI\freebase-data\topic-json"
+        path = ct.get_topic_path()
         # path = r"F:\3_Server\freebase-data\topic-json2"
         tj_gzip = ct.read_rdf_from_gzip_or_alias(path, entity_id)
         # 2 转换成json
@@ -384,6 +390,34 @@ class ct:
         relation_path_rs_all, relation_path_rs_str_all \
             = ct.combine_relations(relations)
         return relation_path_rs_all
+
+    @staticmethod
+    def clean_str(string):
+        """
+        Tokenization/string cleaning for all datasets except for SST.
+        Original taken from https://github.com/yoonkim/CNN_sentence/blob/master/process_data.py
+        """
+        # 正则替换
+        string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)
+        string = re.sub(r"\'s", " \'s", string)
+        string = re.sub(r"\'ve", " \'ve", string)
+        string = re.sub(r"n\'t", " n\'t", string)
+        string = re.sub(r"\'re", " \'re", string)
+        string = re.sub(r"\'d", " \'d", string)
+        string = re.sub(r"\'ll", " \'ll", string)
+        string = re.sub(r",", " , ", string)
+        string = re.sub(r"!", " ! ", string)
+        string = re.sub(r"\(", " \( ", string)
+        string = re.sub(r"\)", " \) ", string)
+        string = re.sub(r"\?", " \? ", string)
+        string = re.sub(r"\s{2,}", " ", string)
+        return string.strip().lower()
+
+    # ---去掉头尾空格，变成全小写，去掉?和.
+    @staticmethod
+    def clean_str_simple(string):
+        return str(string).strip().lower().replace("?","").replace(".","")
+
 
 
 if __name__ == "__main__":
