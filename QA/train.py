@@ -184,6 +184,8 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     print("%s: step %s,  score %s, is_right %s, %6.7f secs/batch" % (
         time_str, step, score, str(is_right), time_elapsed))
     # print(1)
+    return is_right
+
 
 
 # --
@@ -270,7 +272,7 @@ def main():
                 test_q, test_r, labels = \
                     dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index,
                                               100)  # 一次读取2个batch
-                valid_step(sess, lstm, 0, train_op, test_q, test_r, labels, merged, writer, dh)
+                is_right = valid_step(sess, lstm, 0, train_op, test_q, test_r, labels, merged, writer, dh)
 
 
 if __name__ == '__main__':
