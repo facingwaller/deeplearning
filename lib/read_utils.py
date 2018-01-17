@@ -81,6 +81,12 @@ class TextConverter(object):
             words.append(self.int_to_word(index))
         return "".join(words)
 
+    def arr_to_text_by_space(self, arr):
+        words = []
+        for index in arr:
+            words.append(self.int_to_word(index))
+        return " ".join(words)
+
     def save_to_file(self, filename):
         with open(filename, 'wb') as f:
             pickle.dump(self.vocab, f)

@@ -17,6 +17,7 @@ import os
 import codecs
 import numpy as np
 import lib.my_log as mylog
+from lib.ct import ct
 
 # -----------------------------------定义变量
 FLAGS = tf.flags.FLAGS
@@ -25,19 +26,21 @@ tf.flags.DEFINE_string('input_file_train', '../data/simple_questions/annotated_f
                        'utf8 encoded text file')
 tf.flags.DEFINE_string('input_file_test', '', 'utf8 encoded text file')
 tf.flags.DEFINE_string('input_file_freebase', '', 'utf8 encoded text file')
-tf.flags.DEFINE_integer("epoches", 100, "epoches")
+tf.flags.DEFINE_integer("epoches", 5, "epoches")
 tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
 tf.flags.DEFINE_integer("rnn_size", 300, "LSTM 隐藏层的大小 ")
-tf.flags.DEFINE_integer("batch_size", 10, "batch_size")
+tf.flags.DEFINE_integer("batch_size", 2, "batch_size")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "embedding size")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_boolean("need_cal_attention", False, "need_cal_attention ")
-tf.flags.DEFINE_integer("check", 50, "Number of checkpoints to store (default: 5)")
+tf.flags.DEFINE_integer("check", 500000, "Number of checkpoints to store (default: 5)")
+tf.flags.DEFINE_integer("evaluate_every", 2, "evaluate_every")
 
 
 # ----------------------------------- execute train model ---------------------------------
+# --不用
 def run_step(sess, ori_batch, cand_batch, neg_batch, lstm, dropout=1.):
     start_time = time.time()
     feed_dict = {
@@ -64,14 +67,15 @@ def run_step(sess, ori_batch, cand_batch, neg_batch, lstm, dropout=1.):
     return cur_loss, ori_cand_score
 
 
-def run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg,merged,writer):
+# --不用
+def run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer):
     # print("--------------begin")
     # print(train_q)
     # print(train_cand)
     # print(train_neg)
     # print("--------------end")
-    summary,l1, acc1, embedding1, train_op1 = sess.run(
-        [merged,lstm.loss, lstm.acc, lstm.embedding, train_op],
+    summary, l1, acc1, embedding1, train_op1 = sess.run(
+        [merged, lstm.loss, lstm.acc, lstm.embedding, train_op],
         feed_dict={lstm.ori_input_quests: train_q,
                    lstm.cand_input_quests: train_cand,
                    lstm.neg_input_quests: train_neg})
@@ -80,11 +84,111 @@ def run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg,merg
     writer.add_summary(summary, step)
     print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
     # print(1)
-    if step %FLAGS.check == 0:
+    if step % FLAGS.check == 0:
         checkpoint(sess)
 
 
-#  ----------------------------------- checkpoint-----------------------------------
+# ---在用
+def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer):
+    start_time = time.time()
+    feed_dict = {
+        lstm.ori_input_quests: train_q,  # ori_batch
+        lstm.cand_input_quests: train_cand,  # cand_batch
+        lstm.neg_input_quests: train_neg  # neg_batch
+    }
+    summary, l1, acc1, embedding1, train_op1, \
+    ori_cand_score, ori_neg_score = sess.run(
+        [merged, lstm.loss, lstm.acc, lstm.embedding, train_op,
+         lstm.ori_cand, lstm.ori_neg],
+        feed_dict=feed_dict)
+    time_str = datetime.datetime.now().isoformat()
+    right, wrong, score = [0.0] * 3
+    for i in range(0, len(train_q)):
+        ori_cand_score_mean = np.mean(ori_cand_score[i])
+        ori_neg_score_mean = np.mean(ori_neg_score[i])
+        if ori_cand_score_mean > 0.55 and ori_neg_score_mean < 0.4:
+            right += 1.0
+        else:
+            wrong += 1.0
+        score += ori_cand_score_mean - ori_neg_score_mean
+    time_elapsed = time.time() - start_time
+    mylog.logger.info("%s: step %s, loss %s, acc %s, score %s, wrong %s, %6.7f secs/batch" % (
+        time_str, step, l1, acc1, score, wrong, time_elapsed))
+
+    writer.add_summary(summary, step)
+    # print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
+    print("%s: step %s, loss %s, acc %s, score %s, wrong %s, %6.7f secs/batch" % (
+        time_str, step, l1, acc1, score, wrong, time_elapsed))
+    # print(1)
+    if step % FLAGS.check == 0 and step != 0:
+        checkpoint(sess)
+
+
+# ------
+
+# ---先做多个问题（一样的问题），多个答案，多个标签，输出得分前X的答案并给出得分
+# test_q,问题
+# test_r,关系
+# labels,标签,
+def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh):
+    start_time = time.time()
+    feed_dict = {
+        lstm.test_input_q: test_q,
+        lstm.test_input_r: test_r,
+    }
+
+    test_q_r_cosin = sess.run(
+        [lstm.test_q_r],
+        feed_dict=feed_dict)
+
+    test_q_r_cosin = test_q_r_cosin[0]
+
+    right, wrong, score = [0.0] * 3
+    st_list = []  # 各个关系的得分
+
+    for i in range(0, len(test_q_r_cosin)):
+        st = ct.new_struct()
+        st.index = i
+        ori_cand_score_mean = np.mean(test_q_r_cosin[i])
+        st.score = ori_cand_score_mean
+        st_list.append(st)
+        # print(ori_cand_score_mean)
+    # 将得分和index结合，然后得分排序
+    st_list.sort(key=ct.get_key)
+    st_list.reverse()
+    st_list_sort = st_list[0:5]
+    for st in st_list_sort:  # 取5个
+        print("index:%d ,score= %f "%(st.index, st.score))
+        # 得到得分排序前X的index
+        # 根据index找到对应的关系数组
+        # 得到得分最高的关系跟labels做判断是否是正确答案，加入统计
+        better_index = st.index
+        # 根据对应的关系数组找到对应的文字
+        r1 = dh.converter.arr_to_text(test_r[better_index])
+        # 输出对应的文字
+        print(r1)
+    # test_r[best_index]
+    is_right = False
+    if st_list_sort[0].index == 0:
+        print("ok")
+        is_right = True
+    else:
+        print("error relation")
+ 
+    time_elapsed = time.time() - start_time
+    # mylog.logger.info("%s: step %s, score %s, wrong %s, %6.7f secs/batch" % (
+    #     time_str, step,   score, wrong, time_elapsed))
+    # writer.add_summary(summary, step)
+    # print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
+    time_str = datetime.datetime.now().isoformat()
+    print("%s: step %s,  score %s, is_right %s, %6.7f secs/batch" % (
+        time_str, step, score, str(is_right), time_elapsed))
+    # print(1)
+
+
+# --
+
+# ----------------------------------- checkpoint-----------------------------------
 def checkpoint(sess):
     # Output directory for models and summaries
     timestamp = str(int(time.time()))
@@ -141,23 +245,32 @@ def main():
         # dh.get_one_batch(batch_size) # 返回 batch_size的questions
         # run_step(sess, ori_train, cand_train, neg_train, lstm)
         embeddings = []
+
+        # 测试直接跑一次验证
+        # test_q, test_r, labels = \
+        #     dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index, 100)  # 一次读取2个batch
+        # valid_step(sess, lstm, 0, train_op, test_q, test_r, labels, merged, writer, dh)
+
         # -------------------------train
         for step in range(FLAGS.epoches):
             train_q, train_cand, train_neg = \
-                dh.batch_iter(dh.train_question_list_index, dh.train_relation_list_index,
-                              batch_size=FLAGS.batch_size)  # 一次读取2个batch
+                dh.batch_iter_wq(dh.train_question_list_index, dh.train_relation_list_index,
+                                 batch_size=FLAGS.batch_size)  # 一次读取2个batch
             # print("--------------begin")
             # print(train_q)
             # print(train_cand)
             # print(train_neg)
             # print("--------------end")
-            run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg,merged,writer)
-        # e1 = embeddings[0] == embeddings[1]  # 通过这个可以看到确实改变了部分
-        # mylog.log_list(e1)
-        # -------------------------test
-        test_q, test_cand, test_neg = \
-            dh.batch_iter(dh.test_question_list_index, dh.test_relation_list_index, 100)  # 一次读取2个batch
-        run_one_time(sess, lstm, 0, train_op, test_q, test_cand, test_neg,merged,writer)
+            # run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg,merged,writer)
+            run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer)
+            # e1 = embeddings[0] == embeddings[1]  # 通过这个可以看到确实改变了部分
+            # mylog.log_list(e1)
+            # -------------------------test
+            if step % FLAGS.evaluate_every == 0 and step != 0:
+                test_q, test_r, labels = \
+                    dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index,
+                                              100)  # 一次读取2个batch
+                valid_step(sess, lstm, 0, train_op, test_q, test_r, labels, merged, writer, dh)
 
 
 if __name__ == '__main__':

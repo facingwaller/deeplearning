@@ -5,18 +5,20 @@
 
 import tensorflow as tf
 from tensorflow.contrib import rnn
-from QA.bilstm import biLSTM,biLSTM2
+from QA.bilstm import biLSTM, biLSTM2
 from QA.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature
 
 
 class CustomNetwork:
-    def init_config(self,model):
+    def init_config(self, model):
         if model == "debug":
             self.need_cal_attention = True
         else:
             self.need_cal_attention = False
         print(1)
-    def __init__(self, max_document_length, word_d, num_classes, num_hidden, embedding_size, rnn_size,model,need_cal_attention):
+
+    def __init__(self, max_document_length, word_d, num_classes, num_hidden, embedding_size, rnn_size, model,
+                 need_cal_attention):
         # ===================初始化参数
         self.timesteps = max_document_length  # max_document_length，这个就是那个维度？
         self.num_input = word_d  # 类比句子的长度,在这里就是一个单词要向量化的维度？
@@ -30,8 +32,8 @@ class CustomNetwork:
 
         self.build_inputs()
         self.build_LSTM_network()
-        if self.need_cal_attention:
-            self.cal_attention()
+        # if self.need_cal_attention:
+        # self.cal_attention()
         self.cos_sim()
 
     def build_inputs(self):
@@ -39,11 +41,14 @@ class CustomNetwork:
             self.ori_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 问题
             self.cand_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 正确答案
             self.neg_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 错误答案
+
+            self.test_input_q = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试问题
+            self.test_input_r = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试关系
             # [num_seqs,num_steps] 等价于 [timesteps, num_input]
         with tf.device("/cpu:0"), tf.name_scope("embedding_layer"):
             # 方法1，char-rnn中的办法,如果报错就改成方法2，随机初始化一个W / embedding
 
-            self.embedding = tf.get_variable('embedding', [self.embedding_size,self.num_hidden ], trainable=True)
+            self.embedding = tf.get_variable('embedding', [self.embedding_size, self.num_hidden], trainable=True)
             # embedding = tf.Variable(tf.random_normal([self.num_classes, self.embedding_size]))
             # 方法2，QA_LSTM中的方法
             # embeddings 是一个list(大小为词汇的数量)，list中每个成员也是一个list（大小是单个词的维度）;
@@ -53,15 +58,22 @@ class CustomNetwork:
             self.cand_quests = tf.nn.embedding_lookup(self.embedding, self.cand_input_quests)
             self.neg_quests = tf.nn.embedding_lookup(self.embedding, self.neg_input_quests)
 
+            self.test_q = tf.nn.embedding_lookup(self.embedding, self.test_input_q)
+            self.test_r = tf.nn.embedding_lookup(self.embedding, self.test_input_r)
+
             tf.summary.histogram("embedding", self.embedding)  # 可视化观看变量
 
     def build_LSTM_network(self):
-        with tf.variable_scope("LSTM_scope1", reuse=None) as scop1:  # 为什么要强调 reuse = None
-            self.ori_q = biLSTM(self.ori_quests, self.rnn_size,reuse=None)  # embedding size 之前设定是300
+        with tf.variable_scope("LSTM_scope1", reuse=None) as scop1:
+            self.ori_q = biLSTM(self.ori_quests, self.rnn_size, reuse=None)  # embedding size 之前设定是300
         with tf.variable_scope("LSTM_scope1", reuse=True) as scop2:
             self.cand_a = biLSTM(self.cand_quests, self.rnn_size)
         with tf.variable_scope("LSTM_scope1", reuse=True) as scop3:
             self.neg_a = biLSTM(self.neg_quests, self.rnn_size)
+
+        with tf.variable_scope("LSTM_scope1", reuse=True) as scop4:
+            self.test_q_out = biLSTM(self.test_q, self.rnn_size)
+            self.test_r_out = biLSTM(self.test_r, self.rnn_size)
 
     def cal_attention(self):
         with tf.name_scope("att_weight"):
@@ -77,16 +89,25 @@ class CustomNetwork:
                     [self.attention_matrix_size, 1], stddev=0.1))
             }
             # 获取特征
-            ori_q_feat, cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W)
-            ori_nq_feat, neg_q_feat = get_feature(self.ori_q, self.neg_a, att_W)
-            # test_q_out, test_a_out = get_feature(self.test_q_out, self.test_a_out, att_W)
+            self.ori_q_feat, self.cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W)
+            self.ori_nq_feat, self.neg_q_feat = get_feature(self.ori_q, self.neg_a, att_W)
+            # self.test_q_out, self.test_a_out = get_feature(self.test_q_out, self.test_a_out, att_W)
         print("cal_attention")
 
     def cos_sim(self):
         self.ori_cand = feature2cos_sim(self.ori_q, self.cand_a)
         self.ori_neg = feature2cos_sim(self.ori_q, self.neg_a)
+        # self.ori_cand = feature2cos_sim(self.ori_q_feat, self.cand_q_feat)
+        # print("ori_cand-----------")
+        # print(self.ori_cand)
+        # self.ori_neg = feature2cos_sim(self.ori_q_feat, self.neg_q_feat)
+        # print("ori_neg-----------")
+        # print(self.ori_neg)
+
         self.loss, self.acc = cal_loss_and_acc(self.ori_cand, self.ori_neg)
-        # 计算相似度
+
+        # 计算问题和关系的相似度
+        self.test_q_r = feature2cos_sim( self.test_q_out , self.test_r_out)
 
     # X [None, timesteps, num_input]
     # 第一版，定个小目标使用1个RNN  ---!!!

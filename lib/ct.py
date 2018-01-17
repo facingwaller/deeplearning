@@ -10,6 +10,15 @@ class classObject:
 
 
 class ct:
+    # 新建一个简单的结构体
+    @staticmethod
+    def new_struct():
+        return classObject()
+
+    @staticmethod
+    def get_key(st):
+        return st.score
+
     @staticmethod
     def random_get_one_from_list(list):
         return list[random.randint(0, len(list) - 1)]
@@ -37,9 +46,13 @@ class ct:
     @staticmethod
     def padding_line(line, max_len, padding_num):
         padding = max_len - len(line)
+        # max = min(max_len,len(line))
         for index in range(padding):
             line.append(padding_num)
-        return np.array(line)
+        line_tmp = []
+        for i in range(max_len):
+            line_tmp.append(line[i])
+        return np.array(line_tmp)
 
     # ----------------webquestions 相关
     @staticmethod
@@ -185,7 +198,7 @@ class ct:
                 g2 = "".join(gs)
                 # print(g2)
         except Exception as e1:
-            print(e1)
+            # print(e1)
             read_from_gzip_error = True
 
         if read_from_gzip_error:
@@ -198,7 +211,8 @@ class ct:
                         gs.append(str(g1))
                     g2 = "".join(gs)
             except Exception as e1:
-                print(e1)
+                # print(e1)
+                aaaa = 1
 
         return g2
 
@@ -291,6 +305,14 @@ class ct:
         #
         return relation_path_rs_all, relation_path_rs_str_all
 
+    # 获取除了指定关系外的 关系
+    @staticmethod
+    def get_all_relations_except_ps(ps, ps_to_except):
+        ps_to_return = []
+        for p in ps:
+            if p not in ps_to_except:
+                ps_to_return.append(p)
+        return ps_to_return
     # 获取除了指定关系外的随机一个关系
     @staticmethod
     def get_one_relations_except_ps(ps, ps_to_except):
@@ -315,7 +337,7 @@ class ct:
         # print("# 4 将关系路径合并")
         relation_path_rs_all, relation_path_rs_str_all \
             = ct.combine_relations(relations)
-        print(relation_path_rs_str_all)
+        # print(relation_path_rs_str_all)
         # print("# 5 剔除掉指定关系后随机获得一个,临时取前2个排除后随机取一个")
         ps_to_except = ps_to_except or relation_path_rs_str_all[0:2]
         r3 = ct.get_one_relations_except_ps(relation_path_rs_str_all, ps_to_except)
@@ -323,12 +345,35 @@ class ct:
         # print(r3)
         return r3
 
+    # 读取实体的所有的neg关系
+    def read_entity_and_get_all_neg_relations(entity_id="10th_of_august", ps_to_except=[]):
+        # 1 读取json
+        path = r"D:\ZAIZHI\freebase-data\topic-json"
+        tj_gzip = ct.read_rdf_from_gzip_or_alias(path, entity_id)
+        # 2 转换成json
+        id, ps_name_list, json_file = ct.find_id_ps_json_from_file(tj_gzip)
+        # 3 从json中提取出关系路径
+        ids, relations = ct.json_has_text_all(json_file)
+        # print(ids)
+        # print("# 4 将关系路径合并")
+        relation_path_rs_all, relation_path_rs_str_all \
+            = ct.combine_relations(relations)
+        # print(relation_path_rs_str_all)
+        # print("# 5 剔除掉指定关系后随机获得一个,临时取前2个排除后随机取一个")
+        ps_to_except = ps_to_except or relation_path_rs_str_all[0:2]
+        r3 = ct.get_all_relations_except_ps(relation_path_rs_str_all, ps_to_except)
+        # print(relations)
+        # print(r3)
+        return r3
+
+
+
     # 读取实体的所有关系
     @staticmethod
     def read_entity_and_get_all_relations(entity_id="10th_of_august"):
         # 1 读取json
-        # path = r"D:\ZAIZHI\freebase-data\topic-json"
-        path = r"F:\3_Server\freebase-data\topic-json2"
+        path = r"D:\ZAIZHI\freebase-data\topic-json"
+        # path = r"F:\3_Server\freebase-data\topic-json2"
         tj_gzip = ct.read_rdf_from_gzip_or_alias(path, entity_id)
         # 2 转换成json
         id, ps_name_list, json_file = ct.find_id_ps_json_from_file(tj_gzip)
