@@ -27,11 +27,11 @@ tf.flags.DEFINE_string('input_file_train', '../data/simple_questions/annotated_f
                        'utf8 encoded text file')
 tf.flags.DEFINE_string('input_file_test', '', 'utf8 encoded text file')
 tf.flags.DEFINE_string('input_file_freebase', '', 'utf8 encoded text file')
-tf.flags.DEFINE_integer("epoches", 200, "epoches")
+tf.flags.DEFINE_integer("epoches", 100, "epoches")
 tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
-tf.flags.DEFINE_integer("rnn_size", 300, "LSTM 隐藏层的大小 ")
+tf.flags.DEFINE_integer("rnn_size", 100, "LSTM 隐藏层的大小 ")
 tf.flags.DEFINE_integer("batch_size", 1, "batch_size")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "embedding size")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
@@ -148,6 +148,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         lstm.test_input_r: test_r,
     }
 
+
     test_q_r_cosin = sess.run(
         [lstm.test_q_r],
         feed_dict=feed_dict)
@@ -157,9 +158,15 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     right, wrong, score = [0.0] * 3
     st_list = []  # 各个关系的得分
 
+    # 用第一个和其他的比较
+    for i in range(1, len(test_q_r_cosin)):
+        compare_res =ct.nump_compare_matix(test_q_r_cosin[0],test_q_r_cosin[i])
+        print("compare_res:"+str(compare_res))
+
     for i in range(0, len(test_q_r_cosin)):
         st = ct.new_struct()
         st.index = i
+        st.cosine_matix = test_q_r_cosin[i]
         ori_cand_score_mean = np.mean(test_q_r_cosin[i])
         st.score = ori_cand_score_mean
         st_list.append(st)
@@ -168,6 +175,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     st_list.sort(key=ct.get_key)
     st_list.reverse()
     st_list_sort = st_list  # 取全部 st_list[0:5]
+    # st_list_sort=ct.nump_sort(st_list)
 
     mylog.logger.info("==============")
     for st in st_list_sort:  # 取5个

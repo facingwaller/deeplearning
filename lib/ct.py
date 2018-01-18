@@ -27,10 +27,6 @@ class ct:
         return classObject()
 
     @staticmethod
-    def get_key(st):
-        return st.score
-
-    @staticmethod
     def random_get_one_from_list(list):
         return list[random.randint(0, len(list) - 1)]
 
@@ -340,12 +336,12 @@ class ct:
     # --获取指定id的样本
     @staticmethod
     def get_static_id_list_debug():
-        return [ 1]
+        return [1]
 
     # --获取指定个数的错误关系
     @staticmethod
     def get_static_num_debug():
-        return 1
+        return 2
 
     # 获取除了指定关系外的随机一个关系
     @staticmethod
@@ -357,8 +353,8 @@ class ct:
         # index = random.randint(0, len(ps_to_return) - 1)
         # todo : 临时改成 固定2个随机
         num = min(ct.get_static_num_debug(), len(ps_to_return))
-        index = random.randint(0, num)
-        return ps_to_return[index],index
+        index = random.randint(0, num - 1)
+        return ps_to_return[index], index
 
     # 读取实体的neg关系,返回1个neg关系和他对应在neg关系集合里的index
     @staticmethod
@@ -368,10 +364,10 @@ class ct:
         # print(relation_path_rs_str_all)
         # print("# 5 剔除掉指定关系后随机获得一个,临时取前2个排除后随机取一个")
         ps_to_except = ps_to_except or relation_path_rs_str_all[0:2]
-        r3 ,index= ct.get_one_relations_except_ps(relation_path_rs_str_all, ps_to_except)
+        r3, index = ct.get_one_relations_except_ps(relation_path_rs_str_all, ps_to_except)
         # print(relations)
         # print(r3)
-        return r3,index
+        return r3, index
 
     # 读取实体的所有的neg关系
     @staticmethod
@@ -519,9 +515,75 @@ class ct:
         f1_writer.write(msg + "\n")
         f1_writer.close()
 
+    @staticmethod
+    def get_key(st):
+        return st.score
+
+    @staticmethod
+    def get_key_matix(st):
+        return st.cosine_matix
+
+    @staticmethod
+    def nump_compare_matix(a, b):
+        greater_than_0 = 0 > (a - b)
+        high = 0
+        low = 0
+        for i in greater_than_0:
+            if i:
+                high += 1
+            else:
+                low += 1
+        if high >= low:
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def nump_sort(list):
+        # 选择排序
+        new_list = []
+
+        # max = list[0]
+
+        for j in range(len(list)):
+            max = list[j]
+            maxindex = j
+            current = j
+            for k in range(len(list)):
+                if not ct.nump_compare_matix(ct.get_key_matix(max),
+                                             ct.get_key_matix(list[k])):
+                    max = list[k]
+                    maxindex = k
+            # 交换
+            tmp = list[maxindex]
+            list[maxindex] = list[current]
+            list[current] = tmp
+        return list
+
+
+    @staticmethod
+    def test_nump_sort():
+        a= ct.new_struct()
+        a.deep =1
+        a.cosine_matix= np.ndarray([3,3,3])
+
+        b = ct.new_struct()
+        b.deep = 1
+        b.cosine_matix =np.ndarray([1,1,1])
+
+        c = ct.new_struct()
+        c.deep = 1
+        c.cosine_matix = np.ndarray([2,2,2])
+        l = []
+        l.append(a)
+        l.append(b)
+        l.append(c)
+        ct.nump_sort(l)
+        print(l)
 
 if __name__ == "__main__":
-    ct.log3("1111")  # 测试日志 ok
+    ct.test_nump_sort()
+    # ct.log3("1111")  # 测试日志 ok
     # ct.test_decode_all_relations()
     # ct.test_random_get_one_from_list()
 
