@@ -4,10 +4,16 @@ import gzip
 import codecs
 import numpy as np
 import re
+import datetime
+import time
+
 
 class classObject:
     pass
+
+
 from lib.config import config
+
 
 class ct:
     # -------------------配置
@@ -26,6 +32,10 @@ class ct:
 
     @staticmethod
     def random_get_one_from_list(list):
+        return list[random.randint(0, len(list) - 1)]
+
+    @staticmethod
+    def random_get_item_from_list(list):
         return list[random.randint(0, len(list) - 1)]
 
     @staticmethod
@@ -246,11 +256,12 @@ class ct:
         for index in range(0, len(r_relation)):
             # r1.split("@@")[0] # 关系
             # r1.split("@@")[1] # 深度
-            a1 = classObject()  # current
+            # a1 = classObject()  # current
             r1 = r_relation[index]
             # try:
-            a1.relation = r1.split("@@")[0]
-            a1.deep = r1.split("@@")[1]
+            relation = r1.split("@@")[0]
+            deep = r1.split("@@")[1]
+            a1 = (relation, deep)
             # except Exception as e1:
             #     print(e1)
             #     continue
@@ -260,9 +271,10 @@ class ct:
                 continue
             else:
                 r0 = r_relation[index - 1]  # 上一个
-                a0 = classObject()
-                a0.relation = r0.split("@@")[0]
-                a0.deep = r0.split("@@")[1]
+
+                relation = r0.split("@@")[0]
+                deep = r0.split("@@")[1]
+                a0 = (relation, deep)
 
             # a1.deep < a0.deep  1 , 2 , 1
             # 不存储且输出，且清空(a1.deep 到 a0.deep的长度),再存储,
@@ -271,7 +283,7 @@ class ct:
             # 替换存储且输出，不清空
             # a1.deep > a0.deep
             # 存储不输出，不清空
-            if int(a1.deep) < int(a0.deep):  # 不存储且输出，且清空
+            if int(a1[1]) < int(a0[1]):  # 不存储且输出，且清空
                 # relation_path_rs_all.append()
                 # ct.add_relation_path_rs(relation_path_rs)
                 # 输出
@@ -279,20 +291,20 @@ class ct:
                 # for _r1 in relation_path_rs:
                 #     temp_r.append(_r1)  # 取出当前存的，然后输出
                 relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
-                if int(a0.deep) ==3 and int(a0.deep) - int(a1.deep) == 1:
+                if int(a0[1]) == 3 and int(a0[1]) - int(a1[1]) == 1:
                     # 2 3->2 清空 3 2 ;
                     # 1 2->1 清空 1 2
-                    tmp1=relation_path_rs[0]
+                    tmp1 = relation_path_rs[0]
                     relation_path_rs = []  # 清空
                     relation_path_rs.append(tmp1)
                 else:
                     relation_path_rs = []  # 清空 1 2  3->1 清空3 2 1
                 relation_path_rs.append(a1)  # 存储进临时队列
-            elif int(a1.deep) == int(a0.deep):  # 不存储且输出，不清空
+            elif int(a1[1]) == int(a0[1]):  # 不存储且输出，不清空
                 relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))  # 输出
                 # 替换存储
                 relation_path_rs[len(relation_path_rs) - 1] = a1
-            elif int(a1.deep) > int(a0.deep):
+            elif int(a1[1]) > int(a0[1]):
                 relation_path_rs.append(a1)  # 存储进临时队列
             else:
                 print("...ERROR...")
@@ -300,11 +312,17 @@ class ct:
         # if len(relation_path_rs) > 0:  # 输出
         #     relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
 
+        new_rs = []
+        for r in relation_path_rs_all:
+            if r not in new_rs:
+                new_rs.append(r)
+
+        relation_path_rs_all = new_rs
         # 展开一个关系
         for x in relation_path_rs_all:
             temp_relation = ""
             for o_r in x:
-                temp_relation += str(o_r.relation + " ").replace("/", " ").replace("_", " ")
+                temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
             # 增加关系
             relation_path_rs_str_all.append(temp_relation)
         #
@@ -318,6 +336,17 @@ class ct:
             if p not in ps_to_except:
                 ps_to_return.append(p)
         return ps_to_return
+
+    # --获取指定id的样本
+    @staticmethod
+    def get_static_id_list_debug():
+        return [ 1]
+
+    # --获取指定个数的错误关系
+    @staticmethod
+    def get_static_num_debug():
+        return 1
+
     # 获取除了指定关系外的随机一个关系
     @staticmethod
     def get_one_relations_except_ps(ps, ps_to_except):
@@ -325,45 +354,31 @@ class ct:
         for p in ps:
             if p not in ps_to_except:
                 ps_to_return.append(p)
-        index = random.randint(0, len(ps_to_return) - 1)
-        return ps_to_return[index]
+        # index = random.randint(0, len(ps_to_return) - 1)
+        # todo : 临时改成 固定2个随机
+        num = min(ct.get_static_num_debug(), len(ps_to_return))
+        index = random.randint(0, num)
+        return ps_to_return[index],index
 
-    # 读取实体的neg关系
+    # 读取实体的neg关系,返回1个neg关系和他对应在neg关系集合里的index
     @staticmethod
     def read_entity_and_get_neg_relation(entity_id="10th_of_august", ps_to_except=[]):
-        # 1 读取json
-        path = ct.get_topic_path()
-        tj_gzip = ct.read_rdf_from_gzip_or_alias(path, entity_id)
-        # 2 转换成json
-        id, ps_name_list, json_file = ct.find_id_ps_json_from_file(tj_gzip)
-        # 3 从json中提取出关系路径
-        ids, relations = ct.json_has_text_all(json_file)
-        # print(ids)
-        # print("# 4 将关系路径合并")
         relation_path_rs_all, relation_path_rs_str_all \
-            = ct.combine_relations(relations)
+            = ct.read_entity_and_get_all_relations(entity_id)
         # print(relation_path_rs_str_all)
         # print("# 5 剔除掉指定关系后随机获得一个,临时取前2个排除后随机取一个")
         ps_to_except = ps_to_except or relation_path_rs_str_all[0:2]
-        r3 = ct.get_one_relations_except_ps(relation_path_rs_str_all, ps_to_except)
+        r3 ,index= ct.get_one_relations_except_ps(relation_path_rs_str_all, ps_to_except)
         # print(relations)
         # print(r3)
-        return r3
+        return r3,index
 
     # 读取实体的所有的neg关系
     @staticmethod
     def read_entity_and_get_all_neg_relations(entity_id="10th_of_august", ps_to_except=[]):
-        # 1 读取json
-        path = ct.get_topic_path()
-        tj_gzip = ct.read_rdf_from_gzip_or_alias(path, entity_id)
-        # 2 转换成json
-        id, ps_name_list, json_file = ct.find_id_ps_json_from_file(tj_gzip)
-        # 3 从json中提取出关系路径
-        ids, relations = ct.json_has_text_all(json_file)
-        # print(ids)
-        # print("# 4 将关系路径合并")
+
         relation_path_rs_all, relation_path_rs_str_all \
-            = ct.combine_relations(relations)
+            = ct.read_entity_and_get_all_relations(entity_id)
         # print(relation_path_rs_str_all)
         # print("# 5 剔除掉指定关系后随机获得一个,临时取前2个排除后随机取一个")
         ps_to_except = ps_to_except or relation_path_rs_str_all[0:2]
@@ -371,8 +386,6 @@ class ct:
         # print(relations)
         # print(r3)
         return r3
-
-
 
     # 读取实体的所有关系
     @staticmethod
@@ -389,7 +402,50 @@ class ct:
         # print("# 4 将关系路径合并")
         relation_path_rs_all, relation_path_rs_str_all \
             = ct.combine_relations(relations)
-        return relation_path_rs_all
+        return relation_path_rs_all, relation_path_rs_str_all
+
+    @staticmethod
+    def decode_all_relations(
+            line="/m/01npcy7@@1~/m/0220tgk@@2~/m/0220tgn@@3^/tv/tv_actor/starring_roles@@1~/tv/regular_tv_appearance/character@@2~text@@3"):
+        r_entity = line.split('^')[0].split('~')
+        r_relation = line.split('^')[1].split('~')
+
+        relation_path_rs = []  # 关系路径中的关系集合
+        index = 0
+        # 构建1或者2跳的关系路径，如果是下一跳没有上一跳深度则重新入容器
+        # 最后组织成路径容器，然后随机选择路径?
+        relation_path_rs_all = []  # 路径集合的 容器
+
+        for r1 in r_relation:
+            index += 1
+            # r1.split("@@")[0] # 关系
+            # r1.split("@@")[1] # 深度
+            # a = classObject()
+            try:
+                relation = r1.split("@@")[0]
+                deep = r1.split("@@")[1]
+                a = (relation, deep)
+            except Exception as e1:
+                print(e1)
+            if int(a[1]) == 1 and len(relation_path_rs) > 0:  # 清空之前的存储
+                relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
+                # relation_path_rs.clear()  # 清空
+                relation_path_rs = []
+
+            relation_path_rs.append(a)
+
+        if len(relation_path_rs) > 0:  # 清理掉存储
+            relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
+
+        # one_relation = ct.random_get_one_from_list(relation_path_rs_all)
+        # print(relation_path_rs_all)
+        new_rs = []
+        for r1 in relation_path_rs_all:
+            if r1 not in new_rs:
+                new_rs.append(r1)
+
+        # relation_path_rs_all = list(set(relation_path_rs_all))
+        return new_rs
 
     @staticmethod
     def clean_str(string):
@@ -416,30 +472,61 @@ class ct:
     # ---去掉头尾空格，变成全小写，去掉?和.
     @staticmethod
     def clean_str_simple(string):
-        return str(string).strip().lower().replace("?","").replace(".","").replace("'s","")
+        return str(string).strip().lower().replace("?", "").replace(".", "").replace("'s", "")
 
     @staticmethod
-    def check_len(list,len):
+    def check_len(list, len):
         try:
-            for l1  in list:
-                 if l1.size != len:
-                        print(1)
-                        return False
+            for l1 in list:
+                if l1.size != len:
+                    print(1)
+                    return False
         except Exception as e1:
             print(e1)
         return True
 
+    @staticmethod
+    def test_decode_all_relations():
+        test = "/m/0ddqw@@1~/m/0gx626p@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/02t8dyx@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/0k3r24@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/01xpnt9@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/0k3r3v@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/0k2h24@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/0k6jzp@@2~/m/01tnbn@@3^/tv/tv_character/appeared_in_tv_program@@1~/tv/regular_tv_appearance/actor@@2~text@@3~/tv/tv_character/appeared_in_tv_program@@1~/tv/regular_tv_appearance/actor@@2~text@@3~/film/film_character/portrayed_in_films@@1~/film/performance/actor@@2~text@@3~/film/film_character/portrayed_in_films@@1~/film/performance/actor@@2~text@@3~/film/film_character/portrayed_in_films@@1~/film/performance/actor@@2~text@@3~/film/film_character/portrayed_in_films@@1~/film/performance/actor@@2~text@@3~/film/film_character/portrayed_in_films@@1~/film/performance/actor@@2~text@@3"
+        r = ct.decode_all_relations(test)
+        print(len(r))
+
+    @staticmethod
+    def test_xxx():
+        relation_path_rs_all = ct.read_entity_and_get_all_relations("100_metres")
+        for r1 in relation_path_rs_all:
+            for r11_index in range(0, len(r1)):
+                if int(r1[r11_index].deep) != (r11_index + 1):
+                    print(r1[r11_index].deep)
+                    print(1111111111111111111111111111)
+
+    @staticmethod
+    def just_log(file_name, msg):
+        f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
+        f1_writer.write(msg + "\n")
+        f1_writer.close()
+
+    # -- 记录到log3 文件
+    time_str1 = str(time.time())
+
+    @staticmethod
+    def log3(msg):
+
+        time_str = time.strftime('%Y-%m-%d-%H ', time.localtime(time.time()))
+        time_str += ct.time_str1
+        file_name = "log3/" + time_str + ".txt"
+        f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
+        f1_writer.write(msg + "\n")
+        f1_writer.close()
+
 
 if __name__ == "__main__":
+    ct.log3("1111")  # 测试日志 ok
+    # ct.test_decode_all_relations()
     # ct.test_random_get_one_from_list()
-    relation_path_rs_all = ct.read_entity_and_get_all_relations("100_metres")
-    for  r1 in relation_path_rs_all:
-        for r11_index in range(0,len(r1)):
-            if int(r1[r11_index].deep) != (r11_index+1):
-                print(r1[r11_index].deep)
-                print(1111111111111111111111111111)
-            else:
-                print(r1[r11_index].deep)
+
+    # else:
+    # print(r1[r11_index].deep)
 
 
-    print(relation_path_rs_all)
+    # print(relation_path_rs_all)

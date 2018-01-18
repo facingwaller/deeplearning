@@ -14,13 +14,15 @@ import datetime
 import pickle
 import logging
 import logging.handlers
+import codecs
 # from gensim.models import word2vec
 # from gensim import models
 
 ''' 日志  '''
 LOG_FILE = 'log2/' + str(time.time()) + '.txt'
 handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024 * 1024, backupCount=5)  # 实例化handler
-fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(message)s'
+# fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(message)s'
+fmt = '%(message)s'
 formatter = logging.Formatter(fmt)  # 实例化formatter
 handler.setFormatter(formatter)  # 为handler添加formatter
 logger = logging.getLogger('tst')  # 获取名为tst的logger
@@ -35,3 +37,5 @@ def log_list(obj):
         logger.info(l1)
 def get_logger():
     return logger
+
+

@@ -120,8 +120,8 @@ def cal_loss_and_acc_try(ori_cand, ori_neg):
     """
      losses  = max(zero , 0.2的矩阵-(ori_cand - ori_neg))
      acc = loss 是 0 的比例
-    :param ori_cand:
-    :param ori_neg:
+    :param ori_cand:正例
+    :param ori_neg:反例
     :return:
     """
     # the target function
@@ -130,7 +130,7 @@ def cal_loss_and_acc_try(ori_cand, ori_neg):
     # 创建一个维度为dims，值为value的tensor对象．该操作会创建一个维度为dims的tensor对象，
     # 并将其值设置为value，该tensor对象中的值类型和value一致
     zero = tf.fill(tf.shape(ori_cand), 0.0)
-    margin = tf.fill(tf.shape(ori_cand), 0.2)
+    margin = tf.fill(tf.shape(ori_cand), 0.2) # 0.2
     with tf.name_scope("loss"):
         # tf.maximum(a,b),返回的是a,b之间的最大值
         loss_tmp = tf.subtract(ori_cand, ori_neg)

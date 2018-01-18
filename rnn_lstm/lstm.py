@@ -135,7 +135,7 @@ logger.info("y=====")
 # # print("time"+"\t\t"+str(datetime.datetime.now().isoformat()))
 #
 # # Split train/test set
-# # # TODO: This is very crude(粗糙), should use cross-validation（交叉验证）
+# # # TO DO: This is very crude(粗糙), should use cross-validation（交叉验证）
 # dev_sample_index = -1 * int(FLAGS.dev_sample_percentage * float(len(y)))
 # x_train, x_dev = x_shuffled[:dev_sample_index], x_shuffled[dev_sample_index:]
 # y_train, y_dev = y_shuffled[:dev_sample_index], y_shuffled[dev_sample_index:]

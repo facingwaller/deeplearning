@@ -32,13 +32,14 @@ tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
 tf.flags.DEFINE_integer("rnn_size", 300, "LSTM 隐藏层的大小 ")
-tf.flags.DEFINE_integer("batch_size", 100, "batch_size")
+tf.flags.DEFINE_integer("batch_size", 1, "batch_size")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "embedding size")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_boolean("need_cal_attention", False, "need_cal_attention ")
 tf.flags.DEFINE_integer("check", 500000, "Number of checkpoints to store (default: 5)")
-tf.flags.DEFINE_integer("evaluate_every", 10, "evaluate_every")
-tf.flags.DEFINE_integer("test_batchsize", 10, "test_batchsize ")
+tf.flags.DEFINE_integer("evaluate_every", 5, "evaluate_every")
+tf.flags.DEFINE_integer("test_batchsize", 1, "test_batchsize ")
+
 
 # ----------------------------------- execute train model ---------------------------------
 # --不用
@@ -102,13 +103,13 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
     # ct.check_len(train_cand, 15)
     # ct.check_len(train_neg, 15)
     summary, l1, acc1, embedding1, train_op1, \
-    ori_cand_score, ori_neg_score, loss_t= sess.run(
+    ori_cand_score, ori_neg_score, loss_t = sess.run(
         [merged, lstm.loss, lstm.acc, lstm.embedding, train_op,
          lstm.ori_cand, lstm.ori_neg,
          lstm.loss_tmp],
         feed_dict=feed_dict)
     # print(loss_t)
-    mylog.log_list(loss_t)
+    # mylog.log_list(loss_t)
     time_str = datetime.datetime.now().isoformat()
     right, wrong, score = [0.0] * 3
     for i in range(0, len(train_q)):
@@ -120,13 +121,15 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
             wrong += 1.0
         score += ori_cand_score_mean - ori_neg_score_mean
     time_elapsed = time.time() - start_time
-    mylog.logger.info("%s: step %s, loss %s, acc %s, score %s, wrong %s, %6.7f secs/batch" % (
-        time_str, step, l1, acc1, score, wrong, time_elapsed))
 
     writer.add_summary(summary, step)
     # print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
-    print("%s: step %s, loss %s, acc %s, score %s, wrong %s, %6.7f secs/batch" % (
-        time_str, step, l1, acc1, score, wrong, time_elapsed))
+    info = "%s: step %s, loss %s, acc %s, score %s, wrong %s, %6.7f secs/batch" % (
+        time_str, step, l1, acc1, score, wrong, time_elapsed)
+    mylog.logger.info(info)
+    print(info)
+    if l1 == 0.0:
+        ct.log3("loss = 0.0 ")
     # print(1)
     if step % FLAGS.check == 0 and step != 0:
         checkpoint(sess)
@@ -164,25 +167,31 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     # 将得分和index结合，然后得分排序
     st_list.sort(key=ct.get_key)
     st_list.reverse()
-    st_list_sort = st_list[0:5]
+    st_list_sort = st_list  # 取全部 st_list[0:5]
+
+    mylog.logger.info("==============")
     for st in st_list_sort:  # 取5个
-        print("index:%d ,score= %f " % (st.index, st.score))
+        # print("index:%d ,score= %f " % (st.index, st.score))
+        # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
         # 得到得分排序前X的index
         # 根据index找到对应的关系数组
         # 得到得分最高的关系跟labels做判断是否是正确答案，加入统计
         better_index = st.index
         # 根据对应的关系数组找到对应的文字
-        r1 = dh.converter.arr_to_text(test_r[better_index])
-        print(r1)
+        r1 = dh.converter.arr_to_text_by_space(test_r[better_index])
+        # print(r1)
+        mylog.logger.info("st.index:%d,score:%f,r:%s" % (st.index, st.score, r1))
         # 输出对应的文字
         # print(r1)
     # test_r[best_index]
     is_right = False
+    msg = " win r =%d  " % st_list_sort[0].index
+    ct.log3(msg)
     if st_list_sort[0].index == 0:
-        print("ok")
+        print("================================================================ok")
         is_right = True
     else:
-        print("error relation")
+        print("================================================================error")
 
     time_elapsed = time.time() - start_time
     # mylog.logger.info("%s: step %s, score %s, wrong %s, %6.7f secs/batch" % (
@@ -211,7 +220,19 @@ def valid_batch(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
     return acc
 
 
-
+def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
+    test_q, test_r, labels = \
+        dh.batch_iter_wq_test_one_debug(dh.train_question_list_index, dh.train_relation_list_index)
+    right = 0
+    wrong = 0
+    for i in range(batchsize):
+        ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
+        if ok:
+            right += 1
+        else:
+            wrong += 1
+    acc = right / (right + wrong)
+    return acc
 
 
 # --
@@ -280,10 +301,12 @@ def main():
         # valid_step(sess, lstm, 0, train_op, test_q, test_r, labels, merged, writer, dh)
 
         # -------------------------train
+        is_degbug_the_same_bath = False
         for step in range(FLAGS.epoches):
-            train_q, train_cand, train_neg = \
-                dh.batch_iter_wq(dh.train_question_list_index, dh.train_relation_list_index,
-                                 batch_size=FLAGS.batch_size)  # 一次读取2个batch
+            if not is_degbug_the_same_bath:
+                train_q, train_cand, train_neg = \
+                    dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
+                                           batch_size=FLAGS.batch_size)
             # print("--------------begin")
             # print(train_q)
             # print(train_cand)
@@ -298,11 +321,14 @@ def main():
                 # test_q, test_r, labels = \
                 #     dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index,
                 #                               100)  # 一次读取2个batch
-                test_batchsize = 10
-                acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
+                test_batchsize = FLAGS.test_batchsize
+                # if is_degbug_the_same_bath:
+                acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
                 print("test_batchsize:%d  acc:%d " % (test_batchsize, acc))
+                # else:
+                #     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
+                #     print("test_batchsize:%d  acc:%d " % (test_batchsize, acc))
 
 
 if __name__ == '__main__':
     main()
-

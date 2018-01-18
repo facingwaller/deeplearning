@@ -257,14 +257,14 @@ class DataClass:
             self.relation_list_index.append(self.converter.text_to_arr_list(_))
         # 第一版本先padding到max长度
         padding_num = self.converter.vocab_size - 1
-        for index in range(0,len(self.question_list_index)):
+        for index in range(0, len(self.question_list_index)):
             self.question_list_index[index] = \
-                ct.padding_line(self.question_list_index[index],self.max_document_length,padding_num)
-        for index in range(0,len(self.relation_list_index)):
+                ct.padding_line(self.question_list_index[index], self.max_document_length, padding_num)
+        for index in range(0, len(self.relation_list_index)):
             self.relation_list_index[index] = \
-                ct.padding_line(self.relation_list_index[index],self.max_document_length,padding_num)
-        # for s in self.relation_list_index:
-        #     s = ct.padding_line(s,self.max_document_length,padding_num)
+                ct.padding_line(self.relation_list_index[index], self.max_document_length, padding_num)
+            # for s in self.relation_list_index:
+            #     s = ct.padding_line(s,self.max_document_length,padding_num)
             # 截断
         # 按比例分割训练和测试集
         rate = 0.8
@@ -340,11 +340,11 @@ class DataClass:
         for e1 in self.entity1_list:
             if e1 not in self.entitys:
                 print(e1)
-                self.just_log("../data/simple_questions/entitys_not_in_fb.txt", e1)
+                ct.just_log("../data/simple_questions/entitys_not_in_fb.txt", e1)
         print("compare============r1")
         for e1 in self.relation_list:
             if e1 not in self.relations:
-                self.just_log("../data/simple_questions/relations_not_in_fb.txt", e1)
+                ct.just_log("../data/simple_questions/relations_not_in_fb.txt", e1)
         print("compare============")
 
     def find_both_in_sq_and_freebase(self):
@@ -383,9 +383,9 @@ class DataClass:
                 print(rdf[1])
 
             if r1 or r2:
-                self.just_log("../data/simple_questions/rdf_not_in_fb.txt", str(rdf[0]) + "\t" + str(index))
+                ct.just_log("../data/simple_questions/rdf_not_in_fb.txt", str(rdf[0]) + "\t" + str(index))
             else:
-                self.just_log("../data/simple_questions/rdf_in_fb.txt", str(rdf[0]) + "\t" + str(index))
+                ct.just_log("../data/simple_questions/rdf_in_fb.txt", str(rdf[0]) + "\t" + str(index))
         print("compare============end")
 
     def init_relation_fb(self, file_name="../data/freebase/freebase_relation_clear.txt"):
@@ -516,6 +516,7 @@ class DataClass:
         :param batch_size:
         :return:
         """
+        print(111111111111)
         x = question_list_index.copy()
         y = relation_list_index.copy()
         x_new = []
@@ -524,6 +525,9 @@ class DataClass:
         length = len(x)
         shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
         # print("shuffle_indices", str(shuffle_indices))
+        # total_times = len(shuffle_indices) / batch_size
+        # print("total times : %d"%total_times)
+
         total = 0
         for index in shuffle_indices:
             x_new.append(x[index])
@@ -534,11 +538,18 @@ class DataClass:
             # （self.entity1_list）
             # s2 根据entity-name直接读取entity-id的gzip
             # 现在有2种方法，1 直接读取；2 或者
+
+            question = self.question_list[index]
             name = self.entity1_list[index]
-            # print(name)
-            ps_to_except1 = self.relation_path_clear_str_all[index]  # 应该从另一个关系集合获取
+
+            # print(name) 得到该id所有的正确和错误的关系
+            ps_to_except1 = self.relation_list[index]  # 应该从另一个关系集合获取
+            ps_to_except1 = [ps_to_except1]
+
             length = len(x[index])
             r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
+            r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+
             # self.entitys[index]
             # print(r1)
             # r1 需要 取数字   补齐
@@ -548,12 +559,21 @@ class DataClass:
             # print("11111111111111111111111111")
             # print(len(r1))
             z_new.append(r1)
+            # print("q:%s e:%s     " % (question, name))
+            # mylog.logger.info("q:%s e:%s     " % (question, name))
+            # for r in ps_to_except1:
+            #     mylog.logger.info("r-right:%s       " % r)
+            # for r in r_all_neg:
+            #     mylog.logger.info("r-neg:%s       " % r)
 
             total += 1
             if total >= batch_size:
                 break
+                # total = 0
+                # yield np.array(x_new), np.array(y_new), np.array(z_new)
+        # print("````")
         # print("show shuffle_indices")
-        # print(shuffle_indices[0:batch_size])
+        print(shuffle_indices[0:batch_size])
         # 根据y 生成z，也就是错误的关系,当前先做1:1的比例
         # rate = 1
         # r_si = reversed(shuffle_indices)
@@ -565,12 +585,109 @@ class DataClass:
         #     total += 1
         #     if total >= batch_size:
         #         break
-        print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
+        # print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
 
         return np.array(x_new), np.array(y_new), np.array(z_new)
 
-    # --------------------生成test的batch
+    # -------------------测试生成同一批次的 debug 在测！！！
+    # todo: train data
+    def batch_iter_wq_debug(self, question_list_index, relation_list_index, batch_size=100):
+        """
+        web questions 的生成反例的办法
+        生成指定batch_size的数据
+        :param batch_size:
+        :return:
+        """
+        print("enter:batch_iter_wq_debug")
+
+        x = question_list_index.copy()
+        y = relation_list_index.copy()
+        x_new = []
+        y_new = []
+        z_new = []
+        length = len(x)
+        self.batch_size_degbug = batch_size
+        shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
+        shuffle_indices = ct.get_static_id_list_debug()  # [2808,1 ] # 临时设置成固定的
+
+        # 这个是设置随机1个
+        # self.shuffle_indices_debug = shuffle_indices[0:self.batch_size_degbug]
+
+        # 从固定里面随机取一个作为index
+        self.shuffle_indices_debug = ct.random_get_one_from_list(shuffle_indices)
+
+        # 到这里还是变成1个 也就是一次还是跑1个问题
+        msg1 = "shuffle_indices q= %s " % self.shuffle_indices_debug
+        mylog.logger.info(msg1)
+
+
+        total = 0
+        for index in shuffle_indices:
+            index = self.shuffle_indices_debug  # 将随机到的赋值给当前
+            x_new.append(x[index])
+            y_new.append(y[index])
+            # 对于z_new 加进去
+            #   根据index，寻找entity里面非relaiton的relation[]
+            # s1 获取entity;这个index是问句的index，问句对应了entity-name
+            # （self.entity1_list）
+            # s2 根据entity-name直接读取entity-id的gzip
+            # 现在有2种方法，1 直接读取；2 或者
+
+            question = self.question_list[index]
+            name = self.entity1_list[index]
+
+            # print(name)
+            # self.converter.arr_to_text_by_space(self.relation_list_index[2808])
+            ps_to_except1 = self.relation_list[index]  # 应该从另一个关系集合获取
+            ps_to_except1 = [ps_to_except1]
+            length = len(x[index])
+            r1,r1_index = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
+            r1_text = r1
+            r1 = self.converter.text_to_arr_list(r1)
+            r1 = ct.padding_line(r1, self.max_document_length, length)
+
+            r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+            z_new.append(r1)
+
+            info1 = "%d q:%s e:%s  %d,%d" % (index,question, name, len(ps_to_except1), len(r_all_neg))
+            print(info1)
+            mylog.logger.info(info1)
+
+            msg = "qid = %d,neg r=%d r=%s "%(index,r1_index,r1_text)
+            ct.log3(msg)
+            for r in ps_to_except1:
+                print("r-right %d :%s       " % (len(str(r).split(" ")), r))
+                mylog.logger.info("r-right %d :%s       " % (len(str(r).split(" ")), r))
+            # for r in r_all_neg:
+            #     mylog.logger.info("r-neg %d :%s       " % (len(str(r).split(" ")), r))
+
+            mylog.logger.info("r-neg %d,%d :%s       " % (r1_index,len(str(r).split(" ")), r1_text))
+            mylog.logger.info("=======================================")
+            total += 1
+            if total >= batch_size:
+                break
+
+        print(shuffle_indices[0:batch_size])
+        #  mylog.logger.info("======================================= end train data build")
+        print("leave:batch_iter_wq_debug")
+        return np.array(x_new), np.array(y_new), np.array(z_new)
+
+    # --第二版，使得每次产生的不重复
     # --------------------生成batch
+    def batch_iter_init(self):
+        length = len(self.question_list_index)
+        self.shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
+        self.shuffle_index = 0  # 索引
+        print(1)
+
+    def can_batch_wq(self, batch_size):
+        if self.shuffle_index + batch_size > len(self.shuffle_indices):
+            return False
+        else:
+            return True
+
+    # --------------------生成test的batch
+    # --------------------生成batch 暂时不用
     def batch_iter_wq_test_one(self, question_list_index, relation_list_index, batch_size=100):
         """
         web questions
@@ -578,6 +695,7 @@ class DataClass:
         :param batch_size:
         :return:
         """
+
         x = question_list_index.copy()
         y = relation_list_index.copy()
         x_new = []  # 问题集合
@@ -595,8 +713,9 @@ class DataClass:
 
         name = self.entity1_list[index]
         # print(name)
-        ps_to_except1 = self.relation_path_clear_str_all[index]  # 应该从另一个关系集合获取
-        padding_num = self.converter.vocab_size-1
+        ps_to_except1 = self.relation_list[index]  # 应该从另一个关系集合获取
+        ps_to_except1 = [ps_to_except1]
+        padding_num = self.converter.vocab_size - 1
         # r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
         rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
 
@@ -649,6 +768,86 @@ class DataClass:
 
         return np.array(x_new), np.array(y_new), np.array(labels)
 
+    # todo: test data
+    def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, batch_size=100):
+        """
+        web questions
+        生成指定batch_size的数据
+        :param batch_size:
+        :return:
+        """
+        print("enter:batch_iter_wq_test_one_debug")
+        x = question_list_index.copy()
+        y = relation_list_index.copy()
+        x_new = []  # 问题集合
+        y_new = []  # 关系集合
+        z_new = []  #
+        labels = []  # 标签集合
+        length = len(x)
+        # print("x length %d " % length)
+        # shuffle_indices = self.shuffle_indices_debug
+        msg = "test id=%s " % self.shuffle_indices_debug
+        print(msg)
+        ct.log3(msg)
+        mylog.logger.info(msg)
+        # shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
+        # print("shuffle_indices", str(shuffle_indices))
+
+        # 使用这个问题的index作为测试的问题
+        index = self.shuffle_indices_debug
+
+        # index = ct.random_get_one_from_list(shuffle_indices)
+        # index = shuffle_indices[0]
+        # 当前给一个
+        # x_new.append(x[index])
+        # y_new.append(y[index])
+
+        name = self.entity1_list[index]
+
+        ps_to_except1 = self.relation_list[index]  # 应该从另一个关系集合获取
+        ps_to_except1 = [ps_to_except1]
+        padding_num = self.converter.vocab_size - 1
+        # r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
+        rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+
+        # rs = list(set(rs))
+        # 加入正确的
+        x_new.append(x[index])
+        y_new.append(y[index])
+        labels.append(True)
+        # print("batch_iter_wq_test_one_debug ")
+        mylog.logger.info("~~~~~~~~batch_iter_wq_test_one_debug ")
+        mylog.logger.info("entity:%s " % name)
+        # mylog.logger.info("relation:%s " % name)
+
+        # print(y[index])
+        r1_text = self.converter.arr_to_text_by_space(y[index])
+        print("r-right: %s" % r1_text)
+        mylog.logger.info("r-right: %s" % r1_text)
+
+        # 加入错误的
+        # todo : total is get_static_num_debug
+        rs_len = len(rs)
+        num = min(ct.get_static_num_debug(), rs_len)
+        rs = rs[0:num]
+        for r1 in rs:
+            r1_split = r1.split(" ")
+            r1 = self.converter.text_to_arr_list(r1_split)
+            r1_text = self.converter.arr_to_text_by_space(r1)
+            # ct.log3(r1_text)
+            mylog.logger.info("r1_neg in test %s"%r1_text)
+            # print(r1_text)
+            # mylog.logger.info("neg-r test:" + r1_text)
+            r1 = ct.padding_line(r1, self.max_document_length, padding_num)
+            x_new.append(x[index])
+            y_new.append(r1)  # neg
+            labels.append(False)
+
+        # print("show shuffle_indices")
+        print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
+        print("leave:batch_iter_wq_test_one_debug")
+        return np.array(x_new), np.array(y_new), np.array(labels)
+
     # --------------------按比例分割
     def cap_nums(self, y, rate=0.8):
         y = y.copy()
@@ -693,7 +892,7 @@ class DataClass:
                 line = ct.clean_str_simple(line)
                 entity1 = line.split('\t')[0]
                 relation_path = line.split('\t')[1]
-                answer = line.split('\t')[2]
+                # answer = line.split('\t')[2]
                 question = line.split('\t')[3]
 
                 self.entity1_list.append(entity1)
@@ -705,42 +904,44 @@ class DataClass:
                     self.relation_list.append("###")
                     continue
 
-                r_entity = relation_path.split('^')[0].split('~')
-                r_relation = relation_path.split('^')[1].split('~')
-
-                relation_path_rs = []  # 关系路径中的关系集合
-                index = 0
-                # 构建1或者2跳的关系路径，如果是下一跳没有上一跳深度则重新入容器
-                # 最后组织成路径容器，然后随机选择路径?
-                relation_path_rs_all = []  # 路径集合的 容器
-
-                for r1 in r_relation:
-                    index += 1
-                    # r1.split("@@")[0] # 关系
-                    # r1.split("@@")[1] # 深度
-                    a = classObject()
-                    try:
-                        a.relation = r1.split("@@")[0]
-                        a.deep = r1.split("@@")[1]
-                    except Exception as e1:
-                        print(e1)
-                    if int(a.deep) == 1 and len(relation_path_rs) > 0:  # 清空之前的存储
-                        relation_path_rs_all.append(self.add_relation_path_rs(relation_path_rs))
-                        # relation_path_rs.clear()  # 清空
-                        relation_path_rs = []
-
-                    relation_path_rs.append(a)
-
-                if len(relation_path_rs) > 0:  # 清理掉存储
-                    relation_path_rs_all.append(self.add_relation_path_rs(relation_path_rs))
-
+                # r_entity = relation_path.split('^')[0].split('~')
+                # r_relation = relation_path.split('^')[1].split('~')
+                #
+                # relation_path_rs = []  # 关系路径中的关系集合
+                # index = 0
+                # # 构建1或者2跳的关系路径，如果是下一跳没有上一跳深度则重新入容器
+                # # 最后组织成路径容器，然后随机选择路径?
+                # relation_path_rs_all = []  # 路径集合的 容器
+                #
+                # for r1 in r_relation:
+                #     index += 1
+                #     # r1.split("@@")[0] # 关系
+                #     # r1.split("@@")[1] # 深度
+                #     a = classObject()
+                #     try:
+                #         a.relation = r1.split("@@")[0]
+                #         a.deep = r1.split("@@")[1]
+                #     except Exception as e1:
+                #         print(e1)
+                #     if int(a.deep) == 1 and len(relation_path_rs) > 0:  # 清空之前的存储
+                #         relation_path_rs_all.append(self.add_relation_path_rs(relation_path_rs))
+                #         # relation_path_rs.clear()  # 清空
+                #         relation_path_rs = []
+                #
+                #     relation_path_rs.append(a)
+                #
+                # if len(relation_path_rs) > 0:  # 清理掉存储
+                #     relation_path_rs_all.append(self.add_relation_path_rs(relation_path_rs))
+                # 解出1行所有正确的关系，
+                relation_path_rs_all = ct.decode_all_relations(relation_path)
+                # 随机获取1行作为他的关系
                 one_relation = ct.random_get_one_from_list(relation_path_rs_all)
 
                 self.relation_path_one.append(one_relation)
                 # 展开一个关系，加入
                 temp_relation = ""
                 for o_r in one_relation:
-                    temp_relation += str(o_r.relation + " ").replace("/", " ").replace("_", " ")
+                    temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
                 self.relation_list.append(temp_relation)
                 # 处理一下添加到这里
                 # self.relation_list 这个格式是 空格隔开的单词
@@ -751,7 +952,7 @@ class DataClass:
                 for x in relation_path_rs_all:
                     temp_relation = ""
                     for o_r in x:
-                        temp_relation += str(o_r.relation + " ").replace("/", " ").replace("_", " ")
+                        temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
                     # 增加关系
                     relation_path_rs_str_all.append(temp_relation)
 
@@ -887,14 +1088,19 @@ def test2():
     # id, ps = d.find_entity_and_relations_paths(path=r"D:\ZAIZHI\freebase-data\topic-json", entity_id="012bg5")
     # print(id)
     # print(ps)
-    x, y, z = d.batch_iter_wq_test_one(d.train_question_list_index, d.train_relation_list_index,
-                              batch_size=10)
-    d.batch_iter(d.train_question_list_index, d.train_relation_list_index,
-                              batch_size=10)
 
-    d.batch_iter_wq(d.train_question_list_index, d.train_relation_list_index,
-                              batch_size=10)
-    print(z)
+    # d.batch_iter(d.train_question_list_index, d.train_relation_list_index,
+    #              batch_size=10)
+    for i in range(10):
+        d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
+                              batch_size=1)
+        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index,
+                                       batch_size=1)
+
+    print(11122222)
+
+
+    # print(z)
 
     # d.compare()
     # d = DataClass("debug")
@@ -904,7 +1110,6 @@ def test2():
 
 
 if __name__ == "__main__":
-    print("----d h")
     # a = read_rdf_from_gzip_or_alias(path=r"F:\3_Server\freebase-data\topic-json", file_name="1")
     # print(a)
     # clear_relation()

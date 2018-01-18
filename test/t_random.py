@@ -1,5 +1,7 @@
 import numpy as np
 import rnn_lstm.data_helpers as data_helpers
+
+
 import random
 y = [[1, 11],
      [2, 3],
