@@ -34,7 +34,7 @@ tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (d
 tf.flags.DEFINE_boolean("need_cal_attention", False, "need_cal_attention ")
 tf.flags.DEFINE_integer("check", 50000, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_integer("evaluate_every", 5, "evaluate_every")
-tf.flags.DEFINE_integer("test_batchsize", 1, "test_batchsize ")
+tf.flags.DEFINE_integer("test_batchsize",3, "test_batchsize ")
 
 
 # 测试模型的有效性的一个配置办法
@@ -310,7 +310,7 @@ def main():
                 else:
                     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
 
-                msg = "test_batchsize:%d  acc:%d " % (test_batchsize, acc)
+                msg = "test_batchsize:%d  acc:%f " % (test_batchsize, acc)
                 print(msg)
                 ct.log_vailed(msg)
 
