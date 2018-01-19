@@ -343,12 +343,12 @@ class ct:
     # --获取指定id的样本
     @staticmethod
     def get_static_id_list_debug():
-        return [1]
+        return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     # --获取指定个数的错误关系
     @staticmethod
     def get_static_num_debug():
-        return 1
+        return 999999
 
     # 获取除了指定关系外的随机一个关系
     @staticmethod

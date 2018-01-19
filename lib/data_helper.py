@@ -592,7 +592,7 @@ class DataClass:
         self.shuffle_indices_debug = ct.random_get_one_from_list(shuffle_indices)
 
         # 到这里还是变成1个 也就是一次还是跑1个问题
-        msg1 = "shuffle_indices q= %s " % self.shuffle_indices_debug
+        msg1 = "\n batch_iter_wq_debug index q= %s " % self.shuffle_indices_debug
         mylog.logger.info(msg1)
 
         total = 0
@@ -624,11 +624,11 @@ class DataClass:
             r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
             z_new.append(r1)
 
-            info1 = "%d q:%s e:%s  %d,%d" % (index, question, name, len(ps_to_except1), len(r_all_neg))
+            info1 = "index=%d q=%s e=%s  %d,%d" % (index, question, name, len(ps_to_except1), len(r_all_neg))
             print(info1)
             mylog.logger.info(info1)
 
-            msg = "qid = %d,neg r=%d r=%s " % (index, r1_index, r1_text)
+            msg = "qid=%d,neg r=%d r=%s " % (index, r1_index, r1_text)
             ct.log3(msg)
             for r in ps_to_except1:
                 print("r-right %d :%s       " % (len(str(r).split(" ")), r))
@@ -768,21 +768,29 @@ class DataClass:
         length = len(x)
         # print("x length %d " % length)
         # shuffle_indices = self.shuffle_indices_debug
-        msg = "test id=%s " % self.shuffle_indices_debug
-        print(msg)
-        ct.log3(msg)
-        mylog.logger.info(msg)
+        # index = self.shuffle_indices_debug
+
+
         # shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
         # print("shuffle_indices", str(shuffle_indices))
 
         # 使用这个问题的index作为测试的问题
-        index = self.shuffle_indices_debug
+        # index = index
 
-        # index = ct.random_get_one_from_list(shuffle_indices)
+        # index = self.shuffle_indices_debug
+        # 从debug的index集合里面随机挑选一个
+        index = ct.random_get_one_from_list(ct.get_static_id_list_debug())
         # index = shuffle_indices[0]
         # 当前给一个
         # x_new.append(x[index])
         # y_new.append(y[index])
+
+        # log
+        mylog.logger.info("batch_iter_wq_test_one_debug")
+        msg = "test id=%s " % index
+        print(msg)
+        ct.log3(msg)
+        mylog.logger.info(msg)
 
         name = self.entity1_list[index]
 
@@ -798,14 +806,17 @@ class DataClass:
         y_new.append(y[index])
         labels.append(True)
         # print("batch_iter_wq_test_one_debug ")
-        mylog.logger.info("~~~~~~~~batch_iter_wq_test_one_debug ")
+
         mylog.logger.info("entity:%s " % name)
         # mylog.logger.info("relation:%s " % name)
 
         # print(y[index])
         r1_text = self.converter.arr_to_text_by_space(y[index])
-        print("r-right: %s" % r1_text)
-        mylog.logger.info("r-right: %s" % r1_text)
+        q1_text = self.converter.arr_to_text_by_space(x[index])
+        r1_msg = "r-right: %s" % r1_text
+        q1_msg = "q : %s" % q1_text
+        mylog.logger.info(q1_msg)
+        mylog.logger.info(r1_msg)
 
         # 加入错误的
         # todo : total is get_static_num_debug
@@ -1004,10 +1015,18 @@ def test2():
     # print(e1)
     # print(d.batch_iter(2))
 
+def test_random_choose_indexs_debug():
+    d = DataClass("wq")
+    for i in range(2):
+        d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
+                        batch_size=10)
+        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index,
+                                 batch_size=10)
 
 if __name__ == "__main__":
     # a = read_rdf_from_gzip_or_alias(path=r"F:\3_Server\freebase-data\topic-json", file_name="1")
     # print(a)
     # clear_relation()
-    test2()
+    # test2()
+    test_random_choose_indexs_debug()
     # clear_relation()
