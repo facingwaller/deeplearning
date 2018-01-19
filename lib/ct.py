@@ -336,7 +336,7 @@ class ct:
     # --获取指定id的样本
     @staticmethod
     def get_static_id_list_debug():
-        return [1]
+        return [1,2]
 
     # --获取指定个数的错误关系
     @staticmethod

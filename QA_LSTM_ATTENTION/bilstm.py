@@ -19,6 +19,7 @@ def biLSTM(x, hidden_size):
 
     # input transformation
     input_x = tf.transpose(x, [1, 0, 2])
+    print("input_x 1:"+str(input_x))
     # input_x = tf.reshape(input_x, [-1, w])
     # input_x = tf.split(0, h, input_x)
     input_x = tf.unstack(input_x)  # [tf.pack] 和 [tf.unpack] 弃用，改为 [tf.stack] 和 [tf.unstack]。

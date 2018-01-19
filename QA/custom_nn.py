@@ -38,6 +38,7 @@ class CustomNetwork:
 
     def build_inputs(self):
         with tf.name_scope('inputs'):
+            self.ori_input_quests_tmp = tf.placeholder(tf.int32, [None, self.timesteps])  # 临时
             self.ori_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 问题
             self.cand_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 正确答案
             self.neg_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 错误答案
@@ -54,6 +55,7 @@ class CustomNetwork:
             # embeddings 是一个list(大小为词汇的数量)，list中每个成员也是一个list（大小是单个词的维度）;
             # embeddings = [vob_size * word_d]
             # W = tf.Variable(tf.to_float(self.embeddings), trainable=True, name="W")
+            self.ori_quests_tmp = tf.nn.embedding_lookup(self.embedding, self.ori_input_quests_tmp)
             self.ori_quests = tf.nn.embedding_lookup(self.embedding, self.ori_input_quests)
             self.cand_quests = tf.nn.embedding_lookup(self.embedding, self.cand_input_quests)
             self.neg_quests = tf.nn.embedding_lookup(self.embedding, self.neg_input_quests)
@@ -64,16 +66,27 @@ class CustomNetwork:
             tf.summary.histogram("embedding", self.embedding)  # 可视化观看变量
 
     def build_LSTM_network(self):
+        print("build_LSTM_network>>>>>>>>>>>>>>>>>>")
         with tf.variable_scope("LSTM_scope1", reuse=None) as scop1:
-            self.ori_q = biLSTM(self.ori_quests, self.rnn_size, reuse=None)  # embedding size 之前设定是300
+            dsadasda= 1 # 下面全部重用
+            # self.ori_quests_tmp
+            self.ori_q = biLSTM(self.ori_quests_tmp, self.rnn_size)  # embedding size 之前设定是300
         with tf.variable_scope("LSTM_scope1", reuse=True) as scop2:
+            self.ori_q = biLSTM(self.ori_quests, self.rnn_size)  # embedding size 之前设定是300
+            self.ori_q = biLSTM(self.ori_quests, self.rnn_size)  # embedding size 之前设定是300
             self.cand_a = biLSTM(self.cand_quests, self.rnn_size)
-        with tf.variable_scope("LSTM_scope1", reuse=True) as scop3:
+        # with tf.variable_scope("LSTM_scope1", reuse=True) as scop3:
             self.neg_a = biLSTM(self.neg_quests, self.rnn_size)
-
-        with tf.variable_scope("LSTM_scope1", reuse=True) as scop4:
+            print(self.ori_q)
+            print(self.cand_a)
+            print(self.neg_a)
+        # with tf.variable_scope("LSTM_scope1", reuse=True) as scop4:
             self.test_q_out = biLSTM(self.test_q, self.rnn_size)
+            print(self.test_q_out)
+        # with tf.variable_scope("LSTM_scope1", reuse=True) as scop5:
             self.test_r_out = biLSTM(self.test_r, self.rnn_size)
+            print(self.test_r_out)
+            print("build_LSTM_network<<<<<<<<<<<<<<<<<")
 
     def cal_attention(self):
         with tf.name_scope("att_weight"):

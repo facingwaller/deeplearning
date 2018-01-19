@@ -256,7 +256,7 @@ class DataClass:
         for _ in self.relation_list_split:
             self.relation_list_index.append(self.converter.text_to_arr_list(_))
         # 第一版本先padding到max长度
-        padding_num = self.converter.vocab_size - 1
+        padding_num = self.get_padding_num()
         for index in range(0, len(self.question_list_index)):
             self.question_list_index[index] = \
                 ct.padding_line(self.question_list_index[index], self.max_document_length, padding_num)
@@ -643,8 +643,10 @@ class DataClass:
             length = len(x[index])
             r1,r1_index = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
             r1_text = r1
-            r1 = self.converter.text_to_arr_list(r1)
-            r1 = ct.padding_line(r1, self.max_document_length, length)
+            r1_split_space = str(r1).split(" ")
+            r1 = self.converter.text_to_arr_list(r1_split_space)
+
+            r1 = ct.padding_line(r1, self.max_document_length, self.get_padding_num())
 
             r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
             z_new.append(r1)
@@ -715,7 +717,7 @@ class DataClass:
         # print(name)
         ps_to_except1 = self.relation_list[index]  # 应该从另一个关系集合获取
         ps_to_except1 = [ps_to_except1]
-        padding_num = self.converter.vocab_size - 1
+        padding_num = self.get_padding_num() # self.converter.vocab_size - 1
         # r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
         rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
 
@@ -1061,6 +1063,9 @@ class DataClass:
         finally:
             return id, ps
 
+    # ---------------------------------零碎的小东西
+    def get_padding_num(self):
+        return self.converter.vocab_size - 1
 
 # =======================================================================clear data
 def clear_relation():

@@ -66,7 +66,7 @@ def biLSTM2(x, hidden_size ):
 x = tf.placeholder(dtype=tf.float32, shape=[None,11,100])
 
 # 注意， bias1 的定义方式
-with tf.variable_scope('v_scope') as s1:
+with tf.variable_scope('v_scope',reuse=None) as s1:
     print(s1)
     # Weights1 = tf.get_variable('Weights', shape=[2,3])
     biLSTM(x,100)

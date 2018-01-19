@@ -91,14 +91,16 @@ def run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg, mer
 
 
 # ---在用
-def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer):
+def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer,dh):
     start_time = time.time()
     feed_dict = {
         lstm.ori_input_quests: train_q,  # ori_batch
         lstm.cand_input_quests: train_cand,  # cand_batch
         lstm.neg_input_quests: train_neg  # neg_batch
     }
-
+    for _ in train_neg:
+        train_neg_text = dh.converter.arr_to_text_by_space(_)
+        print("run_step2:"+train_neg_text)
     # ct.check_len(train_q,15)
     # ct.check_len(train_cand, 15)
     # ct.check_len(train_neg, 15)
@@ -148,6 +150,9 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         lstm.test_input_r: test_r,
     }
 
+    for _ in test_r:
+        train_neg_text = dh.converter.arr_to_text_by_space(_)
+        print("valid_step:"+train_neg_text)
 
     test_q_r_cosin = sess.run(
         [lstm.test_q_r],
@@ -264,7 +269,7 @@ def checkpoint(sess):
 def main():
     # test 是完整的; small 是少量 ; debug 只是一次
     model = "wq"
-    # print(tf.__version__)  # 1.2.0
+    print(tf.__version__)  # 1.2.1
     mylog.logger.info(model)
     # 1 读取所有的数据,返回一批数据标记好的数据{data.x,data.label}
     # batch_size 是1个bath，questions的个数，
@@ -321,7 +326,7 @@ def main():
             # print(train_neg)
             # print("--------------end")
             # run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg,merged,writer)
-            run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer)
+            run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer,dh)
             # e1 = embeddings[0] == embeddings[1]  # 通过这个可以看到确实改变了部分
             # mylog.log_list(e1)
             # -------------------------test
