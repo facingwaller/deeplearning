@@ -18,7 +18,7 @@ def biLSTM(x, hidden_size,reuse=None):
     # 	output: [batch, height, 2*hidden_size]  / [batch, step, 2*hidden_size]
 
     # input transformation
-    print("biLSTM")
+    # print("biLSTM")
     # x:Tensor("embedding_layer/embedding_lookup:0", shape=(?, 11, 100), dtype=float32, device=/device:CPU:0)
     input_x = tf.transpose(x, [1, 0, 2])
     # print("input_x 1:"+str(input_x))

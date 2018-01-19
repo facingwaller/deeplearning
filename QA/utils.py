@@ -1,4 +1,8 @@
 import tensorflow as tf
+from lib.ct import ct
+
+
+
 
 
 # ----------------------------- cal attention -------------------------------

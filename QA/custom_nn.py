@@ -117,6 +117,8 @@ class CustomNetwork:
         # print("ori_neg-----------")
         # print(self.ori_neg)
         self.loss, self.acc,self.loss_tmp = cal_loss_and_acc_try(self.ori_cand, self.ori_neg)
+        tf.summary.histogram("loss", self.loss)  # 可视化观看变量
+        tf.summary.histogram("acc", self.acc)  # 可视化观看变量
         # 计算问题和关系的相似度
         self.test_q_r = feature2cos_sim( self.test_q_out , self.test_r_out)
 

@@ -23,75 +23,29 @@ import lib.config as config
 # -----------------------------------定义变量
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('input_file_train', '../data/simple_questions/annotated_fb_data_train-1.txt',
-                       'utf8 encoded text file')
-tf.flags.DEFINE_string('input_file_test', '', 'utf8 encoded text file')
-tf.flags.DEFINE_string('input_file_freebase', '', 'utf8 encoded text file')
 tf.flags.DEFINE_integer("epoches", 100, "epoches")
 tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
 tf.flags.DEFINE_integer("rnn_size", 100, "LSTM 隐藏层的大小 ")
-tf.flags.DEFINE_integer("batch_size", 1, "batch_size")
+tf.flags.DEFINE_integer("batch_size", 10, "batch_size")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "embedding size")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_boolean("need_cal_attention", False, "need_cal_attention ")
-tf.flags.DEFINE_integer("check", 500000, "Number of checkpoints to store (default: 5)")
+tf.flags.DEFINE_integer("check", 50000, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_integer("evaluate_every", 5, "evaluate_every")
-tf.flags.DEFINE_integer("test_batchsize", 1, "test_batchsize ")
+tf.flags.DEFINE_integer("test_batchsize", 5, "test_batchsize ")
 
 
+# 测试模型的有效性的一个配置办法
+# 1.    def is_debug_few() return True
+# 2.    get_static_id_list_debug 和 get_static_num_debug 设置id和错误关系的个数
+# 3.
 # ----------------------------------- execute train model ---------------------------------
-# --不用
-def run_step(sess, ori_batch, cand_batch, neg_batch, lstm, dropout=1.):
-    start_time = time.time()
-    feed_dict = {
-        lstm.ori_input_quests: ori_batch,
-        lstm.cand_input_quests: cand_batch,
-        lstm.neg_input_quests: neg_batch,
-        lstm.keep_prob: dropout
-    }
-
-    ori_cand_score, ori_neg_score, cur_loss, cur_acc = sess.run(
-        [lstm.ori_cand, lstm.ori_neg, lstm.loss, lstm.acc], feed_dict)
-    time_str = datetime.datetime.now().isoformat()
-    right, wrong, score = [0.0] * 3
-    for i in range(0, len(ori_batch)):
-        if ori_cand_score[i] > 0.55 and ori_neg_score[i] < 0.4:
-            right += 1.0
-        else:
-            wrong += 1.0
-        score += ori_cand_score[i] - ori_neg_score[i]
-    time_elapsed = time.time() - start_time
-    mylog.get_logger().info("%s:  loss %s, acc %s, score %s, wrong %s, %6.7f secs/batch" % (
-        time_str, cur_loss, cur_acc, score, wrong, time_elapsed))
-
-    return cur_loss, ori_cand_score
-
-
-# --不用
-def run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer):
-    # print("--------------begin")
-    # print(train_q)
-    # print(train_cand)
-    # print(train_neg)
-    # print("--------------end")
-    summary, l1, acc1, embedding1, train_op1 = sess.run(
-        [merged, lstm.loss, lstm.acc, lstm.embedding, train_op],
-        feed_dict={lstm.ori_input_quests: train_q,
-                   lstm.cand_input_quests: train_cand,
-                   lstm.neg_input_quests: train_neg})
-    # mylog.log_list(embedding1)
-    # embeddings.append(embedding1)
-    writer.add_summary(summary, step)
-    print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
-    # print(1)
-    if step % FLAGS.check == 0:
-        checkpoint(sess)
 
 
 # ---在用
-def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer,dh):
+def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer, dh):
     start_time = time.time()
     feed_dict = {
         lstm.ori_input_quests: train_q,  # ori_batch
@@ -100,7 +54,7 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
     }
     for _ in train_neg:
         train_neg_text = dh.converter.arr_to_text_by_space(_)
-        print("run_step2:"+train_neg_text)
+        ct.print("run_step2:" + train_neg_text, "data")
     # ct.check_len(train_q,15)
     # ct.check_len(train_cand, 15)
     # ct.check_len(train_neg, 15)
@@ -152,7 +106,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 
     for _ in test_r:
         train_neg_text = dh.converter.arr_to_text_by_space(_)
-        print("valid_step:"+train_neg_text)
+        print("valid_step:" + train_neg_text)
 
     test_q_r_cosin = sess.run(
         [lstm.test_q_r],
@@ -163,10 +117,10 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     right, wrong, score = [0.0] * 3
     st_list = []  # 各个关系的得分
 
-    # 用第一个和其他的比较
-    for i in range(1, len(test_q_r_cosin)):
-        compare_res =ct.nump_compare_matix(test_q_r_cosin[0],test_q_r_cosin[i])
-        print("compare_res:"+str(compare_res))
+    # 用第一个和其他的比较，这个是另一种判定正确的办法,
+    # for i in range(1, len(test_q_r_cosin)):
+    #     compare_res = ct.nump_compare_matix(test_q_r_cosin[0], test_q_r_cosin[i])
+    #     print("compare_res:" + str(compare_res))
 
     for i in range(0, len(test_q_r_cosin)):
         st = ct.new_struct()
@@ -182,7 +136,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     st_list_sort = st_list  # 取全部 st_list[0:5]
     # st_list_sort=ct.nump_sort(st_list)
 
-    mylog.logger.info("==============")
+
     for st in st_list_sort:  # 取5个
         # print("index:%d ,score= %f " % (st.index, st.score))
         # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
@@ -230,6 +184,9 @@ def valid_batch(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
         else:
             wrong += 1
     acc = right / (right + wrong)
+    result_msg = "right:%d wrong:%d" % (right, wrong)
+    ct.print(result_msg, "debug")
+    ct.log3(result_msg)
     return acc
 
 
@@ -245,6 +202,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize=
         else:
             wrong += 1
     acc = right / (right + wrong)
+    ct.print("right:%d wrong:%d" % (right, wrong), "debug")
     return acc
 
 
@@ -316,17 +274,17 @@ def main():
         # -------------------------train
         is_degbug_the_same_bath = False
         for step in range(FLAGS.epoches):
-            if not is_degbug_the_same_bath:
-                train_q, train_cand, train_neg = \
-                    dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
-                                           batch_size=FLAGS.batch_size)
+
+            train_q, train_cand, train_neg = \
+                dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
+                                       batch_size=FLAGS.batch_size)
             # print("--------------begin")
             # print(train_q)
             # print(train_cand)
             # print(train_neg)
             # print("--------------end")
             # run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg,merged,writer)
-            run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer,dh)
+            run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer, dh)
             # e1 = embeddings[0] == embeddings[1]  # 通过这个可以看到确实改变了部分
             # mylog.log_list(e1)
             # -------------------------test
@@ -335,12 +293,14 @@ def main():
                 #     dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index,
                 #                               100)  # 一次读取2个batch
                 test_batchsize = FLAGS.test_batchsize
-                # if is_degbug_the_same_bath:
-                acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
-                print("test_batchsize:%d  acc:%d " % (test_batchsize, acc))
-                # else:
-                #     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
-                #     print("test_batchsize:%d  acc:%d " % (test_batchsize, acc))
+                if ct.is_debug_few():
+                    acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
+                    print("test_batchsize:%d  acc:%d " % (test_batchsize, acc))
+                else:
+                    acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
+                    msg = "test_batchsize:%d  acc:%d " % (test_batchsize, acc)
+                    print(msg)
+                    ct.log_vailed(msg)
 
 
 if __name__ == '__main__':
