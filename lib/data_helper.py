@@ -493,12 +493,6 @@ class DataClass:
 
     # --------------------生成batch
     def batch_iter_wq(self, question_list_index, relation_list_index, batch_size=100):
-        """
-        web questions 的生成反例的办法
-        生成指定batch_size的数据
-        :param batch_size:
-        :return:
-        """
         print("enter:batch_iter_wq")
         x = question_list_index.copy()
         y = relation_list_index.copy()
@@ -723,7 +717,7 @@ class DataClass:
         rs = rs[0:num]
         for r1 in rs:
             r1 = self.converter.text_to_arr_list(r1)
-            r1_text = self.converter.arr_to_text(r1)
+            r1_text = self.converter.arr_to_text_by_space(r1)
             r1 = ct.padding_line(r1, self.max_document_length, padding_num)
             x_new.append(x[index])
             y_new.append(r1)  # neg
@@ -988,7 +982,7 @@ def test2():
 
     # d.batch_iter(d.train_question_list_index, d.train_relation_list_index,
     #              batch_size=10)
-    for i in range(1):
+    for i in range(2):
         d.batch_iter_wq(d.train_question_list_index, d.train_relation_list_index,
                               batch_size=10)
         d.batch_iter_wq_test_one(d.train_question_list_index, d.train_relation_list_index,

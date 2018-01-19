@@ -28,13 +28,13 @@ tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
 tf.flags.DEFINE_integer("rnn_size", 100, "LSTM 隐藏层的大小 ")
-tf.flags.DEFINE_integer("batch_size", 10, "batch_size")
+tf.flags.DEFINE_integer("batch_size", 1, "batch_size")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "embedding size")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_boolean("need_cal_attention", False, "need_cal_attention ")
 tf.flags.DEFINE_integer("check", 50000, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_integer("evaluate_every", 5, "evaluate_every")
-tf.flags.DEFINE_integer("test_batchsize", 5, "test_batchsize ")
+tf.flags.DEFINE_integer("test_batchsize", 1, "test_batchsize ")
 
 
 # 测试模型的有效性的一个配置办法
@@ -103,10 +103,14 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         lstm.test_input_q: test_q,
         lstm.test_input_r: test_r,
     }
-
+    for _ in test_q:
+        v_s_1 = dh.converter.arr_to_text_by_space(_)
+        valid_msg = "valid_step test_q 1:" + v_s_1
+        ct.just_log2("valid_step",valid_msg)
     for _ in test_r:
-        train_neg_text = dh.converter.arr_to_text_by_space(_)
-        print("valid_step:" + train_neg_text)
+        v_s_1 = dh.converter.arr_to_text_by_space(_)
+        valid_msg = "valid_step test_r 1:" + v_s_1
+        ct.just_log2("valid_step",valid_msg)
 
     test_q_r_cosin = sess.run(
         [lstm.test_q_r],
@@ -267,17 +271,23 @@ def main():
         embeddings = []
 
         # 测试直接跑一次验证
-        # test_q, test_r, labels = \
-        #     dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index, 100)  # 一次读取2个batch
+        # if ct.is_debug_few():
+        #     test_q, test_r, labels = \
+        #          dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index, 100)  # 一次读取2个batch
         # valid_step(sess, lstm, 0, train_op, test_q, test_r, labels, merged, writer, dh)
 
         # -------------------------train
-        is_degbug_the_same_bath = False
         for step in range(FLAGS.epoches):
 
-            train_q, train_cand, train_neg = \
-                dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
-                                       batch_size=FLAGS.batch_size)
+            if ct.is_debug_few():
+                train_q, train_cand, train_neg = \
+                    dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
+                                           FLAGS.batch_size)
+            else:
+                train_q, train_cand, train_neg = \
+                    dh.batch_iter_wq(dh.train_question_list_index, dh.train_relation_list_index,
+                                           FLAGS.batch_size)
+
             # print("--------------begin")
             # print(train_q)
             # print(train_cand)
@@ -295,12 +305,12 @@ def main():
                 test_batchsize = FLAGS.test_batchsize
                 if ct.is_debug_few():
                     acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
-                    print("test_batchsize:%d  acc:%d " % (test_batchsize, acc))
                 else:
                     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
-                    msg = "test_batchsize:%d  acc:%d " % (test_batchsize, acc)
-                    print(msg)
-                    ct.log_vailed(msg)
+
+                msg = "test_batchsize:%d  acc:%d " % (test_batchsize, acc)
+                print(msg)
+                ct.log_vailed(msg)
 
 
 if __name__ == '__main__':
