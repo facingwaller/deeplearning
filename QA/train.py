@@ -140,7 +140,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     st_list_sort = st_list  # 取全部 st_list[0:5]
     # st_list_sort=ct.nump_sort(st_list)
 
-
+    mylog.logger.info("\n ##3 score" )
     for st in st_list_sort:  # 取5个
         # print("index:%d ,score= %f " % (st.index, st.score))
         # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
@@ -163,6 +163,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         is_right = True
     else:
         print("================================================================error")
+    mylog.logger.info("\n =================================end")
 
     time_elapsed = time.time() - start_time
     # mylog.logger.info("%s: step %s, score %s, wrong %s, %6.7f secs/batch" % (
@@ -195,11 +196,12 @@ def valid_batch(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
 
 
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
-    test_q, test_r, labels = \
-        dh.batch_iter_wq_test_one_debug(dh.train_question_list_index, dh.train_relation_list_index)
+
     right = 0
     wrong = 0
     for i in range(batchsize):
+        test_q, test_r, labels = \
+            dh.batch_iter_wq_test_one_debug(dh.train_question_list_index, dh.train_relation_list_index)
         ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
         if ok:
             right += 1

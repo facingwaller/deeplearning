@@ -624,21 +624,21 @@ class DataClass:
             r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
             z_new.append(r1)
 
-            info1 = "index=%d q=%s e=%s  %d,%d" % (index, question, name, len(ps_to_except1), len(r_all_neg))
-            print(info1)
+            info1 = "q=%d ,r-right=%d,r-neg=%d q=%s e=%s  %d,%d" % (index,index,r1_index, question, name, len(ps_to_except1), len(r_all_neg))
+            ct.print(info1[0:30],"debug")
             mylog.logger.info(info1)
 
-            msg = "qid=%d,neg r=%d r=%s " % (index, r1_index, r1_text)
+            msg = "qid=%d,neg r=%d  " % (index, r1_index )
             ct.log3(msg)
             for r in ps_to_except1:
-                print("r-right %d :%s       " % (len(str(r).split(" ")), r))
+                # print("r-right %d :%s       " % (len(str(r).split(" ")), r))
                 mylog.logger.info("r-right %d :%s       " % (len(str(r).split(" ")), r))
             # for r in r_all_neg:
             #      mylog.logger.info("r-neg %d :%s       " % (len(str(r1).split(" ")), r))
 
             msg_neg = "r-neg %d,%d :%s       " % (r1_index, len(str(r1).split(" ")), r1_text)
             mylog.logger.info(msg_neg)
-            print(msg_neg)
+            # print(msg_neg)
             # mylog.logger.info("=======================================")
             total += 1
             if total >= batch_size:
@@ -818,6 +818,7 @@ class DataClass:
         mylog.logger.info(q1_msg)
         mylog.logger.info(r1_msg)
 
+
         # 加入错误的
         # todo : total is get_static_num_debug
         rs_len = len(rs)
@@ -993,7 +994,7 @@ def test2():
 
     # d.batch_iter(d.train_question_list_index, d.train_relation_list_index,
     #              batch_size=10)
-    for i in range(2):
+    for i in range(20):
         d.batch_iter_wq(d.train_question_list_index, d.train_relation_list_index,
                               batch_size=10)
         d.batch_iter_wq_test_one(d.train_question_list_index, d.train_relation_list_index,
@@ -1017,7 +1018,7 @@ def test2():
 
 def test_random_choose_indexs_debug():
     d = DataClass("wq")
-    for i in range(2):
+    for i in range(20):
         d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
                         batch_size=10)
         d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index,
