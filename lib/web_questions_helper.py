@@ -18,8 +18,10 @@ def json_has_text(json_file, targetValue, deep=1):
     ps = []
     ids = []
     id = json_file.get("id", "")
-    if id == "":
-        return [], []
+
+    # 删除这个判定，存在id为空，但是有text的
+    # if id == "": #
+    #     return [], []
 
     # 寻找text
     text = json_file.get("text", "")
@@ -40,7 +42,11 @@ def json_has_text(json_file, targetValue, deep=1):
     for _ps in json_file["property"]:
         # if _ps == "/location/country/currency_used":
         #     print(1111)
-
+        # print(_ps)
+        # if _ps == "/dining/restaurant/cuisine":
+        #     print(1111)
+        # if _ps == "/common/topic/notable_for":
+        #     print(2222)
         p_values = json_file["property"][_ps]["values"]
         p_values_len = len(json_file["property"][_ps]["values"])
         for i in range(0, p_values_len):
@@ -57,15 +63,16 @@ def json_has_text(json_file, targetValue, deep=1):
             p_text = p_values[i].get('text', "")
             if p_text == "":
                 continue
-            if p_text == "David Silver":
-                print(1)
+            # if p_text == "David Silver":
+            #     print(1)
             if is_in_list_case(targetValue, p_text):
                 # if str(p_text).lower() == str(targetValue).lower():
                 has_r = True
                 r = _ps
-                break
+                # break
         if has_r:
-            break
+            aaa =1 #站位 没用
+            # break
     if has_r:
         # ids.append(id)
         # relations.append(r)
@@ -84,6 +91,7 @@ def extract_entity_relations_from_webquestions(dir=r'D:\ZAIZHI\freebase-data'):
     targetValue = []
     relations = []
     questions = []
+    # 测试
     for fn in (
             'webquestions.examples.dev.20.json'
             # ,'webquestions.examples.dev.20.json'
@@ -251,4 +259,5 @@ if __name__ == "__main__" and debug:
 
 if __name__ == "__main__" and debug is False:
     extract_entity_relations_from_webquestions()
+    # extract_entity_relations_from_webquestions()
 # extract_entity_from_webquestions()

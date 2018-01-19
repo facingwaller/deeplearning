@@ -21,6 +21,12 @@ class ct:
     def get_topic_path():
         return config.get_config_path()
 
+    # 使用极少数条数据做测试
+    @staticmethod
+    def is_debug_few():
+        return True
+
+    # ------------------------
     # 新建一个简单的结构体
     @staticmethod
     def new_struct():
@@ -118,7 +124,7 @@ class ct:
             # ids.append("***")
             # relations.append("***")
             #  看看有无property
-            property_list = json_file.get("property", "")
+            # property_list = json_file.get("property", "")
             # if property_list != "":
             # print("has property_list:   ", str(property_list))
             # return ids, relations
@@ -288,8 +294,8 @@ class ct:
                 #     temp_r.append(_r1)  # 取出当前存的，然后输出
                 relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
                 if int(a0[1]) == 3 and int(a0[1]) - int(a1[1]) == 1:
-                    # 2 3->2 清空 3 2 ;
-                    # 1 2->1 清空 1 2
+                    # 2 3->2 输出，清空 3 2 ;
+                    # 1 2->1 输出，清空 1 2
                     tmp1 = relation_path_rs[0]
                     relation_path_rs = []  # 清空
                     relation_path_rs.append(tmp1)
@@ -305,8 +311,8 @@ class ct:
             else:
                 print("...ERROR...")
 
-        # if len(relation_path_rs) > 0:  # 输出
-        #     relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
+        if len(relation_path_rs) > 0:  # 输出
+            relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
 
         new_rs = []
         for r in relation_path_rs_all:
@@ -317,6 +323,7 @@ class ct:
         # 展开一个关系
         for x in relation_path_rs_all:
             temp_relation = ""
+            # 这里不去掉这些符号就无法做比较
             for o_r in x:
                 temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
             # 增加关系
@@ -336,7 +343,7 @@ class ct:
     # --获取指定id的样本
     @staticmethod
     def get_static_id_list_debug():
-        return [1,2]
+        return [1, 2]
 
     # --获取指定个数的错误关系
     @staticmethod
@@ -352,7 +359,13 @@ class ct:
                 ps_to_return.append(p)
         # index = random.randint(0, len(ps_to_return) - 1)
         # todo : 临时改成 固定2个随机
-        num = min(ct.get_static_num_debug(), len(ps_to_return))
+        if len(ps) == len(ps_to_return):
+            print("get_one_relations_except_ps failed ")
+            raise Exception("except failed!!!!!")
+        if ct.is_debug_few():
+            num = min(ct.get_static_num_debug(), len(ps_to_return))
+        else:
+            num = len(ps_to_return)
         index = random.randint(0, num - 1)
         return ps_to_return[index], index
 
@@ -406,42 +419,45 @@ class ct:
         r_entity = line.split('^')[0].split('~')
         r_relation = line.split('^')[1].split('~')
 
-        relation_path_rs = []  # 关系路径中的关系集合
-        index = 0
-        # 构建1或者2跳的关系路径，如果是下一跳没有上一跳深度则重新入容器
-        # 最后组织成路径容器，然后随机选择路径?
-        relation_path_rs_all = []  # 路径集合的 容器
-
-        for r1 in r_relation:
-            index += 1
-            # r1.split("@@")[0] # 关系
-            # r1.split("@@")[1] # 深度
-            # a = classObject()
-            try:
-                relation = r1.split("@@")[0]
-                deep = r1.split("@@")[1]
-                a = (relation, deep)
-            except Exception as e1:
-                print(e1)
-            if int(a[1]) == 1 and len(relation_path_rs) > 0:  # 清空之前的存储
-                relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
-                # relation_path_rs.clear()  # 清空
-                relation_path_rs = []
-
-            relation_path_rs.append(a)
-
-        if len(relation_path_rs) > 0:  # 清理掉存储
-            relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
-
-        # one_relation = ct.random_get_one_from_list(relation_path_rs_all)
-        # print(relation_path_rs_all)
-        new_rs = []
-        for r1 in relation_path_rs_all:
-            if r1 not in new_rs:
-                new_rs.append(r1)
+        relation_path_rs_all, relation_path_rs_str_all \
+            = ct.combine_relations(r_relation)
+        return relation_path_rs_all
+        # relation_path_rs = []  # 关系路径中的关系集合
+        # index = 0
+        # # 构建1或者2跳的关系路径，如果是下一跳没有上一跳深度则重新入容器
+        # # 最后组织成路径容器，然后随机选择路径?
+        # relation_path_rs_all = []  # 路径集合的 容器
+        #
+        # for r1 in r_relation:
+        #     index += 1
+        #     # r1.split("@@")[0] # 关系
+        #     # r1.split("@@")[1] # 深度
+        #     # a = classObject()
+        #     try:
+        #         relation = r1.split("@@")[0]
+        #         deep = r1.split("@@")[1]
+        #         a = (relation, deep)
+        #     except Exception as e1:
+        #         print(e1)
+        #     if int(a[1]) == 1 and len(relation_path_rs) > 0:  # 清空之前的存储
+        #         relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
+        #         # relation_path_rs.clear()  # 清空
+        #         relation_path_rs = []
+        #
+        #     relation_path_rs.append(a)
+        #
+        # if len(relation_path_rs) > 0:  # 清理掉存储
+        #     relation_path_rs_all.append(ct.add_relation_path_rs(relation_path_rs))
+        #
+        # # one_relation = ct.random_get_one_from_list(relation_path_rs_all)
+        # # print(relation_path_rs_all)
+        # new_rs = []
+        # for r1 in relation_path_rs_all:
+        #     if r1 not in new_rs:
+        #         new_rs.append(r1)
 
         # relation_path_rs_all = list(set(relation_path_rs_all))
-        return new_rs
+        # return new_rs
 
     @staticmethod
     def clean_str(string):
@@ -483,12 +499,12 @@ class ct:
 
     @staticmethod
     def test_decode_all_relations():
-        test = "/m/0ddqw@@1~/m/0gx626p@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/02t8dyx@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/0k3r24@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/01xpnt9@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/0k3r3v@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/0k2h24@@2~/m/01tnbn@@3~/m/0ddqw@@1~/m/0k6jzp@@2~/m/01tnbn@@3^/tv/tv_character/appeared_in_tv_program@@1~/tv/regular_tv_appearance/actor@@2~text@@3~/tv/tv_character/appeared_in_tv_program@@1~/tv/regular_tv_appearance/actor@@2~text@@3~/film/film_character/portrayed_in_films@@1~/film/performance/actor@@2~text@@3~/film/film_character/portrayed_in_films@@1~/film/performance/actor@@2~text@@3~/film/film_character/portrayed_in_films@@1~/film/performance/actor@@2~text@@3~/film/film_character/portrayed_in_films@@1~/film/performance/actor@@2~text@@3~/film/film_character/portrayed_in_films@@1~/film/performance/actor@@2~text@@3"
+        test = "/m/05f3q@@1~/m/0jsmcfb@@2~/m/07tr_3@@3~/m/0jsmcfb@@2~/m/0czcxyw@@3~/m/0jsmcfb@@2~/m/0g9t8m2@@3^/award/award_category/winners@@1~/award/award_honor/award_winner@@2~text@@3~/award/award_honor/award_winner@@2~text@@3~/award/award_honor/award_winner@@2~text@@3"
         r = ct.decode_all_relations(test)
-        print(len(r))
+        print(r)
 
     @staticmethod
-    def test_xxx():
+    def test_read_entity_and_get_all_relations():
         relation_path_rs_all = ct.read_entity_and_get_all_relations("100_metres")
         for r1 in relation_path_rs_all:
             for r11_index in range(0, len(r1)):
@@ -511,6 +527,16 @@ class ct:
         time_str = time.strftime('%Y-%m-%d-%H ', time.localtime(time.time()))
         time_str += ct.time_str1
         file_name = "log3/" + time_str + ".txt"
+        f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
+        f1_writer.write(msg + "\n")
+        f1_writer.close()
+
+    @staticmethod
+    def log_vailed(msg):
+
+        time_str = time.strftime('%Y-%m-%d-%H ', time.localtime(time.time()))
+        time_str += ct.time_str1
+        file_name = "log3/valied_" + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -560,20 +586,19 @@ class ct:
             list[current] = tmp
         return list
 
-
     @staticmethod
     def test_nump_sort():
-        a= ct.new_struct()
-        a.deep =1
-        a.cosine_matix= np.ndarray([3,3,3])
+        a = ct.new_struct()
+        a.deep = 1
+        a.cosine_matix = np.ndarray([3, 3, 3])
 
         b = ct.new_struct()
         b.deep = 1
-        b.cosine_matix =np.ndarray([1,1,1])
+        b.cosine_matix = np.ndarray([1, 1, 1])
 
         c = ct.new_struct()
         c.deep = 1
-        c.cosine_matix = np.ndarray([2,2,2])
+        c.cosine_matix = np.ndarray([2, 2, 2])
         l = []
         l.append(a)
         l.append(b)
@@ -581,8 +606,23 @@ class ct:
         ct.nump_sort(l)
         print(l)
 
+    # 自定义打印什么级别的
+    @staticmethod
+    def print(msg="", m="none"):
+        #
+        ms = ["train", "test", "debug", "none"
+              ,"show_shape"
+            # , "data"
+              ]
+        if m in ms:
+            print(msg)
+
+
 if __name__ == "__main__":
-    ct.test_nump_sort()
+    print(1)
+    # ct.test_read_entity_and_get_all_relations()
+    # ct.test_decode_all_relations()
+    # ct.test_nump_sort()
     # ct.log3("1111")  # 测试日志 ok
     # ct.test_decode_all_relations()
     # ct.test_random_get_one_from_list()

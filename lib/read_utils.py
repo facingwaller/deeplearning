@@ -69,7 +69,18 @@ class TextConverter(object):
         for word in text:
             arr.append(self.word_to_int(word))
         return np.array(arr)
+
+    # 将test_list 转换成 int_array
+    # text必须是字符串的list
     def text_to_arr_list(self, text):
+        #
+        if type(text) == str:
+            text = str(text).strip() # 去掉头尾空格
+            text = str(text).split(" ")
+        if type(text) != list:
+            print("bad type")
+            raise Exception("bad type not list %s" % type(list))
+        #
         arr = []
         for word in text:
             arr.append(self.word_to_int(word))
@@ -90,7 +101,8 @@ class TextConverter(object):
     def save_to_file(self, filename):
         with open(filename, 'wb') as f:
             pickle.dump(self.vocab, f)
+
     def save_to_file_raw(self, filename):
-        with open(filename, 'w',encoding="utf-8") as f:
+        with open(filename, 'w', encoding="utf-8") as f:
             for w in self.vocab:
-                f.write(w+"\n")
+                f.write(w + "\n")
