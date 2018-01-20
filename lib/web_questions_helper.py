@@ -4,6 +4,7 @@ import codecs
 from lib.data_hander import read_rdf_from_gzip, find_id_ps_json_from_file, just_log
 from lib.ct import ct
 
+
 def is_in_list_case(list, arg):
     for l in list:
         if str(l).lower() == str(arg).lower():
@@ -71,7 +72,7 @@ def json_has_text(json_file, targetValue, deep=1):
                 r = _ps
                 # break
         if has_r:
-            aaa =1 #站位 没用
+            aaa = 1  # 站位 没用
             # break
     if has_r:
         # ids.append(id)
@@ -250,14 +251,41 @@ def t2():
     print(rs)
 
 
-# True False
-debug = False
-if __name__ == "__main__" and debug:
-    # 1    测试取出list的答案
-    get_description_from_targetValue("(list (description Carrie Fisher))")
-    get_description_from_targetValue("(list (description Japan) (description Okuma))")
+def statistics_relationship_number():
+    relations = []
+    file_name = "../data/freebase/"
+    file_name3 = "freebase_relation.txt"
+    print("列出最多和最少的")
+    with codecs.open(file_name + file_name3, mode="r", encoding="utf-8") as read_file:
+        for line in read_file.readlines():
+            relations.append(line.replace("\n", "").replace("/", " ").replace("_", " ").strip())
+    print("relations len:" + str(len(relations)))
+    r_d = dict()
+    for r in relations:
+        if r in r_d:
+            r_d[r] += 1
+        else:
+            r_d[r] = 1
+    #  r_d_sort1 =[ v for v in sorted(r_d.values())]
+    r_d_sort2 = sorted(r_d.items(), key=lambda d: d[1], reverse=True)
+    f1_writer = codecs.open("../data/freebase/statistics_relationship_number.txt", mode="w", encoding="utf-8")
+    for l in r_d_sort2:
+        f1_writer.write(str(l[0])+"\t"+str(l[1]) + "\n")
+    f1_writer.close()
+    print(1)
 
-if __name__ == "__main__" and debug is False:
-    extract_entity_relations_from_webquestions()
+
+
+# True False
+
+# if __name__ == "__main__"  :
+#     # 1    测试取出list的答案
+#     get_description_from_targetValue("(list (description Carrie Fisher))")
+#     get_description_from_targetValue("(list (description Japan) (description Okuma))")
+
+if __name__ == "__main__":
+    print(1)
+    statistics_relationship_number()
+    # extract_entity_relations_from_webquestions()
     # extract_entity_relations_from_webquestions()
 # extract_entity_from_webquestions()

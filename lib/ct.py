@@ -24,7 +24,7 @@ class ct:
     # 使用极少数条数据做测试
     @staticmethod
     def is_debug_few():
-        return True
+        return config.is_debug_few()
 
     # ------------------------
     # 新建一个简单的结构体
@@ -343,12 +343,33 @@ class ct:
     # --获取指定id的样本
     @staticmethod
     def get_static_id_list_debug():
-        return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        return config.get_static_id_list_debug()
+        # return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     # --获取指定个数的错误关系
     @staticmethod
     def get_static_num_debug():
-        return 999999
+        return config.get_static_num_debug()
+
+    @staticmethod
+    def filter_some_relations(rs):
+        # 读取rs_filter
+        path = r"../data/freebase/filter_relations.txt"
+        lines = ct.file_read_all_lines(path)
+        lines = [str(x).replace("\n", "").replace("\r", "") for x in lines]
+        new_rs = []
+        for r1 in rs:
+            in_line = False
+            for l1 in lines:
+                if str(r1).__contains__(l1):
+                    in_line=True
+                    break
+            # if str(r1).strip() not in lines:
+            #     new_rs.append(r1)
+            if not in_line:
+                new_rs.append(r1)
+        # 获得rs不在rs_filter的项目
+        return new_rs
 
     # 获取除了指定关系外的随机一个关系
     @staticmethod
@@ -362,11 +383,16 @@ class ct:
         if len(ps) == len(ps_to_return):
             print("get_one_relations_except_ps failed ")
             raise Exception("except failed!!!!!")
+        # 在这里加入过滤
+        ps_to_return = ct.filter_some_relations(ps_to_return)
+
         if ct.is_debug_few():
             num = min(ct.get_static_num_debug(), len(ps_to_return))
         else:
             num = len(ps_to_return)
+
         index = random.randint(0, num - 1)
+
         return ps_to_return[index], index
 
     # 读取实体的neg关系,返回1个neg关系和他对应在neg关系集合里的index
@@ -521,7 +547,7 @@ class ct:
     @staticmethod
     def just_log2(file_name, msg):
         time_str = time.strftime('%Y-%m-%d-%H ', time.localtime(time.time()))
-        file_name = "log3/" +file_name+ time_str + ".txt"
+        file_name = "log3/" + file_name + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -618,11 +644,21 @@ class ct:
     def print(msg="", m="none"):
         #
         ms = ["train", "test", "debug", "none"
-              ,"show_shape"
-            # , "data"
+            , "show_shape"
+              # , "data"
               ]
         if m in ms:
             print(msg)
+
+    #
+    @staticmethod
+    def file_read_all_lines(file_name):
+        lines = []
+        with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
+            for line in read_file.readlines():
+                lines.append(line)
+                # .replace("\n", "").replace("/", " ").replace("_", " ").strip()
+        return lines
 
 
 if __name__ == "__main__":

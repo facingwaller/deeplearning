@@ -139,7 +139,7 @@ class DataClass:
     # ---------------------freebase
     entitys = []
     relations = []
-
+    relations_filter = []  # 待排除的关系 e.g. "type object creator"
     # ---------------------DataClass
     train_path = "../data/simple_questions/annotated_fb_data_train-1.txt"
     entity1_list = []  # id
@@ -191,6 +191,12 @@ class DataClass:
             all_stence.append(one_sentence)
         return all_stence
 
+    # 初始化待排除的关系，待考虑如何加进去
+    def init_filter_relations(self):
+        path = r"../data/freebase/filter_relations.txt"
+        lines = ct.file_read_all_lines(path)
+        lines = [str(x).replace("\n", "").replace("\r", "") for x in lines]
+        return lines
     def __init__(self, mode="debug"):
         """
         mode = debug(1行数据调试);test(测试模式);small();
@@ -215,6 +221,8 @@ class DataClass:
         elif mode == "wq":
             self.init_web_questions()
             self.init_fb("../data/freebase/")
+            # 初始化排除的关系
+            # self.init_filter_relations()
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
             self.init_fb("../data/freebase/")

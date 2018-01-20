@@ -18,29 +18,15 @@ import codecs
 import numpy as np
 import lib.my_log as mylog
 from lib.ct import ct
-import lib.config as config
+from lib.config import FLAGS
+
 
 # -----------------------------------定义变量
-FLAGS = tf.flags.FLAGS
-
-tf.flags.DEFINE_integer("epoches", 100, "epoches")
-tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
-tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
-tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
-tf.flags.DEFINE_integer("rnn_size", 100, "LSTM 隐藏层的大小 ")
-tf.flags.DEFINE_integer("batch_size", 1, "batch_size")
-tf.flags.DEFINE_integer("max_grad_norm", 5, "embedding size")
-tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
-tf.flags.DEFINE_boolean("need_cal_attention", False, "need_cal_attention ")
-tf.flags.DEFINE_integer("check", 50000, "Number of checkpoints to store (default: 5)")
-tf.flags.DEFINE_integer("evaluate_every", 5, "evaluate_every")
-tf.flags.DEFINE_integer("test_batchsize",3, "test_batchsize ")
-
 
 # 测试模型的有效性的一个配置办法
 # 1.    def is_debug_few() return True
 # 2.    get_static_id_list_debug 和 get_static_num_debug 设置id和错误关系的个数
-# 3.
+# 3.    放方便多机共享测试，已经迁移到config文件
 # ----------------------------------- execute train model ---------------------------------
 
 
@@ -106,18 +92,17 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     for _ in test_q:
         v_s_1 = dh.converter.arr_to_text_by_space(_)
         valid_msg = "valid_step test_q 1:" + v_s_1
-        ct.just_log2("valid_step",valid_msg)
+        ct.just_log2("valid_step", valid_msg)
     for _ in test_r:
         v_s_1 = dh.converter.arr_to_text_by_space(_)
         valid_msg = "valid_step test_r 1:" + v_s_1
-        ct.just_log2("valid_step",valid_msg)
+        ct.just_log2("valid_step", valid_msg)
 
     test_q_r_cosin = sess.run(
         [lstm.test_q_r],
         feed_dict=feed_dict)
 
     test_q_r_cosin = test_q_r_cosin[0]
-
     right, wrong, score = [0.0] * 3
     st_list = []  # 各个关系的得分
 
@@ -140,7 +125,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     st_list_sort = st_list  # 取全部 st_list[0:5]
     # st_list_sort=ct.nump_sort(st_list)
 
-    mylog.logger.info("\n ##3 score" )
+    mylog.logger.info("\n ##3 score")
     for st in st_list_sort:  # 取5个
         # print("index:%d ,score= %f " % (st.index, st.score))
         # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
@@ -196,7 +181,6 @@ def valid_batch(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
 
 
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
-
     right = 0
     wrong = 0
     for i in range(batchsize):
@@ -288,7 +272,7 @@ def main():
             else:
                 train_q, train_cand, train_neg = \
                     dh.batch_iter_wq(dh.train_question_list_index, dh.train_relation_list_index,
-                                           FLAGS.batch_size)
+                                     FLAGS.batch_size)
 
             # print("--------------begin")
             # print(train_q)
@@ -313,6 +297,8 @@ def main():
                 msg = "test_batchsize:%d  acc:%f " % (test_batchsize, acc)
                 print(msg)
                 ct.log_vailed(msg)
+
+
 
 
 if __name__ == '__main__':
