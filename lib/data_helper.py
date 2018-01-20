@@ -673,93 +673,93 @@ class DataClass:
 
     # --------------------生成test的batch
     # --------------------生成batch 暂时不用
-    def batch_iter_wq_test_one(self, question_list_index, relation_list_index, batch_size=100):
-        """
-        web questions
-        生成指定batch_size的数据
-        :param batch_size:
-        :return:
-        """
-
-        x = question_list_index.copy()
-        y = relation_list_index.copy()
-        x_new = []  # 问题集合
-        y_new = []  # 关系集合
-        z_new = []  #
-        labels = []  # 标签集合
-        shuffle_indices = np.random.permutation(np.arange(len(x)))  # 打乱样本
-        # print("shuffle_indices", str(shuffle_indices))
-
-        total = 0
-        index = shuffle_indices[0]  # 选取第一个
-
-        msg = "test id=%s " % index
-        print(msg)
-        ct.log3(msg)
-        mylog.logger.info(msg)
-
-        name = self.entity1_list[index]
-
-        ps_to_except1 = self.relation_list[index]
-        ps_to_except1 = [ps_to_except1]
-        padding_num = self.get_padding_num()  # self.converter.vocab_size - 1
-        # r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
-        rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
-
-        rs = list(set(rs))
-        # 加入正确的
-        x_new.append(x[index])
-        y_new.append(y[index])
-        labels.append(True)
-
-        # log
-        r1_text = self.converter.arr_to_text_by_space(y[index])
-        print("r-right: %s" % r1_text)
-        mylog.logger.info("r-right: %s" % r1_text)
-
-        # 加入错误的,暂时加入控制免得太多
-        if ct.is_debug_few():
-            num = min(ct.get_static_num_debug(), len(rs))
-        else:
-            num = len(rs)
-        rs = rs[0:num]
-        for r1 in rs:
-            r1 = self.converter.text_to_arr_list(r1)
-            r1_text = self.converter.arr_to_text_by_space(r1)
-            r1 = ct.padding_line(r1, self.max_document_length, padding_num)
-            x_new.append(x[index])
-            y_new.append(r1)  # neg
-            labels.append(False)
-
-            # ct.log3(r1_text)
-            mylog.logger.info("r1_neg in test %s" % r1_text)
-
-        # print("11111111111111111111111111")
-        # print(len(r1))
-        # z_new.append(r1)
-        #
-        # total += 1
-        # if total >= batch_size:
-        #         break
-        # print("show shuffle_indices")
-        # print(shuffle_indices[0:batch_size])
-        # 根据y 生成z，也就是错误的关系,当前先做1:1的比例
-        # rate = 1
-        # r_si = reversed(shuffle_indices)
-        # r_si = list(r_si)
-        # print(r_si)
-        # total = 0
-        # for index in r_si:
-        #     z_new.append(y[index])
-        #     total += 1
-        #     if total >= batch_size:
-        #         break
-        print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
-
-        return np.array(x_new), np.array(y_new), np.array(labels)
+    # def batch_iter_wq_test_one(self, question_list_index, relation_list_index, batch_size=100):
+    #     """
+    #     web questions
+    #     生成指定batch_size的数据
+    #     :param batch_size:
+    #     :return:
+    #     """
+    #
+    #     x = question_list_index.copy()
+    #     y = relation_list_index.copy()
+    #     x_new = []  # 问题集合
+    #     y_new = []  # 关系集合
+    #     z_new = []  #
+    #     labels = []  # 标签集合
+    #     shuffle_indices = np.random.permutation(np.arange(len(x)))  # 打乱样本
+    #     # print("shuffle_indices", str(shuffle_indices))
+    #
+    #     total = 0
+    #     index = shuffle_indices[0]  # 选取第一个
+    #
+    #     msg = "test id=%s " % index
+    #     print(msg)
+    #     ct.log3(msg)
+    #     mylog.logger.info(msg)
+    #
+    #     name = self.entity1_list[index]
+    #
+    #     ps_to_except1 = self.relation_list[index]
+    #     ps_to_except1 = [ps_to_except1]
+    #     padding_num = self.get_padding_num()  # self.converter.vocab_size - 1
+    #     # r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
+    #     rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+    #
+    #     rs = list(set(rs))
+    #     # 加入正确的
+    #     x_new.append(x[index])
+    #     y_new.append(y[index])
+    #     labels.append(True)
+    #
+    #     # log
+    #     r1_text = self.converter.arr_to_text_by_space(y[index])
+    #     print("r-right: %s" % r1_text)
+    #     mylog.logger.info("r-right: %s" % r1_text)
+    #
+    #     # 加入错误的,暂时加入控制免得太多
+    #     if ct.is_debug_few():
+    #         num = min(ct.get_static_num_debug(), len(rs))
+    #     else:
+    #         num = len(rs)
+    #     rs = rs[0:num]
+    #     for r1 in rs:
+    #         r1 = self.converter.text_to_arr_list(r1)
+    #         r1_text = self.converter.arr_to_text_by_space(r1)
+    #         r1 = ct.padding_line(r1, self.max_document_length, padding_num)
+    #         x_new.append(x[index])
+    #         y_new.append(r1)  # neg
+    #         labels.append(False)
+    #
+    #         # ct.log3(r1_text)
+    #         mylog.logger.info("r1_neg in test %s" % r1_text)
+    #
+    #     # print("11111111111111111111111111")
+    #     # print(len(r1))
+    #     # z_new.append(r1)
+    #     #
+    #     # total += 1
+    #     # if total >= batch_size:
+    #     #         break
+    #     # print("show shuffle_indices")
+    #     # print(shuffle_indices[0:batch_size])
+    #     # 根据y 生成z，也就是错误的关系,当前先做1:1的比例
+    #     # rate = 1
+    #     # r_si = reversed(shuffle_indices)
+    #     # r_si = list(r_si)
+    #     # print(r_si)
+    #     # total = 0
+    #     # for index in r_si:
+    #     #     z_new.append(y[index])
+    #     #     total += 1
+    #     #     if total >= batch_size:
+    #     #         break
+    #     print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
+    #
+    #     return np.array(x_new), np.array(y_new), np.array(labels)
 
     # todo: test data
-    def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, batch_size=100):
+    def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, model):
         """
         web questions
         生成指定batch_size的数据
@@ -787,7 +787,14 @@ class DataClass:
 
         # index = self.shuffle_indices_debug
         # 从debug的index集合里面随机挑选一个
-        index = ct.random_get_one_from_list(ct.get_static_id_list_debug())
+        id_list = []
+        if model =="valid":
+            id_list = ct.get_static_id_list_debug()
+        elif model == "test":
+            id_list = ct.get_static_id_list_debug_test()
+        else:
+            raise Exception("MODEL 参数出错")
+        index = ct.random_get_one_from_list(id_list)
         # index = shuffle_indices[0]
         # 当前给一个
         # x_new.append(x[index])

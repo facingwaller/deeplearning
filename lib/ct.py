@@ -346,6 +346,10 @@ class ct:
         return config.get_static_id_list_debug()
         # return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
+    @staticmethod
+    def get_static_id_list_debug_test():
+        return config.get_static_id_list_debug_test()
+
     # --获取指定个数的错误关系
     @staticmethod
     def get_static_num_debug():
@@ -547,7 +551,7 @@ class ct:
     @staticmethod
     def just_log2(file_name, msg):
         time_str = time.strftime('%Y-%m-%d-%H ', time.localtime(time.time()))
-        file_name = "log3/" + file_name + time_str + ".txt"
+        file_name = "log2/" + file_name + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -569,7 +573,7 @@ class ct:
 
         time_str = time.strftime('%Y-%m-%d-%H ', time.localtime(time.time()))
         time_str += ct.time_str1
-        file_name = "log3/valied_" + time_str + ".txt"
+        file_name = "log2/valied_" + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()

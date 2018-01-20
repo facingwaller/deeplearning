@@ -162,30 +162,32 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     return is_right
 
 
-def valid_batch(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
-    test_q, test_r, labels = \
-        dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index)
-    right = 0
-    wrong = 0
-    for i in range(batchsize):
-        ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
-        if ok:
-            right += 1
-        else:
-            wrong += 1
-    acc = right / (right + wrong)
-    result_msg = "right:%d wrong:%d" % (right, wrong)
-    ct.print(result_msg, "debug")
-    ct.log3(result_msg)
-    return acc
+# 暂时不用
+# def valid_batch(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
+#     test_q, test_r, labels = \
+#         dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index)
+#     right = 0
+#     wrong = 0
+#     for i in range(batchsize):
+#         ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
+#         if ok:
+#             right += 1
+#         else:
+#             wrong += 1
+#     acc = right / (right + wrong)
+#     result_msg = "right:%d wrong:%d" % (right, wrong)
+#     ct.print(result_msg, "debug")
+#     ct.log3(result_msg)
+#     return acc
 
 
-def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
+def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
+                      train_relation_list_index,model):
     right = 0
     wrong = 0
     for i in range(batchsize):
         test_q, test_r, labels = \
-            dh.batch_iter_wq_test_one_debug(dh.train_question_list_index, dh.train_relation_list_index)
+            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index,model)
         ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
         if ok:
             right += 1
@@ -284,21 +286,27 @@ def main():
             # e1 = embeddings[0] == embeddings[1]  # 通过这个可以看到确实改变了部分
             # mylog.log_list(e1)
             # -------------------------test
+            # 1 源数据，训练数据OR验证数据OR测试数据
+            # 2 生成模式batch_iter_wq_test_one_debug 从，batch_iter_wq_test_one
+            test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
             if step % FLAGS.evaluate_every == 0 and step != 0:
-                # test_q, test_r, labels = \
-                #     dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index,
-                #                               100)  # 一次读取2个batch
-                test_batchsize = FLAGS.test_batchsize
-                if ct.is_debug_few():
-                    acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
-                else:
-                    acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
-
+                # if ct.is_debug_few():
+                # dh.train_question_list_index, dh.train_relation_list_index
+                model = "valid"
+                acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
+                                        dh, test_batchsize, dh.train_question_list_index, dh.train_relation_list_index,model)
+                # else:
+                #     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
+                msg = "valid_batchsize:%d  acc:%f " % (test_batchsize, acc)
+                print(msg)
+                ct.just_log2("valied",msg)
+            if step % FLAGS.test_every == 0 and step != 0:
+                model = "test"
+                acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
+                                        dh, test_batchsize, dh.test_question_list_index, dh.test_relation_list_index,model)
                 msg = "test_batchsize:%d  acc:%f " % (test_batchsize, acc)
                 print(msg)
-                ct.log_vailed(msg)
-
-
+                ct.just_log2("test",msg)
 
 
 if __name__ == '__main__':
