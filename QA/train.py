@@ -19,10 +19,11 @@ import numpy as np
 import lib.my_log as mylog
 from lib.ct import ct
 from lib.config import FLAGS
+import os
 
 
 # -----------------------------------定义变量
-
+max_looss_0_time = 100
 # 测试模型的有效性的一个配置办法
 # 1.    def is_debug_few() return True
 # 2.    get_static_id_list_debug 和 get_static_num_debug 设置id和错误关系的个数
@@ -70,8 +71,13 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
         time_str, step, l1, acc1, score, wrong, time_elapsed)
     mylog.logger.info(info)
     print(info)
-    if l1 == 0.0:
-        ct.log3("loss = 0.0 ")
+    if l1 == 0.0 and acc1 == 1.0:
+        max_looss_0_time += 0
+        if max_looss_0_time == 1:
+            ct.log3("loss = 0.0 ")
+            print("loss == 0.0 and acc == 1.0 checkpoint and exit")
+            checkpoint(sess)
+            os._exit(0)
     # print(1)
     if step % FLAGS.check == 0 and step != 0:
         checkpoint(sess)
@@ -217,10 +223,14 @@ def checkpoint(sess):
 
 # 主流程
 def main():
+    now = "\n\n\n"+str(datetime.datetime.now().isoformat())
     # test 是完整的; small 是少量 ; debug 只是一次
     model = "wq"
     print(tf.__version__)  # 1.2.1
     mylog.logger.info(model)
+    ct.log3(now)
+    ct.just_log2("vailed",now)
+    ct.just_log2("test", now)
     # 1 读取所有的数据,返回一批数据标记好的数据{data.x,data.label}
     # batch_size 是1个bath，questions的个数，
     dh = data_helper.DataClass(model)
@@ -233,10 +243,10 @@ def main():
     print("dh.max_document_length " + str(dh.max_document_length) + "   " + str(dh.converter.vocab_size))
     lstm = mynn.CustomNetwork(max_document_length=dh.max_document_length,  # timesteps
                               word_d=1,  # 一个单词的维度
-                              num_classes=FLAGS.num_classes,  # 这个就是最终得出结果的维度
-                              num_hidden=FLAGS.num_hidden,  # 这个是隐藏层的维度
+                              # num_classes=FLAGS.num_classes,  # 这个就是最终得出结果的维度
+                              num_hidden=FLAGS.num_hidden,  # 这个是embedding的维度
                               embedding_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
-                              rnn_size=FLAGS.rnn_size,
+                              rnn_size=FLAGS.rnn_size,  # 隐藏层大小
                               model=model,
                               need_cal_attention=FLAGS.need_cal_attention)
     # 4 ----------------------------------- 设定loss-----------------------------------
