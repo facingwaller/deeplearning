@@ -72,12 +72,10 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
     mylog.logger.info(info)
     print(info)
     if l1 == 0.0 and acc1 == 1.0:
-        max_looss_0_time += 0
-        if max_looss_0_time == 1:
-            ct.log3("loss = 0.0 ")
-            print("loss == 0.0 and acc == 1.0 checkpoint and exit")
-            checkpoint(sess)
-            os._exit(0)
+        ct.log3("loss = 0.0 ")
+        print("loss == 0.0 and acc == 1.0 checkpoint and exit")
+        checkpoint(sess)
+        os._exit(0)
     # print(1)
     if step % FLAGS.check == 0 and step != 0:
         checkpoint(sess)
