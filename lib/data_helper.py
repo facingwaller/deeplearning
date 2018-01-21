@@ -13,7 +13,7 @@ import datetime
 import lib.my_log as mylog
 from lib.ct import ct
 
-mylog.logger.info("test")
+
 
 
 # 从文件中读取问题集合
@@ -65,7 +65,7 @@ def read_rdf_from_gzip(file_name=r"../data/freebase/100_classic_book_collection.
             g2 = "".join(gs)
             # print(g2)
     except Exception as e1:
-        mylog.logger.info(e1)
+        ct.just_log2("info",e1)
     return g2
 
 
@@ -83,7 +83,7 @@ def read_rdf_from_gzip_or_alias(path, file_name):
             g2 = "".join(gs)
             # print(g2)
     except Exception as e1:
-        mylog.logger.info(e1)
+        ct.just_log2("info",e1)
         read_from_gzip_error = True
 
     if read_from_gzip_error:
@@ -97,7 +97,7 @@ def read_rdf_from_gzip_or_alias(path, file_name):
                 gs.append(str(g1))
             g2 = "".join(gs)
     except Exception as e1:
-        mylog.logger.info(e1)
+        ct.just_log2("info",e1)
 
     return g2
 
@@ -514,7 +514,7 @@ class DataClass:
 
         self.shuffle_indices_train = shuffle_indices[0:batch_size]  # 取出指定的样本记录下来
         msg1 = "shuffle_indices q= %s " % str(self.shuffle_indices_train)
-        mylog.logger.info(msg1)
+        ct.just_log2("info",msg1)
         ct.print(msg1, "data")
 
         total = 0
@@ -539,17 +539,17 @@ class DataClass:
             # log
             info1 = "%d q:%s e:%s  %d,%d" % (index, question, name, len(ps_to_except1), len(r_all_neg))
             print(info1)
-            mylog.logger.info(info1)
+            ct.just_log2("info",info1)
 
             msg = "qid = %d,neg r=%d r=%s " % (index, r1_index, r1_text)
             ct.log3(msg)
 
             msg_right = "r-right %d :%s       " % (len(str(ps_to_except1[0]).split(" ")), ps_to_except1[0])
-            mylog.logger.info(msg_right)
+            ct.just_log2("info",msg_right)
             print(msg_right)
 
             msg_neg = "r-neg %d,%d :%s       " % (r1_index, len(str(r1).split(" ")), r1_text)
-            mylog.logger.info(msg_neg)
+            ct.just_log2("info",msg_neg)
             print(msg_neg)
 
             #
@@ -605,7 +605,7 @@ class DataClass:
 
         # 取消 # 到这里还是变成1个 也就是一次还是跑1个问题-
         # msg1 = "\n batch_iter_wq_debug index q= %s " % self.shuffle_indices_debug
-        # mylog.logger.info(msg1)
+        # ct.just_log2("info",msg1)
 
         total = 0
         for index in shuffle_indices:
@@ -638,26 +638,26 @@ class DataClass:
 
             info1 = "q=%d ,r-right=%d,r-neg=%d q=%s e=%s  %d,%d" % (index,index,r1_index, question, name, len(ps_to_except1), len(r_all_neg))
             ct.print(info1[0:30],"debug")
-            mylog.logger.info(info1)
+            ct.just_log2("info",info1)
 
             msg = "qid=%d,neg r=%d  " % (index, r1_index )
             ct.log3(msg)
             for r in ps_to_except1:
                 # print("r-right %d :%s       " % (len(str(r).split(" ")), r))
-                mylog.logger.info("r-right %d :%s       " % (len(str(r).split(" ")), r))
+                ct.just_log2("info","r-right %d :%s       " % (len(str(r).split(" ")), r))
             # for r in r_all_neg:
-            #      mylog.logger.info("r-neg %d :%s       " % (len(str(r1).split(" ")), r))
+            #      ct.just_log2("info","r-neg %d :%s       " % (len(str(r1).split(" ")), r))
 
             msg_neg = "r-neg %d,%d :%s       " % (r1_index, len(str(r1).split(" ")), r1_text)
-            mylog.logger.info(msg_neg)
+            ct.just_log2("info",msg_neg)
             # print(msg_neg)
-            # mylog.logger.info("=======================================")
+            # ct.just_log2("info","=======================================")
             total += 1
             if total >= batch_size:
                 break
 
         print(shuffle_indices[0:batch_size])
-        #  mylog.logger.info("======================================= end train data build")
+        #  ct.just_log2("info","======================================= end train data build")
         print("leave:batch_iter_wq_debug")
         return np.array(x_new), np.array(y_new), np.array(z_new)
 
@@ -700,7 +700,7 @@ class DataClass:
     #     msg = "test id=%s " % index
     #     print(msg)
     #     ct.log3(msg)
-    #     mylog.logger.info(msg)
+    #     ct.just_log2("info",msg)
     #
     #     name = self.entity1_list[index]
     #
@@ -719,7 +719,7 @@ class DataClass:
     #     # log
     #     r1_text = self.converter.arr_to_text_by_space(y[index])
     #     print("r-right: %s" % r1_text)
-    #     mylog.logger.info("r-right: %s" % r1_text)
+    #     ct.just_log2("info","r-right: %s" % r1_text)
     #
     #     # 加入错误的,暂时加入控制免得太多
     #     if ct.is_debug_few():
@@ -736,7 +736,7 @@ class DataClass:
     #         labels.append(False)
     #
     #         # ct.log3(r1_text)
-    #         mylog.logger.info("r1_neg in test %s" % r1_text)
+    #         ct.just_log2("info","r1_neg in test %s" % r1_text)
     #
     #     # print("11111111111111111111111111")
     #     # print(len(r1))
@@ -805,11 +805,11 @@ class DataClass:
         # y_new.append(y[index])
 
         # log
-        mylog.logger.info("batch_iter_wq_test_one_debug")
+        ct.just_log2("info","batch_iter_wq_test_one_debug")
         msg = "test id=%s " % index
         print(msg)
         ct.log3(msg)
-        mylog.logger.info(msg)
+        ct.just_log2("info",msg)
 
         name = self.entity1_list[index]
 
@@ -826,16 +826,16 @@ class DataClass:
         labels.append(True)
         # print("batch_iter_wq_test_one_debug ")
 
-        mylog.logger.info("entity:%s " % name)
-        # mylog.logger.info("relation:%s " % name)
+        ct.just_log2("info","entity:%s " % name)
+        # ct.just_log2("info","relation:%s " % name)
 
         # print(y[index])
         r1_text = self.converter.arr_to_text_by_space(y[index])
         q1_text = self.converter.arr_to_text_by_space(x[index])
         r1_msg = "r-right: %s" % r1_text
         q1_msg = "q : %s" % q1_text
-        mylog.logger.info(q1_msg)
-        mylog.logger.info(r1_msg)
+        ct.just_log2("info",q1_msg)
+        ct.just_log2("info",r1_msg)
 
 
         # 加入错误的
@@ -848,9 +848,9 @@ class DataClass:
             r1 = self.converter.text_to_arr_list(r1_split)
             r1_text = self.converter.arr_to_text_by_space(r1)
             # ct.log3(r1_text)
-            mylog.logger.info("r1_neg in test %s" % r1_text)
+            ct.just_log2("info","r1_neg in test %s" % r1_text)
             # print(r1_text)
-            # mylog.logger.info("neg-r test:" + r1_text)
+            # ct.just_log2("info","neg-r test:" + r1_text)
             r1 = ct.padding_line(r1, self.max_document_length, padding_num)
             x_new.append(x[index])
             y_new.append(r1)  # neg

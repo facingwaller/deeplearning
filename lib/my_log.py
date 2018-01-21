@@ -19,7 +19,7 @@ import codecs
 # from gensim import models
 
 ''' 日志  '''
-LOG_FILE = 'log2/' + str(time.time()) + '.txt'
+LOG_FILE = 'log/' + str(time.time()) + '.txt'
 handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=1024 * 1024 * 1024, backupCount=5)  # 实例化handler
 # fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(message)s'
 fmt = '%(message)s'
@@ -28,7 +28,7 @@ handler.setFormatter(formatter)  # 为handler添加formatter
 logger = logging.getLogger('tst')  # 获取名为tst的logger
 logger.addHandler(handler)  # 为logger添加handler
 logger.setLevel(logging.DEBUG)
-logger.info('==================================')
+
 
 def log_list(obj):
     logger.info("obj begin===========================" + str(len(obj)))

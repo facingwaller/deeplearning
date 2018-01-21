@@ -4,6 +4,7 @@ import gzip
 import codecs
 import numpy as np
 import re
+import os
 import datetime
 import time
 
@@ -14,7 +15,7 @@ class classObject:
 
 from lib.config import config
 
-
+log_path = ""
 class ct:
     # -------------------配置
     @staticmethod
@@ -543,6 +544,17 @@ class ct:
                     print(1111111111111111111111111111)
 
     @staticmethod
+    def log_path_static():
+        timestamp = str(int(time.time()))
+        out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
+        # print("Writing to {}\n".format(out_dir))
+        # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
+        checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+        return out_dir
+
+    @staticmethod
     def just_log(file_name, msg):
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
@@ -551,7 +563,7 @@ class ct:
     @staticmethod
     def just_log2(file_name, msg):
         time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
-        file_name = "log/" + file_name + time_str + ".txt"
+        file_name = log_path+"/" + file_name + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -563,7 +575,7 @@ class ct:
     def log3(msg):
         time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
         time_str += ct.time_str1
-        file_name = "log/" + time_str + ".txt"
+        file_name = log_path+"/" + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -573,7 +585,7 @@ class ct:
 
         time_str = time.strftime('%Y-%m-%d-%H ', time.localtime(time.time()))
         time_str += ct.time_str1
-        file_name = "log/valied_" + time_str + ".txt"
+        file_name = log_path+"/valied_" + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -664,7 +676,7 @@ class ct:
                 # .replace("\n", "").replace("/", " ").replace("_", " ").strip()
         return lines
 
-
+log_path = ct.log_path_static()
 if __name__ == "__main__":
     print(1)
     # ct.test_read_entity_and_get_all_relations()

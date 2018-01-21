@@ -70,12 +70,12 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
     # print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
     info = "%s: step %s, loss %s, acc %s, score %s, wrong %s, %6.7f secs/batch" % (
         time_str, step, l1, acc1, score, wrong, time_elapsed)
-    mylog.logger.info(info)
+    ct.just_log2("info",info)
     print(info)
     if l1 == 0.0 and acc1 == 1.0:
         dh.loss_ok += 1
         ct.log3("loss = 0.0  %d " % dh.loss_ok)
-        print("loss == 0.0 and acc == 1.0 checkpoint and exit")
+        print("loss == 0.0 and acc == 1.0 checkpoint and exit now = %d"%dh.loss_ok)
         if dh.loss_ok == max(100, FLAGS.epoches / 10):
             checkpoint(sess)
             os._exit(0)
@@ -132,7 +132,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     st_list_sort = st_list  # 取全部 st_list[0:5]
     # st_list_sort=ct.nump_sort(st_list)
 
-    mylog.logger.info("\n ##3 score")
+    ct.just_log2("info","\n ##3 score")
     for st in st_list_sort:  # 取5个
         # print("index:%d ,score= %f " % (st.index, st.score))
         # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
@@ -143,7 +143,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         # 根据对应的关系数组找到对应的文字
         r1 = dh.converter.arr_to_text_by_space(test_r[better_index])
         # print(r1)
-        mylog.logger.info("st.index:%d,score:%f,r:%s" % (st.index, st.score, r1))
+        ct.just_log2("info","step:%d st.index:%d,score:%f,r:%s" % (step,st.index, st.score, r1))
         # 输出对应的文字
         # print(r1)
     # test_r[best_index]
@@ -155,7 +155,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         is_right = True
     else:
         print("================================================================error")
-    mylog.logger.info("\n =================================end")
+    ct.just_log2("info","\n =================================end")
 
     time_elapsed = time.time() - start_time
     # mylog.logger.info("%s: step %s, score %s, wrong %s, %6.7f secs/batch" % (
@@ -228,7 +228,7 @@ def main():
     # test 是完整的; small 是少量 ; debug 只是一次
     model = "wq"
     print(tf.__version__)  # 1.2.1
-    mylog.logger.info(model)
+    ct.just_log2("info",model)
     ct.log3(now)
     ct.just_log2("vailed", now)
     ct.just_log2("test", now)
@@ -314,7 +314,7 @@ def main():
                 ct.just_log2("valied", msg)
             if step % FLAGS.test_every == 0 and step != 0:
                 model = "test"
-                acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
+                acc = valid_batch_debug(sess, lstm, step, train_op, merged, writer,
                                         dh, test_batchsize, dh.test_question_list_index, dh.test_relation_list_index,
                                         model)
                 msg = "test_batchsize:%d  acc:%f " % (test_batchsize, acc)
