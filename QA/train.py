@@ -76,7 +76,6 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
         dh.loss_ok += 1
         ct.log3("loss = 0.0  %d " % dh.loss_ok)
         print("loss == 0.0 and acc == 1.0 checkpoint and exit")
-        checkpoint(sess)
         if dh.loss_ok == max(100, FLAGS.epoches / 10):
             checkpoint(sess)
             os._exit(0)

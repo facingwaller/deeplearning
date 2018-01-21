@@ -593,8 +593,9 @@ class DataClass:
         z_new = []
         length = len(x)
         self.batch_size_degbug = batch_size
-        shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
+        # shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
         shuffle_indices = ct.get_static_id_list_debug()  # [2808,1 ] # 临时设置成固定的
+        shuffle_indices = np.random.permutation(np.arange(len(shuffle_indices))) # 打乱样本
 
         # 这个是设置随机1个
         # self.shuffle_indices_debug = shuffle_indices[0:self.batch_size_degbug]
@@ -602,13 +603,13 @@ class DataClass:
         # 从固定里面随机取一个作为index
         self.shuffle_indices_debug = ct.random_get_one_from_list(shuffle_indices)
 
-        # 到这里还是变成1个 也就是一次还是跑1个问题
-        msg1 = "\n batch_iter_wq_debug index q= %s " % self.shuffle_indices_debug
-        mylog.logger.info(msg1)
+        # 取消 # 到这里还是变成1个 也就是一次还是跑1个问题-
+        # msg1 = "\n batch_iter_wq_debug index q= %s " % self.shuffle_indices_debug
+        # mylog.logger.info(msg1)
 
         total = 0
         for index in shuffle_indices:
-            index = self.shuffle_indices_debug  # 将随机到的赋值给当前
+            # index = self.shuffle_indices_debug  # 将随机到的赋值给当前
             x_new.append(x[index])
             y_new.append(y[index])
             # 对于z_new 加进去
@@ -1039,8 +1040,7 @@ def test_random_choose_indexs_debug():
     for i in range(20):
         d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
                         batch_size=10)
-        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index,
-                                 batch_size=10)
+        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index,"test")
 
 if __name__ == "__main__":
     # a = read_rdf_from_gzip_or_alias(path=r"F:\3_Server\freebase-data\topic-json", file_name="1")
