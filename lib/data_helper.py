@@ -158,6 +158,8 @@ class DataClass:
     test_relation_list_index = []
 
     fb = []
+    # ----------------
+    loss_ok = 0
 
     # ----------------------分割数据，预处理，转换成index形式
 
@@ -244,7 +246,7 @@ class DataClass:
         # 将问题/关系转换成index的系列表示
         max_document_length1 = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
         max_document_length2 = max([len(x.split(" ")) for x in self.relation_list])  # 获取单行的最大的长度
-        print("max %d,%d"%(max_document_length1,max_document_length2))
+
         # gth = []
         # for x in self.relation_path_clear_str_all:
         #     for x1 in x:
@@ -254,7 +256,8 @@ class DataClass:
         # mean_of_quesitons = np.mean([len(x.split(" ")) for x in self.question_list])
         # print(mean_of_quesitons)
 
-        self.max_document_length = max_document_length1
+        self.max_document_length = max(max_document_length1,max_document_length2)
+        print("max =%d ; %d,%d" % (self.max_document_length,max_document_length1, max_document_length2))
         # max(max_document_length1, max_document_length2, max_document_length3)
         # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
         #

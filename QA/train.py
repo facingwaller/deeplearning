@@ -21,9 +21,10 @@ from lib.ct import ct
 from lib.config import FLAGS
 import os
 
-
 # -----------------------------------定义变量
 max_looss_0_time = 100
+
+
 # 测试模型的有效性的一个配置办法
 # 1.    def is_debug_few() return True
 # 2.    get_static_id_list_debug 和 get_static_num_debug 设置id和错误关系的个数
@@ -72,10 +73,13 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
     mylog.logger.info(info)
     print(info)
     if l1 == 0.0 and acc1 == 1.0:
-        ct.log3("loss = 0.0 ")
+        dh.loss_ok += 1
+        ct.log3("loss = 0.0  %d " % dh.loss_ok)
         print("loss == 0.0 and acc == 1.0 checkpoint and exit")
         checkpoint(sess)
-        os._exit(0)
+        if dh.loss_ok == max(100, FLAGS.epoches / 10):
+            checkpoint(sess)
+            os._exit(0)
     # print(1)
     if step % FLAGS.check == 0 and step != 0:
         checkpoint(sess)
@@ -186,12 +190,12 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 
 
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
-                      train_relation_list_index,model):
+                      train_relation_list_index, model):
     right = 0
     wrong = 0
     for i in range(batchsize):
         test_q, test_r, labels = \
-            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index,model)
+            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model)
         ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
         if ok:
             right += 1
@@ -221,13 +225,13 @@ def checkpoint(sess):
 
 # 主流程
 def main():
-    now = "\n\n\n"+str(datetime.datetime.now().isoformat())
+    now = "\n\n\n" + str(datetime.datetime.now().isoformat())
     # test 是完整的; small 是少量 ; debug 只是一次
     model = "wq"
     print(tf.__version__)  # 1.2.1
     mylog.logger.info(model)
     ct.log3(now)
-    ct.just_log2("vailed",now)
+    ct.just_log2("vailed", now)
     ct.just_log2("test", now)
     # 1 读取所有的数据,返回一批数据标记好的数据{data.x,data.label}
     # batch_size 是1个bath，questions的个数，
@@ -302,19 +306,21 @@ def main():
                 # dh.train_question_list_index, dh.train_relation_list_index
                 model = "valid"
                 acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
-                                        dh, test_batchsize, dh.train_question_list_index, dh.train_relation_list_index,model)
+                                        dh, test_batchsize, dh.train_question_list_index, dh.train_relation_list_index,
+                                        model)
                 # else:
                 #     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
                 msg = "valid_batchsize:%d  acc:%f " % (test_batchsize, acc)
                 print(msg)
-                ct.just_log2("valied",msg)
+                ct.just_log2("valied", msg)
             if step % FLAGS.test_every == 0 and step != 0:
                 model = "test"
                 acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
-                                        dh, test_batchsize, dh.test_question_list_index, dh.test_relation_list_index,model)
+                                        dh, test_batchsize, dh.test_question_list_index, dh.test_relation_list_index,
+                                        model)
                 msg = "test_batchsize:%d  acc:%f " % (test_batchsize, acc)
                 print(msg)
-                ct.just_log2("test",msg)
+                ct.just_log2("test", msg)
 
 
 if __name__ == '__main__':
