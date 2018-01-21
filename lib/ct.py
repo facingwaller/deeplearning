@@ -551,7 +551,7 @@ class ct:
     @staticmethod
     def just_log2(file_name, msg):
         time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
-        file_name = "log2/" + file_name + time_str + ".txt"
+        file_name = "log/" + file_name + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -563,7 +563,7 @@ class ct:
     def log3(msg):
         time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
         time_str += ct.time_str1
-        file_name = "log3/" + time_str + ".txt"
+        file_name = "log/" + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -573,7 +573,7 @@ class ct:
 
         time_str = time.strftime('%Y-%m-%d-%H ', time.localtime(time.time()))
         time_str += ct.time_str1
-        file_name = "log2/valied_" + time_str + ".txt"
+        file_name = "log/valied_" + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
