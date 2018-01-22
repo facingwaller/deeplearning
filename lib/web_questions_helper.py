@@ -274,7 +274,51 @@ def statistics_relationship_number():
     f1_writer.close()
     print(1)
 
+def extract_questions_from_webquestions(dir=r'F:\3_Server\freebase-data'):
+    topic_set = []
+    targetValue = []
+    relations = []
+    questions = []
+    # 测试
+    for fn in (
+            'webquestions.examples.dev.20.json'
+            # ,'webquestions.examples.dev.20.json'
+            , 'webquestions.examples.train.80.json', 'webquestions.examples.test.retrieved.json'
+    ):
+        print('read:', fn)
+        with open(r'%s\train-dev-test\%s' % (dir, fn), 'r', encoding='utf-8') as f_in:
+            j_list = json.load(f_in)
+            for j in j_list:
+                topic_set.append(j['url'].split('/en/')[-1])
+                # 获取第二个(内的数据)
+                # (list (description Vermont) (description Connecticut) (description \"New Hampshire\")
+                # (description Massachusetts))
+                j1 = j['targetValue']
+                # f1-只取第一个值
+                # end = str(j1).index(')')
+                # start = str(j1).index('description ') + len('description ')
+                # # print(j1[start:end])
+                # j_c = j1[start:end]
+                # if str(j_c).startswith("\""):
+                #     j_c = str(j_c).split('\"')[1]
+                # end f1
+                # f2
+                j_c = get_description_from_targetValue(j1)
+                targetValue.append(j_c)
+                # print(j_c)
+                # if str(j['retrievedList']) != "":
+                #     topic_set.append(j['retrievedList'].split(' ')[0].split(':')[0])
 
+                # 增加问题
+                # print(j['utterance'])
+                # questions.append(j['utterance'])
+                jjjj1 =j['utterance']
+                jjjj1= str(jjjj1).replace("?","").replace(".","")
+
+                ct.just_log("../data/web_questions/questions.txt",jjjj1)
+
+
+    print('#topic:', len(topic_set))
 
 # True False
 
@@ -285,7 +329,7 @@ def statistics_relationship_number():
 
 if __name__ == "__main__":
     print(1)
-    statistics_relationship_number()
+    extract_questions_from_webquestions()
     # extract_entity_relations_from_webquestions()
     # extract_entity_relations_from_webquestions()
 # extract_entity_from_webquestions()
