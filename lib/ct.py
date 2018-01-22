@@ -38,8 +38,20 @@ class ct:
         return list[random.randint(0, len(list) - 1)]
 
     @staticmethod
-    def random_get_item_from_list(list):
-        return list[random.randint(0, len(list) - 1)]
+    def random_get_some_from_list(list,num):
+        shuffle_indices = np.random.permutation(np.arange(len(list)))  # 打乱样本下标
+        res = []
+        num = min(num,len(list))
+        shuffle_indices = shuffle_indices[0:num]
+        for index in shuffle_indices:
+            res.append(list[index])
+        return res
+
+    @staticmethod
+    def test_random_get_some_from_list():
+        a = ct.random_get_some_from_list([11],2)
+        print(a)
+
 
     @staticmethod
     def test_random_get_one_from_list():
@@ -545,7 +557,7 @@ class ct:
 
     @staticmethod
     def log_path_static():
-        timestamp = str(int(time.time()))
+        timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
         # print("Writing to {}\n".format(out_dir))
         # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
@@ -575,7 +587,7 @@ class ct:
     def log3(msg):
         time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
         time_str += ct.time_str1
-        file_name = log_path+"/" + time_str + ".txt"
+        file_name = log_path+"/simple_" + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -678,7 +690,8 @@ class ct:
 
 log_path = ct.log_path_static()
 if __name__ == "__main__":
-    print(1)
+
+    ct.test_random_get_some_from_list( )
     # ct.test_read_entity_and_get_all_relations()
     # ct.test_decode_all_relations()
     # ct.test_nump_sort()

@@ -27,7 +27,7 @@ class TextConverter(object):
                 self.vocab = pickle.load(f)
         else:
             vocab = set(text)
-            print(len(vocab))
+            # print(len(vocab))
             # max_vocab_process
             vocab_count = {}
             for word in vocab:

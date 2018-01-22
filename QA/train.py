@@ -18,11 +18,12 @@ import codecs
 import numpy as np
 import lib.my_log as mylog
 from lib.ct import ct
-from lib.config import FLAGS
+from lib.config import FLAGS, get_config_msg
 import os
 
+
 # -----------------------------------定义变量
-max_looss_0_time = 100
+
 
 
 # 测试模型的有效性的一个配置办法
@@ -47,10 +48,9 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
     # ct.check_len(train_cand, 15)
     # ct.check_len(train_neg, 15)
     summary, l1, acc1, embedding1, train_op1, \
-    ori_cand_score, ori_neg_score, loss_t = sess.run(
+    ori_cand_score, ori_neg_score = sess.run(
         [merged, lstm.loss, lstm.acc, lstm.embedding, train_op,
-         lstm.ori_cand, lstm.ori_neg,
-         lstm.loss_tmp],
+         lstm.ori_cand, lstm.ori_neg],
         feed_dict=feed_dict)
     # print(loss_t)
     # mylog.log_list(loss_t)
@@ -70,13 +70,13 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
     # print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
     info = "%s: step %s, loss %s, acc %s, score %s, wrong %s, %6.7f secs/batch" % (
         time_str, step, l1, acc1, score, wrong, time_elapsed)
-    ct.just_log2("info",info)
+    ct.just_log2("info", info)
     print(info)
     if l1 == 0.0 and acc1 == 1.0:
         dh.loss_ok += 1
         ct.log3("loss = 0.0  %d " % dh.loss_ok)
-        print("loss == 0.0 and acc == 1.0 checkpoint and exit now = %d"%dh.loss_ok)
-        if dh.loss_ok == max(100, FLAGS.epoches / 10):
+        print("loss == 0.0 and acc == 1.0 checkpoint and exit now = %d" % dh.loss_ok)
+        if dh.loss_ok == FLAGS.stop_loss_zeor_count:
             checkpoint(sess)
             os._exit(0)
     # print(1)
@@ -98,11 +98,11 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     }
     for _ in test_q:
         v_s_1 = dh.converter.arr_to_text_by_space(_)
-        valid_msg = "valid_step test_q 1:" + v_s_1
+        valid_msg = "test_q 1:" + v_s_1
         ct.just_log2("valid_step", valid_msg)
     for _ in test_r:
         v_s_1 = dh.converter.arr_to_text_by_space(_)
-        valid_msg = "valid_step test_r 1:" + v_s_1
+        valid_msg = "test_r 1:" + v_s_1
         ct.just_log2("valid_step", valid_msg)
 
     test_q_r_cosin = sess.run(
@@ -132,7 +132,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     st_list_sort = st_list  # 取全部 st_list[0:5]
     # st_list_sort=ct.nump_sort(st_list)
 
-    ct.just_log2("info","\n ##3 score")
+    ct.just_log2("info", "\n ##3 score")
     for st in st_list_sort:  # 取5个
         # print("index:%d ,score= %f " % (st.index, st.score))
         # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
@@ -143,7 +143,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         # 根据对应的关系数组找到对应的文字
         r1 = dh.converter.arr_to_text_by_space(test_r[better_index])
         # print(r1)
-        ct.just_log2("info","step:%d st.index:%d,score:%f,r:%s" % (step,st.index, st.score, r1))
+        ct.just_log2("info", "step:%d st.index:%d,score:%f,r:%s" % (step, st.index, st.score, r1))
         # 输出对应的文字
         # print(r1)
     # test_r[best_index]
@@ -155,7 +155,8 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         is_right = True
     else:
         print("================================================================error")
-    ct.just_log2("info","\n =================================end")
+        ct.just_log2("info", "!!!!! error %d  " % step)
+    ct.just_log2("info", "\n =================================end\n")
 
     time_elapsed = time.time() - start_time
     # mylog.logger.info("%s: step %s, score %s, wrong %s, %6.7f secs/batch" % (
@@ -227,29 +228,29 @@ def main():
     now = "\n\n\n" + str(datetime.datetime.now().isoformat())
     # test 是完整的; small 是少量 ; debug 只是一次
     model = "wq"
-    print(tf.__version__)  # 1.2.1
-    ct.just_log2("info",model)
-    ct.log3(now)
-    ct.just_log2("vailed", now)
+    print("tf:%s model:%s " % (str(tf.__version__), model))  # 1.2.1
+    ct.just_log2("info", now)
+    ct.just_log2("valied", now)
     ct.just_log2("test", now)
+    ct.just_log2("info", get_config_msg())
+    ct.log3(now)
+    embedding_weight = None
     # 1 读取所有的数据,返回一批数据标记好的数据{data.x,data.label}
-    # batch_size 是1个bath，questions的个数，
     dh = data_helper.DataClass(model)
-    # all_data = dh.load_all_train_data() # 加载所有训练数据
-    # bath_x = dh.embedding(bath_x)  # embedding
-    # bath = dh.next_bath() #获取一个批次的数据
-    # dh.load_test_data() # 加载测试数据
+    if FLAGS.word_model == "word2vec_train":
+        embedding_weight = dh.embeddings
 
     # 3 构造模型LSTM类
-    print("dh.max_document_length " + str(dh.max_document_length) + "   " + str(dh.converter.vocab_size))
+    print("max_document_length=%s,vocab_size=%s " % (str(dh.max_document_length), str(dh.converter.vocab_size)))
     lstm = mynn.CustomNetwork(max_document_length=dh.max_document_length,  # timesteps
-                              word_d=1,  # 一个单词的维度
-                              # num_classes=FLAGS.num_classes,  # 这个就是最终得出结果的维度
-                              num_hidden=FLAGS.num_hidden,  # 这个是embedding的维度
-                              embedding_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
+                              word_dimension=FLAGS.word_dimension,  # 一个单词的维度
+                              vocab_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
                               rnn_size=FLAGS.rnn_size,  # 隐藏层大小
                               model=model,
-                              need_cal_attention=FLAGS.need_cal_attention)
+                              need_cal_attention=FLAGS.need_cal_attention,
+                              need_max_pooling=FLAGS.need_max_pooling,
+                              word_model=FLAGS.word_model,
+                              embedding_weight=embedding_weight)
     # 4 ----------------------------------- 设定loss-----------------------------------
     global_step = tf.Variable(0, name="globle_step", trainable=False)
     tvars = tf.trainable_variables()
@@ -265,18 +266,13 @@ def main():
         writer = tf.summary.FileWriter("log/", sess.graph)
         sess.run(init)
 
-        # dh.get_one_batch(batch_size) # 返回 batch_size的questions
-        # run_step(sess, ori_train, cand_train, neg_train, lstm)
         embeddings = []
 
-        # 测试直接跑一次验证
-        # if ct.is_debug_few():
-        #     test_q, test_r, labels = \
-        #          dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index, 100)  # 一次读取2个batch
-        # valid_step(sess, lstm, 0, train_op, test_q, test_r, labels, merged, writer, dh)
-
-        # -------------------------train
         for step in range(FLAGS.epoches):
+            toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>step=%d" % step
+            ct.log3(toogle_line)
+            ct.just_log2("info", toogle_line)
+            # ct.just_log2("valied", toogle_line)
 
             if ct.is_debug_few():
                 train_q, train_cand, train_neg = \
@@ -287,15 +283,9 @@ def main():
                     dh.batch_iter_wq(dh.train_question_list_index, dh.train_relation_list_index,
                                      FLAGS.batch_size)
 
-            # print("--------------begin")
-            # print(train_q)
-            # print(train_cand)
-            # print(train_neg)
-            # print("--------------end")
-            # run_one_time(sess, lstm, step, train_op, train_q, train_cand, train_neg,merged,writer)
             run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer, dh)
             # e1 = embeddings[0] == embeddings[1]  # 通过这个可以看到确实改变了部分
-            # mylog.log_list(e1)
+
             # -------------------------test
             # 1 源数据，训练数据OR验证数据OR测试数据
             # 2 生成模式batch_iter_wq_test_one_debug 从，batch_iter_wq_test_one
@@ -309,17 +299,24 @@ def main():
                                         model)
                 # else:
                 #     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
-                msg = "valid_batchsize:%d  acc:%f " % (test_batchsize, acc)
+                msg = "step:%d valid_batchsize:%d  acc:%f " % (step, test_batchsize, acc)
                 print(msg)
                 ct.just_log2("valied", msg)
-            if step % FLAGS.test_every == 0 and step != 0:
-                model = "test"
-                acc = valid_batch_debug(sess, lstm, step, train_op, merged, writer,
-                                        dh, test_batchsize, dh.test_question_list_index, dh.test_relation_list_index,
-                                        model)
-                msg = "test_batchsize:%d  acc:%f " % (test_batchsize, acc)
-                print(msg)
-                ct.just_log2("test", msg)
+            if FLAGS.need_test:
+                if step % FLAGS.test_every == 0 and step != 0:
+                    model = "test"
+                    acc = valid_batch_debug(sess, lstm, step, train_op, merged, writer,
+                                            dh, test_batchsize, dh.test_question_list_index,
+                                            dh.test_relation_list_index,
+                                            model)
+                    msg = "step:%d test_batchsize:%d  acc:%f " % (step, test_batchsize, acc)
+                    print(msg)
+                    ct.just_log2("test", msg)
+            toogle_line = "<<<<<<<<<<<<<<<<<<<<<<<<<<<<step=%d\n" % step
+            # ct.just_log2("test", toogle_line)
+            ct.just_log2("info", toogle_line)
+            # ct.just_log2("valied", toogle_line)
+            ct.log3(toogle_line)
 
 
 if __name__ == '__main__':

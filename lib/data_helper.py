@@ -11,9 +11,9 @@ import random
 from tensorflow.contrib import learn
 import datetime
 import lib.my_log as mylog
-from lib.ct import ct
-
-
+from lib.config import config
+from lib.ct import ct,log_path
+# from gensim import models
 
 
 # 从文件中读取问题集合
@@ -65,7 +65,7 @@ def read_rdf_from_gzip(file_name=r"../data/freebase/100_classic_book_collection.
             g2 = "".join(gs)
             # print(g2)
     except Exception as e1:
-        ct.just_log2("info",e1)
+        ct.just_log2("info", e1)
     return g2
 
 
@@ -83,7 +83,7 @@ def read_rdf_from_gzip_or_alias(path, file_name):
             g2 = "".join(gs)
             # print(g2)
     except Exception as e1:
-        ct.just_log2("info",e1)
+        ct.just_log2("info", e1)
         read_from_gzip_error = True
 
     if read_from_gzip_error:
@@ -97,7 +97,7 @@ def read_rdf_from_gzip_or_alias(path, file_name):
                 gs.append(str(g1))
             g2 = "".join(gs)
     except Exception as e1:
-        ct.just_log2("info",e1)
+        ct.just_log2("info", e1)
 
     return g2
 
@@ -199,6 +199,7 @@ class DataClass:
         lines = ct.file_read_all_lines(path)
         lines = [str(x).replace("\n", "").replace("\r", "") for x in lines]
         return lines
+
     def __init__(self, mode="debug"):
         """
         mode = debug(1行数据调试);test(测试模式);small();
@@ -237,8 +238,9 @@ class DataClass:
         # 应该再加上问题里面的关系集合
         # q_words = [str(x).replace(".","") for x in q_words ]
         self.converter = read_utils.TextConverter(q_words)
-        # self.converter.save_to_file_raw(
-        #     "../data/vocab/" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
+
+        self.converter.save_to_file_raw(
+             log_path+"/vocab_" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
 
         # self.converter.save_to_file("model/converter.pkl")
         # print(self.converter)
@@ -256,8 +258,8 @@ class DataClass:
         # mean_of_quesitons = np.mean([len(x.split(" ")) for x in self.question_list])
         # print(mean_of_quesitons)
 
-        self.max_document_length = max(max_document_length1,max_document_length2)
-        print("max =%d ; %d,%d" % (self.max_document_length,max_document_length1, max_document_length2))
+        self.max_document_length = max(max_document_length1, max_document_length2)
+        print("max =%d ; %d,%d" % (self.max_document_length, max_document_length1, max_document_length2))
         # max(max_document_length1, max_document_length2, max_document_length3)
         # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
         #
@@ -286,6 +288,9 @@ class DataClass:
         self.train_relation_list_index, self.test_relation_list_index = \
             self.cap_nums(self.relation_list_index, rate)
         print("init finish!")
+
+
+        self.build_embedding_weight(config.wiki_vector_path())
 
     # ---------------------load_all_train_data
     def load_all_train_data(self):
@@ -514,7 +519,7 @@ class DataClass:
 
         self.shuffle_indices_train = shuffle_indices[0:batch_size]  # 取出指定的样本记录下来
         msg1 = "shuffle_indices q= %s " % str(self.shuffle_indices_train)
-        ct.just_log2("info",msg1)
+        ct.just_log2("info", msg1)
         ct.print(msg1, "data")
 
         total = 0
@@ -539,17 +544,17 @@ class DataClass:
             # log
             info1 = "%d q:%s e:%s  %d,%d" % (index, question, name, len(ps_to_except1), len(r_all_neg))
             print(info1)
-            ct.just_log2("info",info1)
+            ct.just_log2("info", info1)
 
             msg = "qid = %d,neg r=%d r=%s " % (index, r1_index, r1_text)
             ct.log3(msg)
 
-            msg_right = "r-right %d :%s       " % (len(str(ps_to_except1[0]).split(" ")), ps_to_except1[0])
-            ct.just_log2("info",msg_right)
+            msg_right = "r-pos %d :%s       " % (len(str(ps_to_except1[0]).split(" ")), ps_to_except1[0])
+            ct.just_log2("info", msg_right)
             print(msg_right)
 
             msg_neg = "r-neg %d,%d :%s       " % (r1_index, len(str(r1).split(" ")), r1_text)
-            ct.just_log2("info",msg_neg)
+            ct.just_log2("info", msg_neg)
             print(msg_neg)
 
             #
@@ -591,11 +596,13 @@ class DataClass:
         x_new = []
         y_new = []
         z_new = []
-        length = len(x)
+
         self.batch_size_degbug = batch_size
         # shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
-        shuffle_indices = ct.get_static_id_list_debug()  # [2808,1 ] # 临时设置成固定的
-        shuffle_indices = np.random.permutation(np.arange(len(shuffle_indices))) # 打乱样本
+        id_list = ct.get_static_id_list_debug()  # [2808,1 ] # 临时设置成固定的
+        # todo: 这里应该使用随机从里面提取一个
+        # shuffle_indices = np.random.permutation(np.arange(len(shuffle_indices)))  # 打乱样本
+        shuffle_indices = ct.random_get_some_from_list(id_list,batch_size)
 
         # 这个是设置随机1个
         # self.shuffle_indices_debug = shuffle_indices[0:self.batch_size_degbug]
@@ -636,20 +643,21 @@ class DataClass:
             r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
             z_new.append(r1)
 
-            info1 = "q=%d ,r-right=%d,r-neg=%d q=%s e=%s  %d,%d" % (index,index,r1_index, question, name, len(ps_to_except1), len(r_all_neg))
-            ct.print(info1[0:30],"debug")
-            ct.just_log2("info",info1)
+            info1 = "q=%d ,r-pos=%d,r-neg=%d q=%s e=%s  %d,%d" % (
+                index, index, r1_index, question, name, len(ps_to_except1), len(r_all_neg))
+            ct.print(info1[0:30], "debug")
+            ct.just_log2("info", info1)
 
-            msg = "qid=%d,neg r=%d  " % (index, r1_index )
+            msg = "qid=%d,neg r=%d  " % (index, r1_index)
             ct.log3(msg)
             for r in ps_to_except1:
-                # print("r-right %d :%s       " % (len(str(r).split(" ")), r))
-                ct.just_log2("info","r-right %d :%s       " % (len(str(r).split(" ")), r))
+                # print("r-pos %d :%s       " % (len(str(r).split(" ")), r))
+                ct.just_log2("info", "r-pos %d :%s       " % (len(str(r).split(" ")), r))
             # for r in r_all_neg:
             #      ct.just_log2("info","r-neg %d :%s       " % (len(str(r1).split(" ")), r))
 
             msg_neg = "r-neg %d,%d :%s       " % (r1_index, len(str(r1).split(" ")), r1_text)
-            ct.just_log2("info",msg_neg)
+            ct.just_log2("info", msg_neg)
             # print(msg_neg)
             # ct.just_log2("info","=======================================")
             total += 1
@@ -663,17 +671,17 @@ class DataClass:
 
     # --第二版，使得每次产生的不重复
     # --------------------生成batch
-    def batch_iter_init(self):
-        length = len(self.question_list_index)
-        self.shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
-        self.shuffle_index = 0  # 索引
-        print(1)
+    # def batch_iter_init(self):
+    #     length = len(self.question_list_index)
+    #     self.shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
+    #     self.shuffle_index = 0  # 索引
+    #     print(1)
 
-    def can_batch_wq(self, batch_size):
-        if self.shuffle_index + batch_size > len(self.shuffle_indices):
-            return False
-        else:
-            return True
+    # def can_batch_wq(self, batch_size):
+    #     if self.shuffle_index + batch_size > len(self.shuffle_indices):
+    #         return False
+    #     else:
+    #         return True
 
     # --------------------生成test的batch
     # --------------------生成batch 暂时不用
@@ -718,8 +726,8 @@ class DataClass:
     #
     #     # log
     #     r1_text = self.converter.arr_to_text_by_space(y[index])
-    #     print("r-right: %s" % r1_text)
-    #     ct.just_log2("info","r-right: %s" % r1_text)
+    #     print("r-pos: %s" % r1_text)
+    #     ct.just_log2("info","r-pos: %s" % r1_text)
     #
     #     # 加入错误的,暂时加入控制免得太多
     #     if ct.is_debug_few():
@@ -792,7 +800,7 @@ class DataClass:
         # index = self.shuffle_indices_debug
         # 从debug的index集合里面随机挑选一个
         id_list = []
-        if model =="valid":
+        if model == "valid":
             id_list = ct.get_static_id_list_debug()
         elif model == "test":
             id_list = ct.get_static_id_list_debug_test()
@@ -805,11 +813,11 @@ class DataClass:
         # y_new.append(y[index])
 
         # log
-        ct.just_log2("info","batch_iter_wq_test_one_debug")
+        ct.just_log2("info", "batch_iter_wq_test_one_debug")
         msg = "test id=%s " % index
         print(msg)
         ct.log3(msg)
-        ct.just_log2("info",msg)
+        ct.just_log2("info", msg)
 
         name = self.entity1_list[index]
 
@@ -826,17 +834,16 @@ class DataClass:
         labels.append(True)
         # print("batch_iter_wq_test_one_debug ")
 
-        ct.just_log2("info","entity:%s " % name)
+        ct.just_log2("info", "entity:%s " % name)
         # ct.just_log2("info","relation:%s " % name)
 
         # print(y[index])
         r1_text = self.converter.arr_to_text_by_space(y[index])
         q1_text = self.converter.arr_to_text_by_space(x[index])
-        r1_msg = "r-right: %s" % r1_text
+        r1_msg = "r-pos: %s" % r1_text
         q1_msg = "q : %s" % q1_text
-        ct.just_log2("info",q1_msg)
-        ct.just_log2("info",r1_msg)
-
+        ct.just_log2("info", q1_msg)
+        ct.just_log2("info", r1_msg)
 
         # 加入错误的
         # todo : total is get_static_num_debug
@@ -848,7 +855,7 @@ class DataClass:
             r1 = self.converter.text_to_arr_list(r1_split)
             r1_text = self.converter.arr_to_text_by_space(r1)
             # ct.log3(r1_text)
-            ct.just_log2("info","r1_neg in test %s" % r1_text)
+            ct.just_log2("info", "r1_neg in test %s" % r1_text)
             # print(r1_text)
             # ct.just_log2("info","neg-r test:" + r1_text)
             r1 = ct.padding_line(r1, self.max_document_length, padding_num)
@@ -918,7 +925,6 @@ class DataClass:
                 self.relation_path.append(relation_path)
                 self.question_list.append(question.replace("\n", ""))
 
-
                 # 解出1行所有正确的关系，
                 relation_path_rs_all = ct.decode_all_relations(relation_path)
                 # 随机获取1行作为他的关系
@@ -931,7 +937,7 @@ class DataClass:
                     temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
                 self.relation_list.append(temp_relation)
                 if temp_relation == ' location country iso3166 1 shortname ':
-                     print(1111)
+                    print(1111)
 
                 # 处理一下添加到这里
                 # self.relation_list 这个格式是 空格隔开的单词
@@ -948,9 +954,7 @@ class DataClass:
 
                 self.relation_path_clear_str_all.append(relation_path_rs_str_all)
 
-            print("end total_useless = %d "%total_useless)
-
-
+            print("end total_useless = %d " % total_useless)
 
     def find_entity_and_relations_paths(self, path, entity_id):
         """
@@ -983,6 +987,60 @@ class DataClass:
     def get_padding_num(self):
         return self.converter.vocab_size - 1
 
+    # --------------------------------构建word2vec的矩阵
+    def build_embedding_weight(self, filename, embedding_size=100):
+        """
+        load embedding
+        """
+        embeddings = []
+        word2idx = dict()
+        idx2word = dict()
+        idx = 0
+        with codecs.open(filename, mode="r", encoding="utf-8") as rf:
+            try:
+                for line in rf.readlines():
+                    idx += 1
+                    arr = line.split(" ")
+                    if len(arr) != (embedding_size + 1):
+                        logging.error("embedding error, index is:%s" % (idx))
+                        continue
+
+                    embedding = [float(val) for val in arr[1: ]]  # 整行过去
+                    word2idx[arr[0]] = len(word2idx)
+                    idx2word[len(word2idx)] = arr[0]
+                    embeddings.append(embedding)
+
+            except Exception as e:
+                logging.error("load embedding Exception,", e)
+            finally:
+                rf.close()
+
+        logging.info("load embedding finish!")
+        self.embeddings = embeddings # np.ndarray(embeddings)
+        self.word2idx = word2idx
+        self.idx2word = idx2word
+        return embeddings, word2idx, idx2word
+
+    # def prodeuce_embedding_vec_file(self, filename):
+        # model = models.Word2Vec.load(filename)
+        # # 遍历每个单词，查出word2vec然后输出
+        #
+        # v_base = model['end']
+        # print(v_base)
+        #
+        # for word in self.converter.vocab:
+        #     try:
+        #         v = model[word]
+        #     except Exception as e1:
+        #         msg1 = "%s : %s " % (word, e1)
+        #         print(msg1)
+        #         ct.just_log("../data/word2vec/wiki.vector.log", msg1)
+        #         v = model['end']
+        #     m_v = ' '.join([str(x) for x in list(v)])
+        #     msg = "%s %s" % (word, str(m_v))
+        #     # print(msg)
+        #     ct.just_log("../data/word2vec/wiki.vector", msg)
+
 
 # =======================================================================clear data
 def clear_relation():
@@ -1014,17 +1072,16 @@ def test2():
     # d.batch_iter(d.train_question_list_index, d.train_relation_list_index,
     #              batch_size=10)
     for i in range(20):
-        d.batch_iter_wq(d.train_question_list_index, d.train_relation_list_index,
-                              batch_size=10)
-        d.batch_iter_wq_test_one(d.train_question_list_index, d.train_relation_list_index,
-                                       batch_size=10)
+        d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index, batch_size=10)
+        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index,"valid")
+
         #
         # d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
         #                       batch_size=10)
         # d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index,
         #                                batch_size=10)
 
-    print(11122222)
+
 
 
     # print(z)
@@ -1035,17 +1092,30 @@ def test2():
     # print(e1)
     # print(d.batch_iter(2))
 
+
 def test_random_choose_indexs_debug():
     d = DataClass("wq")
     for i in range(20):
         d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
-                        batch_size=10)
-        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index,"test")
+                              batch_size=10)
+        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index, "test")
+
+
+def test3():
+    d = DataClass("wq")
+    filename = '../data/word2vec/train.model.1516586359.2750003'
+    filename = '../data/word2vec/wiki.vector'
+
+    # d.prodeuce_embedding_vec_file(filename)
+    # a1, a2, a3 = d.build_embedding_weight(filename)
+    print("111")
+
 
 if __name__ == "__main__":
+    test2()
     # a = read_rdf_from_gzip_or_alias(path=r"F:\3_Server\freebase-data\topic-json", file_name="1")
     # print(a)
     # clear_relation()
     # test2()
-    test_random_choose_indexs_debug()
+    # test_random_choose_indexs_debug()
     # clear_relation()

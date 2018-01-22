@@ -108,11 +108,11 @@ def cal_loss_and_acc(ori_cand, ori_neg):
         # tf.maximum(a,b),返回的是a,b之间的最大值
         losses = tf.maximum(zero, tf.subtract(margin, tf.subtract(ori_cand, ori_neg)))
         loss = tf.reduce_sum(losses)
-        print("losses-begin")
-        print(losses)
-        print("--------------")
-        print(loss)
-        print("losses-end")
+        # print("losses-begin")
+        # print(losses)
+        # print("--------------")
+        # print(loss)
+        # print("losses-end")
         # cal accurancy
     with tf.name_scope("acc"):
         correct = tf.equal(zero, losses)
