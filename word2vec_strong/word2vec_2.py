@@ -1,6 +1,7 @@
 import logging
 from gensim.models import word2vec
 import os
+import time
 from gensim.models import Word2Vec
 
 current_dir = os.path.dirname(__file__)
@@ -34,6 +35,8 @@ model.save(os.path.join(current_dir, '../data/word2vec/train.model'))
 model = Word2Vec.load(os.path.join(current_dir, "../data/word2vec/train.model"))
 corpusFiles = listAllFilePathInDirectory()
 for f in corpusFiles:
+    print(f)
     sentences = word2vec.LineSentence(f)
     model.train(sentences, total_examples=model.corpus_count, epochs=model.iter)
-model.save(os.path.join(current_dir, '../data/word2vec/train.model2'))
+    model.save(os.path.join(current_dir, '../data/word2vec/train.model'+str(time.time())))
+    print("end:%s "%f)
