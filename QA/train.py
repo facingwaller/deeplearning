@@ -79,6 +79,8 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
         if dh.loss_ok == FLAGS.stop_loss_zeor_count:
             checkpoint(sess)
             os._exit(0)
+    else:
+        dh.loss_ok = 0
     # print(1)
     if step % FLAGS.check == 0 and step != 0:
         checkpoint(sess)
