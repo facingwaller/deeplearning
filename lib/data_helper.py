@@ -12,7 +12,9 @@ from tensorflow.contrib import learn
 import datetime
 import lib.my_log as mylog
 from lib.config import config
-from lib.ct import ct,log_path
+from lib.ct import ct, log_path
+
+
 # from gensim import models
 
 
@@ -239,8 +241,8 @@ class DataClass:
         # q_words = [str(x).replace(".","") for x in q_words ]
         self.converter = read_utils.TextConverter(q_words)
 
-        self.converter.save_to_file_raw(
-             log_path+"/vocab_" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
+        # self.converter.save_to_file_raw(
+        #      log_path+"/vocab_" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
 
         # self.converter.save_to_file("model/converter.pkl")
         # print(self.converter)
@@ -288,7 +290,6 @@ class DataClass:
         self.train_relation_list_index, self.test_relation_list_index = \
             self.cap_nums(self.relation_list_index, rate)
         print("init finish!")
-
 
         self.build_embedding_weight(config.wiki_vector_path())
 
@@ -602,7 +603,7 @@ class DataClass:
         id_list = ct.get_static_id_list_debug()  # [2808,1 ] # 临时设置成固定的
         # todo: 这里应该使用随机从里面提取一个
         # shuffle_indices = np.random.permutation(np.arange(len(shuffle_indices)))  # 打乱样本
-        shuffle_indices = ct.random_get_some_from_list(id_list,batch_size)
+        shuffle_indices = ct.random_get_some_from_list(id_list, batch_size)
 
         # 这个是设置随机1个
         # self.shuffle_indices_debug = shuffle_indices[0:self.batch_size_degbug]
@@ -631,9 +632,11 @@ class DataClass:
 
             # print(name)
             # self.converter.arr_to_text_by_space(self.relation_list_index[2808])
-            ps_to_except1 = self.relation_list[index]  # 应该从另一个关系集合获取
-            ps_to_except1 = [ps_to_except1]
-            length = len(x[index])
+            # ps_to_except1 = self.relation_list[index]  # 应该从另一个关系集合获取
+            ps_to_except1 = self.relation_path_clear_str_all[index]
+
+            # ps_to_except1 = [ps_to_except1]
+            # length = len(x[index])
             r1, r1_index = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
             r1_text = r1
             r1 = self.converter.text_to_arr_list(r1)
@@ -771,7 +774,7 @@ class DataClass:
     #     return np.array(x_new), np.array(y_new), np.array(labels)
 
     # todo: test data
-    def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, model,index):
+    def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, model, index):
         """
         web questions
         生成指定batch_size的数据
@@ -908,6 +911,7 @@ class DataClass:
     # Brazilian real	what type of money does brazil have?
     def init_web_questions(self, fname=r'../data/web_questions/rdf.txt'):
         total_useless = 0
+        index = -1
         with codecs.open(fname, mode='r', encoding='utf-8') as read_file:
             for line in read_file.readlines():
                 # line = f1.readline()
@@ -922,6 +926,8 @@ class DataClass:
                     # self.relation_list.append("###")
                     total_useless += 0
                     continue
+
+                index += 1
                 self.entity1_list.append(entity1)
                 self.relation_path.append(relation_path)
                 self.question_list.append(question.replace("\n", ""))
@@ -936,13 +942,15 @@ class DataClass:
                 temp_relation = ""
                 for o_r in one_relation:
                     temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
+                #
                 self.relation_list.append(temp_relation)
-                if temp_relation == ' location country iso3166 1 shortname ':
-                    print(1111)
 
                 # 处理一下添加到这里
                 # self.relation_list 这个格式是 空格隔开的单词
                 self.relation_path_clear.append(relation_path_rs_all)
+
+                # 输出
+                # msg = "%d\t%s\t"%(index,entity1)
 
                 # 将处理后的路径集合，转换成string格式加入relation_path_clear_str_all
                 relation_path_rs_str_all = []
@@ -950,9 +958,11 @@ class DataClass:
                     temp_relation = ""
                     for o_r in x:
                         temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
-                    # 增加关系
+                    # 增加关系 ' tv tv actor starring roles  tv regular tv appearance character text '
                     relation_path_rs_str_all.append(temp_relation)
-
+                # todo: here to record r path 在这 记录关系路径
+                # msg = msg + "^".join(relation_path_rs_str_all)
+                # ct.just_log("../data/web_questions/q_relations_path.txt",msg )
                 self.relation_path_clear_str_all.append(relation_path_rs_str_all)
 
             print("end total_useless = %d " % total_useless)
@@ -1006,7 +1016,7 @@ class DataClass:
                         logging.error("embedding error, index is:%s" % (idx))
                         continue
 
-                    embedding = [float(val) for val in arr[1: ]]  # 整行过去
+                    embedding = [float(val) for val in arr[1:]]  # 整行过去
                     word2idx[arr[0]] = len(word2idx)
                     idx2word[len(word2idx)] = arr[0]
                     embeddings.append(embedding)
@@ -1017,12 +1027,12 @@ class DataClass:
                 rf.close()
 
         logging.info("load embedding finish!")
-        self.embeddings = embeddings # np.ndarray(embeddings)
+        self.embeddings = embeddings  # np.ndarray(embeddings)
         self.word2idx = word2idx
         self.idx2word = idx2word
         return embeddings, word2idx, idx2word
 
-    # def prodeuce_embedding_vec_file(self, filename):
+        # def prodeuce_embedding_vec_file(self, filename):
         # model = models.Word2Vec.load(filename)
         # # 遍历每个单词，查出word2vec然后输出
         #
@@ -1041,6 +1051,14 @@ class DataClass:
         #     msg = "%s %s" % (word, str(m_v))
         #     # print(msg)
         #     ct.just_log("../data/word2vec/wiki.vector", msg)
+
+    # ------ 输出所有正确的关系
+    def build_all_pos_relations(self):
+        # index \t name \t r1^r2 ...
+        # 从rdf文件 读取每一个关系路径，重新输出
+
+        # self.entitys
+        print(1)
 
 
 # =======================================================================clear data
@@ -1074,7 +1092,7 @@ def test2():
     #              batch_size=10)
     for i in range(20):
         d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index, batch_size=10)
-        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index,"valid")
+        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index, "valid")
 
         #
         # d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
@@ -1085,13 +1103,13 @@ def test2():
 
 
 
-    # print(z)
+        # print(z)
 
-    # d.compare()
-    # d = DataClass("debug")
-    # e1 = d.find_entity("100_classic_book_collection"+".json.gz")
-    # print(e1)
-    # print(d.batch_iter(2))
+        # d.compare()
+        # d = DataClass("debug")
+        # e1 = d.find_entity("100_classic_book_collection"+".json.gz")
+        # print(e1)
+        # print(d.batch_iter(2))
 
 
 def test_random_choose_indexs_debug():
