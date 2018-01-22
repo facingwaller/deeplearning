@@ -771,7 +771,7 @@ class DataClass:
     #     return np.array(x_new), np.array(y_new), np.array(labels)
 
     # todo: test data
-    def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, model):
+    def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, model,index):
         """
         web questions
         生成指定batch_size的数据
@@ -806,7 +806,8 @@ class DataClass:
             id_list = ct.get_static_id_list_debug_test()
         else:
             raise Exception("MODEL 参数出错")
-        index = ct.random_get_one_from_list(id_list)
+        print("这里暂时用的外面传进来的index")
+        # index = ct.random_get_one_from_list(id_list)
         # index = shuffle_indices[0]
         # 当前给一个
         # x_new.append(x[index])

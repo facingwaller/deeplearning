@@ -195,9 +195,20 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
                       train_relation_list_index, model):
     right = 0
     wrong = 0
+    # 产生随机的index给debug那边去获得index
+    # 仅供现在验证用
+    if model=="valid":
+        id_list = ct.get_static_id_list_debug()
+    else:
+        id_list = ct.get_static_id_list_debug_test()
+    id_list = ct.random_get_some_from_list(id_list,FLAGS.evaluate_batchsize)
+    ct.get_static_id_list_debug()
     for i in range(batchsize):
+
+        index = id_list[i]
+        print("valid_batch_debug: %d ,%d"%(i,index))
         test_q, test_r, labels = \
-            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model)
+            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model,index)
         ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
         if ok:
             right += 1
