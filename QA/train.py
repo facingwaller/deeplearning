@@ -64,28 +64,28 @@ def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_
     time_elapsed = time.time() - start_time
 
     writer.add_summary(summary, trainstep)
-    # print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
-    info = "use_error%s %s: step %s, loss %s, acc %s, score %s,right %s wrong %s, %6.7f secs/batch " % (
+    # ct.print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
+    info = "use_error %s %s: step %s, loss %s, acc %s, score %s,right %s wrong %s, %6.7f secs/batch " % (
         use_error, time_str, trainstep, l1, acc1, score, right, wrong, time_elapsed)
     ct.just_log2("info", info)
-    print(info)
+    ct.print(info)
     if use_error and l1 == 0.0 and acc1 == 1.0:
         ct.just_log2("debug", "step=%s,train_step=%s------" % (step, trainstep))
         dh.log_error_r(train_q, "train_q")
         dh.log_error_r(train_cand, "train_cand")
         dh.log_error_r(train_neg, "train_neg")
-        print("??????")
+        ct.print("??????")
 
     if l1 == 0.0 and acc1 == 1.0:
         dh.loss_ok += 1
         ct.log3("loss = 0.0  %d " % dh.loss_ok)
-        print("loss == 0.0 and acc == 1.0 checkpoint and exit now = %d" % dh.loss_ok)
+        ct.print("loss == 0.0 and acc == 1.0 checkpoint and exit now = %d" % dh.loss_ok)
         if dh.loss_ok == FLAGS.stop_loss_zeor_count:
             checkpoint(sess)
             os._exit(0)
     else:
         dh.loss_ok = 0
-    # print(1)
+    #ct.prin(1)
     if (trainstep + 1) % FLAGS.check == 0:
         checkpoint(sess)
 
@@ -125,7 +125,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     # 用第一个和其他的比较，这个是另一种判定正确的办法,
     # for i in range(1, len(test_q_r_cosin)):
     #     compare_res = ct.nump_compare_matix(test_q_r_cosin[0], test_q_r_cosin[i])
-    #     print("compare_res:" + str(compare_res))
+    #     ct.print("compare_res:" + str(compare_res))
 
     for i in range(0, len(test_q_r_cosin)):
         st = ct.new_struct()
@@ -134,7 +134,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         ori_cand_score_mean = np.mean(test_q_r_cosin[i])
         st.score = ori_cand_score_mean
         st_list.append(st)
-        # print(ori_cand_score_mean)
+        # ct.print(ori_cand_score_mean)
     # 将得分和index结合，然后得分排序
     st_list.sort(key=ct.get_key)
     st_list.reverse()
@@ -142,7 +142,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 
     ct.just_log2("info", "\n ##3 score")
     for st in st_list_sort:
-        # print("index:%d ,score= %f " % (st.index, st.score))
+        # ct.print("index:%d ,score= %f " % (st.index, st.score))
         # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
         # 得到得分排序前X的index
         # 根据index找到对应的关系数组
@@ -150,14 +150,14 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         better_index = st.index
         # 根据对应的关系数组找到对应的文字
         r1 = dh.converter.arr_to_text_by_space(test_r[better_index])
-        # print(r1)
+        # ct.print(r1)
         ct.just_log2("info", "step:%d st.index:%d,score:%f,r:%s" % (step, st.index, st.score, r1))
 
     is_right = False
     msg = " win r =%d  " % st_list_sort[0].index
     ct.log3(msg)
     if st_list_sort[0].index == 0:
-        print("================================================================ok")
+        ct.print("================================================================ok")
         is_right = True
     else:
         # todo: 在此记录该出错的题目和积分比pos高的neg关系
@@ -172,13 +172,13 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
                 error_test_neg_r.append(test_r[st.index])
                 error_test_q.append(test_q[0])
                 error_test_pos_r.append(test_r[0])
-        print("================================================================error")
+        ct.print("================================================================error")
         ct.just_log2("info", "!!!!! error %d  " % step)
     ct.just_log2("info", "\n =================================end\n")
 
     time_elapsed = time.time() - start_time
     time_str = datetime.datetime.now().isoformat()
-    print("%s: step %s,  score %s, is_right %s, %6.7f secs/batch" % (
+    ct.print("%s: step %s,  score %s, is_right %s, %6.7f secs/batch" % (
         time_str, step, score, str(is_right), time_elapsed))
     return is_right, error_test_q, error_test_pos_r, error_test_neg_r
 
@@ -197,7 +197,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 #             wrong += 1
 #     acc = right / (right + wrong)
 #     result_msg = "right:%d wrong:%d" % (right, wrong)
-#     ct.print(result_msg, "debug")
+#     ct.ct.print(result_msg, "debug")
 #     ct.log3(result_msg)
 #     return acc
 
@@ -218,7 +218,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
     error_test_neg_r_list = []
     for i in range(batchsize):
         index = id_list[i]
-        print("valid_batch_debug: %d ,%d" % (i, index))
+        ct.print("valid_batch_debug: %d ,%d" % (i, index))
         test_q, test_r, labels = \
             dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index)
 
@@ -243,7 +243,7 @@ def checkpoint(sess):
     # Output directory for models and summaries
     timestamp = str(int(time.time()))
     out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
-    print("Writing to {}\n".format(out_dir))
+    ct.print("Writing to {}\n".format(out_dir))
     # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
     checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
     checkpoint_prefix = os.path.join(checkpoint_dir, "model")
@@ -258,7 +258,7 @@ def main():
     now = "\n\n\n" + str(datetime.datetime.now().isoformat())
     # test 是完整的; small 是少量 ; debug 只是一次
     model = "wq"
-    print("tf:%s model:%s " % (str(tf.__version__), model))  # 1.2.1
+    ct.print("tf:%s model:%s " % (str(tf.__version__), model))  # 1.2.1
     ct.just_log2("info", now)
     ct.just_log2("valid", now)
     ct.just_log2("test", now)
@@ -271,7 +271,7 @@ def main():
         embedding_weight = dh.embeddings
 
     # 3 构造模型LSTM类
-    print("max_document_length=%s,vocab_size=%s " % (str(dh.max_document_length), str(dh.converter.vocab_size)))
+    ct.print("max_document_length=%s,vocab_size=%s " % (str(dh.max_document_length), str(dh.converter.vocab_size)))
     lstm = mynn.CustomNetwork(max_document_length=dh.max_document_length,  # timesteps
                               word_dimension=FLAGS.word_dimension,  # 一个单词的维度
                               vocab_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
@@ -368,7 +368,7 @@ def main():
                     # else:
                     #     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
                     msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
-                    print(msg)
+                    ct.print(msg)
                     ct.just_log2("valid", msg)
                 if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
                     model = "test"
@@ -383,7 +383,7 @@ def main():
                     _3.clear()
                     msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (
                         step, train_step, test_batchsize, acc)
-                    print(msg)
+                    ct.print(msg)
                     ct.just_log2("test", msg)
                     # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
                     # ct.log3(toogle_line)

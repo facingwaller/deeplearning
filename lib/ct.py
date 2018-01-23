@@ -672,11 +672,14 @@ class ct:
     @staticmethod
     def print(msg="", m="none"):
         #
-        ms = ["train", "test", "debug", "none"
-            , "show_shape"
-              # , "data"
-              # , "debug_epoches"
-              ]
+        # ms = ["train", "test"
+        #     , "debug"
+        #     # , "none"
+        #     , "show_shape"
+        #       # , "data"
+        #       # , "debug_epoches"
+        #       ]
+        ms = config.get_print_type()
         if m in ms:
             print(msg)
 
