@@ -592,6 +592,7 @@ class ct:
         f1_writer.write(msg + "\n")
         f1_writer.close()
 
+
     @staticmethod
     def log_vailed(msg):
 
@@ -674,6 +675,7 @@ class ct:
         ms = ["train", "test", "debug", "none"
             , "show_shape"
               # , "data"
+              # , "debug_epoches"
               ]
         if m in ms:
             print(msg)

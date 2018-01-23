@@ -34,26 +34,23 @@ import os
 
 
 # ---在用
-def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer, dh):
+def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_neg, merged, writer, dh, use_error):
     start_time = time.time()
     feed_dict = {
         lstm.ori_input_quests: train_q,  # ori_batch
         lstm.cand_input_quests: train_cand,  # cand_batch
         lstm.neg_input_quests: train_neg  # neg_batch
     }
-    for _ in train_neg:
-        train_neg_text = dh.converter.arr_to_text_by_space(_)
-        ct.print("run_step2:" + train_neg_text, "data")
+
     # ct.check_len(train_q,15)
     # ct.check_len(train_cand, 15)
     # ct.check_len(train_neg, 15)
     summary, l1, acc1, embedding1, train_op1, \
-    ori_cand_score, ori_neg_score = sess.run(
+    ori_cand_score, ori_neg_score, ori_quests_out = sess.run(
         [merged, lstm.loss, lstm.acc, lstm.embedding, train_op,
-         lstm.ori_cand, lstm.ori_neg],
+         lstm.ori_cand, lstm.ori_neg, lstm.ori_quests],
         feed_dict=feed_dict)
-    # print(loss_t)
-    # mylog.log_list(loss_t)
+
     time_str = datetime.datetime.now().isoformat()
     right, wrong, score = [0.0] * 3
     for i in range(0, len(train_q)):
@@ -66,12 +63,19 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
         score += ori_cand_score_mean - ori_neg_score_mean
     time_elapsed = time.time() - start_time
 
-    writer.add_summary(summary, step)
+    writer.add_summary(summary, trainstep)
     # print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
-    info = "%s: step %s, loss %s, acc %s, score %s, wrong %s, %6.7f secs/batch" % (
-        time_str, step, l1, acc1, score, wrong, time_elapsed)
+    info = "use_error%s %s: step %s, loss %s, acc %s, score %s,right %s wrong %s, %6.7f secs/batch " % (
+        use_error, time_str, trainstep, l1, acc1, score, right, wrong, time_elapsed)
     ct.just_log2("info", info)
     print(info)
+    if use_error and l1 == 0.0 and acc1 == 1.0:
+        ct.just_log2("debug", "step=%s,train_step=%s------" % (step, trainstep))
+        dh.log_error_r(train_q, "train_q")
+        dh.log_error_r(train_cand, "train_cand")
+        dh.log_error_r(train_neg, "train_neg")
+        print("??????")
+
     if l1 == 0.0 and acc1 == 1.0:
         dh.loss_ok += 1
         ct.log3("loss = 0.0  %d " % dh.loss_ok)
@@ -82,7 +86,7 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
     else:
         dh.loss_ok = 0
     # print(1)
-    if step % FLAGS.check == 0 and step != 0:
+    if (trainstep + 1) % FLAGS.check == 0:
         checkpoint(sess)
 
 
@@ -92,7 +96,7 @@ def run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged
 # test_q,问题
 # test_r,关系
 # labels,标签,
-def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh):
+def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh,model):
     start_time = time.time()
     feed_dict = {
         lstm.test_input_q: test_q,
@@ -100,13 +104,16 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     }
     for _ in test_q:
         v_s_1 = dh.converter.arr_to_text_by_space(_)
-        valid_msg = "test_q 1:" + v_s_1
+        valid_msg = model+" test_q 1:" + v_s_1
         ct.just_log2("valid_step", valid_msg)
     for _ in test_r:
         v_s_1 = dh.converter.arr_to_text_by_space(_)
-        valid_msg = "test_r 1:" + v_s_1
+        valid_msg = model+" test_r 1:" + v_s_1
         ct.just_log2("valid_step", valid_msg)
 
+    error_test_q = []
+    error_test_pos_r = []
+    error_test_neg_r = []
     test_q_r_cosin = sess.run(
         [lstm.test_q_r],
         feed_dict=feed_dict)
@@ -132,10 +139,9 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     st_list.sort(key=ct.get_key)
     st_list.reverse()
     st_list_sort = st_list  # 取全部 st_list[0:5]
-    # st_list_sort=ct.nump_sort(st_list)
 
     ct.just_log2("info", "\n ##3 score")
-    for st in st_list_sort:  # 取5个
+    for st in st_list_sort:
         # print("index:%d ,score= %f " % (st.index, st.score))
         # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
         # 得到得分排序前X的index
@@ -146,9 +152,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         r1 = dh.converter.arr_to_text_by_space(test_r[better_index])
         # print(r1)
         ct.just_log2("info", "step:%d st.index:%d,score:%f,r:%s" % (step, st.index, st.score, r1))
-        # 输出对应的文字
-        # print(r1)
-    # test_r[best_index]
+
     is_right = False
     msg = " win r =%d  " % st_list_sort[0].index
     ct.log3(msg)
@@ -156,20 +160,27 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         print("================================================================ok")
         is_right = True
     else:
+        # todo: 在此记录该出错的题目和积分比pos高的neg关系
+        # q,pos,neg
+        # error_test_q.append()
+        # 找到
+        for st in st_list_sort:
+            # 在此记录st list的neg
+            if st.index == 0:
+                break
+            else:
+                error_test_neg_r.append(test_r[st.index])
+                error_test_q.append(test_q[0])
+                error_test_pos_r.append(test_r[0])
         print("================================================================error")
         ct.just_log2("info", "!!!!! error %d  " % step)
     ct.just_log2("info", "\n =================================end\n")
 
     time_elapsed = time.time() - start_time
-    # mylog.logger.info("%s: step %s, score %s, wrong %s, %6.7f secs/batch" % (
-    #     time_str, step,   score, wrong, time_elapsed))
-    # writer.add_summary(summary, step)
-    # print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
     time_str = datetime.datetime.now().isoformat()
     print("%s: step %s,  score %s, is_right %s, %6.7f secs/batch" % (
         time_str, step, score, str(is_right), time_elapsed))
-    # print(1)
-    return is_right
+    return is_right, error_test_q, error_test_pos_r, error_test_neg_r
 
 
 # 暂时不用
@@ -197,26 +208,32 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
     wrong = 0
     # 产生随机的index给debug那边去获得index
     # 仅供现在验证用
-    if model=="valid":
+    if model == "valid":
         id_list = ct.get_static_id_list_debug()
     else:
         id_list = ct.get_static_id_list_debug_test()
-    id_list = ct.random_get_some_from_list(id_list,FLAGS.evaluate_batchsize)
-    ct.get_static_id_list_debug()
+    id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+    error_test_q_list = []
+    error_test_pos_r_list = []
+    error_test_neg_r_list = []
     for i in range(batchsize):
-
         index = id_list[i]
-        print("valid_batch_debug: %d ,%d"%(i,index))
+        print("valid_batch_debug: %d ,%d" % (i, index))
         test_q, test_r, labels = \
-            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model,index)
-        ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
+            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index)
+
+        ok, error_test_q, error_test_pos_r, error_test_neg_r = valid_step(sess, lstm, step, train_op, test_q, test_r,
+                                                                          labels, merged, writer, dh,model)
+        error_test_q_list.extend(error_test_q)
+        error_test_pos_r_list.extend(error_test_pos_r)
+        error_test_neg_r_list.extend(error_test_neg_r)
         if ok:
             right += 1
         else:
             wrong += 1
     acc = right / (right + wrong)
     ct.print("right:%d wrong:%d" % (right, wrong), "debug")
-    return acc
+    return acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list
 
 
 # --
@@ -243,7 +260,7 @@ def main():
     model = "wq"
     print("tf:%s model:%s " % (str(tf.__version__), model))  # 1.2.1
     ct.just_log2("info", now)
-    ct.just_log2("valied", now)
+    ct.just_log2("valid", now)
     ct.just_log2("test", now)
     ct.just_log2("info", get_config_msg())
     ct.log3(now)
@@ -280,55 +297,107 @@ def main():
         sess.run(init)
 
         embeddings = []
+        use_error = False
+        error_test_q_list = []
+        error_test_pos_r_list = []
+        error_test_neg_r_list = []
 
+        # 测试输出所以的训练问题和测试问题
+        # dh.build_train_test_q()
+        #
+        train_step = 0
         for step in range(FLAGS.epoches):
-            toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>step=%d" % step
+
+            toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (step, len(dh.q_neg_r_tuple))
             ct.log3(toogle_line)
             ct.just_log2("info", toogle_line)
-            # ct.just_log2("valied", toogle_line)
 
-            if ct.is_debug_few():
-                train_q, train_cand, train_neg = \
-                    dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
-                                           FLAGS.batch_size)
+            if FLAGS.fix_model and len(error_test_q_list) != 0:
+                my_generator = dh.batch_iter_wq_debug_fix_model(
+                    error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, FLAGS.batch_size)
+                use_error = True
+                toogle_line = "\n\n\n\n\n------------------use_error to train"
+                ct.log3(toogle_line)
+                ct.just_log2("info", toogle_line)
+                ct.just_log2("valid", 'use_error to train')
+                ct.just_log2("test", 'use_error to train')
+            elif ct.is_debug_few():
+                toogle_line = "\n------------------is_debug_few to train"
+                ct.log3(toogle_line)
+                ct.just_log2("info", toogle_line)
+                # train_q, train_cand, train_neg = \
+                my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
+                                                      FLAGS.batch_size)
             else:
                 train_q, train_cand, train_neg = \
                     dh.batch_iter_wq(dh.train_question_list_index, dh.train_relation_list_index,
                                      FLAGS.batch_size)
 
-            run_step2(sess, lstm, step, train_op, train_q, train_cand, train_neg, merged, writer, dh)
-            # e1 = embeddings[0] == embeddings[1]  # 通过这个可以看到确实改变了部分
+            toogle_line = "\n==============================train_step=%d\n" % train_step
+            ct.just_log2("info", toogle_line)
+            ct.log3(toogle_line)
+            for gen in my_generator:
+                toogle_line = "\n==============================train_step=%d\n" % train_step
+                ct.just_log2("info", toogle_line)
+                ct.log3(toogle_line)
 
-            # -------------------------test
-            # 1 源数据，训练数据OR验证数据OR测试数据
-            # 2 生成模式batch_iter_wq_test_one_debug 从，batch_iter_wq_test_one
-            test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
-            if step % FLAGS.evaluate_every == 0 and step != 0:
-                # if ct.is_debug_few():
-                # dh.train_question_list_index, dh.train_relation_list_index
-                model = "valid"
-                acc = valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
-                                        dh, test_batchsize, dh.train_question_list_index, dh.train_relation_list_index,
-                                        model)
-                # else:
-                #     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
-                msg = "step:%d valid_batchsize:%d  acc:%f " % (step, test_batchsize, acc)
-                print(msg)
-                ct.just_log2("valied", msg)
-            if FLAGS.need_test:
-                if step % FLAGS.test_every == 0 and step != 0:
+                if not use_error:
+                    train_step += 1
+
+                train_q = gen[0]
+                train_cand = gen[1]
+                train_neg = gen[2]
+                run_step2(sess, lstm, step, train_step, train_op, train_q, train_cand, train_neg, merged, writer, dh,
+                          use_error)
+
+                if use_error:
+                    continue
+                # -------------------------test
+                # 1 源数据，训练数据OR验证数据OR测试数据
+
+                test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
+                if (train_step + 1) % FLAGS.evaluate_every == 0:
+                    # if ct.is_debug_few():
+                    # dh.train_question_list_index, dh.train_relation_list_index
+                    model = "valid"
+                    acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list = \
+                        valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
+                                          dh, test_batchsize, dh.train_question_list_index,
+                                          dh.train_relation_list_index,
+                                          model)
+                    # else:
+                    #     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
+                    msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
+                    print(msg)
+                    ct.just_log2("valid", msg)
+                if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
                     model = "test"
-                    acc = valid_batch_debug(sess, lstm, step, train_op, merged, writer,
-                                            dh, test_batchsize, dh.test_question_list_index,
-                                            dh.test_relation_list_index,
-                                            model)
-                    msg = "step:%d test_batchsize:%d  acc:%f " % (step, test_batchsize, acc)
+                    acc, _1, _2, _3 = \
+                        valid_batch_debug(sess, lstm, step, train_op, merged, writer,
+                                          dh, test_batchsize, dh.test_question_list_index,
+                                          dh.test_relation_list_index,
+                                          model)
+                    # 测试 集合不做训练
+                    _1.clear()
+                    _2.clear()
+                    _3.clear()
+                    msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (
+                        step, train_step, test_batchsize, acc)
                     print(msg)
                     ct.just_log2("test", msg)
+                    # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
+                    # ct.log3(toogle_line)
+                    # ct.just_log2("info", toogle_line)
+
+            if use_error:
+                error_test_q_list.clear()
+                error_test_pos_r_list.clear()
+                error_test_neg_r_list.clear()
+                use_error = False
             toogle_line = "<<<<<<<<<<<<<<<<<<<<<<<<<<<<step=%d\n" % step
             # ct.just_log2("test", toogle_line)
             ct.just_log2("info", toogle_line)
-            # ct.just_log2("valied", toogle_line)
+            # ct.just_log2("valid", toogle_line)
             ct.log3(toogle_line)
 
 

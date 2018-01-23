@@ -196,5 +196,4 @@ def get_feature(input_q, input_a, att_W):
     # Tensor("att_weight/Tanh_1:0", shape=(?, 600), dtype=float32)
 
 
-def test1():
-    print(1)
+
