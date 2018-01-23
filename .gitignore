@@ -21,3 +21,4 @@ __pycache__
 /data/freebase/freebase.zip
 /test/t_read_gzip.py
 /lib/config.py
+/freebase
