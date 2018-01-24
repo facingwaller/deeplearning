@@ -17,121 +17,11 @@ from lib.ct import ct, log_path
 
 # from gensim import models
 
-
-# 从文件中读取问题集合
-# 返回句子和标签
-
-
-
-class free_base:
-    entitys = []
-
-    def init_fb(self, file_name="../data/freebase/freebase_entity.txt"):
-        with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
-            for line in read_file.readlines():
-                self.entitys.append(line.replace("\r\n", ""))
-
-    def find_fb_by_id(self, id):
-        exist = False
-
-        for e1 in self.entitys:
-
-            if str(e1) == str(id):
-                exist = True
-                ct.print(e1, id)
-        return exist
-
-
-def test1():
-    # read_files("../data/sq/annotated_fb_data_train-1.txt")
-    # read_fb("1111.json")
-
-    fb1 = free_base()
-    fb1.init_fb()
-    ct.print(fb1.entitys.__len__())
-    r = fb1.find_fb_by_id("012_0k9")
-    ct.print(r)
-
-    return
-
-
 # ======================================================================common
-# 直接从gzip中读取文本
-def read_rdf_from_gzip(file_name=r"../data/freebase/100_classic_book_collection.json.gz"):
-    g2 = ""
-    try:
-        with gzip.open(filename=file_name, mode="rt", encoding="utf-8") as g:
-            gs = []
-            for g1 in g:
-                gs.append(str(g1))
-            g2 = "".join(gs)
-            # ct.print(g2)
-    except Exception as e1:
-        ct.just_log2("info", e1)
-    return g2
-
-
-def read_rdf_from_gzip_or_alias(path, file_name):
-    """
-    从gzip或者gzip_txt中读取内容
-    """
-    g2 = ""
-    read_from_gzip_error = False
-    try:
-        with gzip.open(filename=path + "\/" + file_name + ".json.gz", mode="rt", encoding="utf-8") as g:
-            gs = []
-            for g1 in g:
-                gs.append(str(g1))
-            g2 = "".join(gs)
-            # ct.print(g2)
-    except Exception as e1:
-        ct.just_log2("info", e1)
-        read_from_gzip_error = True
-
-    if read_from_gzip_error:
-        tj_txt = codecs.open(path + "\/" + file_name + ".json.gz", mode="r", encoding='utf-8')
-        file_name = tj_txt.readline().replace("\n", "")
-
-    try:
-        with gzip.open(filename=path + "\/" + file_name, mode="rt", encoding="utf-8") as g:
-            gs = []
-            for g1 in g:
-                gs.append(str(g1))
-            g2 = "".join(gs)
-    except Exception as e1:
-        ct.just_log2("info", e1)
-
-    return g2
-
-
-# =======================================================================simple questions
 
 
 
-def read_file(file_name):
-    """
-    读取文件返回行的list
-    :param file_name:
-    :return:
-    """
-    idx = 0
-    lines = []
-    with codecs.open(file_name, mode="r", encoding="utf-8") as file:
-        try:
-            for line in file.readlines():
-                idx += 1
-                lines.append(line)
-        except Exception as e:
-            ct.print("index = ", idx)
-            logging.error("error ", e)
-    return lines
 
-
-class classObject:
-    pass
-
-
-# =======================================================================DataClass
 class DataClass:
     # ---------------------web questions
     relation_path = []  # 原始路径
@@ -306,16 +196,6 @@ class DataClass:
         ct.print("build_all_q_r_tuple 生成所有的q和neg r的组合")
         # 打乱
 
-    # ---------------------load_all_train_data
-    def load_all_train_data(self):
-        """
-
-        :return:返回问题集合,答案集合（关系集合）
-        """
-        all_data = []
-
-        return self.question_list, self.relation_list
-
     # ---------------------simple questions
 
     def init_simple_questions(self, file_name):
@@ -427,60 +307,6 @@ class DataClass:
         ct.print("relations len:" + str(len(self.relations)))
         # relation_path_clear_str_all
 
-    def compare(self):
-        # 寻找simple questions 不在freebase中的
-        ct.print("compare============e1")
-        for e1 in self.entity1_list:
-            if e1 not in self.entitys:
-                ct.print(e1)
-                ct.just_log("../data/simple_questions/entitys_not_in_fb.txt", e1)
-        ct.print("compare============r1")
-        for e1 in self.relation_list:
-            if e1 not in self.relations:
-                ct.just_log("../data/simple_questions/relations_not_in_fb.txt", e1)
-        ct.print("compare============")
-
-    def find_both_in_sq_and_freebase(self):
-        # 寻找simple questions 不在freebase中的
-        ct.print("compare============rdf")
-        index = 0
-        for rdf in self.rdf_list:
-            index += 1
-            if ((index % 10000) == 0):
-                ct.print("index %d " % index)
-            r1 = rdf[0] not in self.entitys
-            r2 = False
-            # r2 = rdf[1] not in self.relations
-            # r3 = rdf[2] not in self.entitys
-            # r2 直接去 entity里面找
-            #         # m.02hvp4r.json.gz
-            id = ""
-            try:
-                id, ps = self.find_entity("m." + rdf[0] + ".json.gz")
-            except Exception as e1:
-                ct.print(e1)
-
-            if id == "":
-                r2 = False
-            else:
-                for p in ps:
-                    p1 = str(p).replace("www.freebase.com/", ""). \
-                        replace("/", "_").replace("_", " ").strip()
-                    if p1 == rdf[1]:
-                        r2 = True
-                    else:
-                        r2 = False
-            if r1:
-                ct.print(rdf[0])
-            elif r2:
-                ct.print(rdf[1])
-
-            if r1 or r2:
-                ct.just_log("../data/simple_questions/rdf_not_in_fb.txt", str(rdf[0]) + "\t" + str(index))
-            else:
-                ct.just_log("../data/simple_questions/rdf_in_fb.txt", str(rdf[0]) + "\t" + str(index))
-        ct.print("compare============end")
-
     def init_relation_fb(self, file_name="../data/freebase/freebase_relation_clear.txt"):
         """
         从文件中加载所有的关系然后作为词汇的候选列表
@@ -491,28 +317,6 @@ class DataClass:
             for line in read_file.readlines():
                 self.relation_list.append(line.replace("\r\n", ""))
                 # ct.print("init_relation_fb")
-
-    # 根据entity_id获取entity
-    def find_entity(self, path, entity_id):
-        """
-        从文件系统中获取实体
-        :return:
-        """
-        # file_path = r"D:\ZAIZHI\freebase-data\topic-json"
-
-        file_txt = read_rdf_from_gzip_or_alias(path, entity_id)
-        json_file = json.loads(file_txt)
-        id = ""
-        ps = []
-        try:
-            id = json_file["id"]
-            property_list = json_file["property"]
-            for p in property_list:
-                ps.append(p)
-        except Exception as e1:
-            ct.print("error ", e1)
-        finally:
-            return id, ps
 
     def get_relations_except_one(self, path, entity_id, ps_to_except):
         """
@@ -542,45 +346,6 @@ class DataClass:
                 exist = True
                 ct.print(e1, id)
         return exist
-
-    # --------------------- 在annotated_fb_data_train等三个文件中找出所有的id然后去 entity_id里面找
-
-    # --------------------生成batch
-    def batch_iter(self, question_list_index, relation_list_index, batch_size=100):
-        """
-        生成指定batch_size的数据
-        :param batch_size:
-        :return:
-        """
-        x = question_list_index.copy()
-        y = relation_list_index.copy()
-        x_new = []
-        y_new = []
-        z_new = []
-        length = len(x)
-        shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
-        # ct.print("shuffle_indices", str(shuffle_indices))
-        total = 0
-        for index in shuffle_indices:
-            x_new.append(x[index])
-            y_new.append(y[index])
-            total += 1
-            if total >= batch_size:
-                break
-        # 根据y 生成z，也就是错误的关系,当前先做1:1的比例
-        # rate = 1
-        r_si = reversed(shuffle_indices)
-        r_si = list(r_si)
-        # ct.print(r_si)
-        total = 0
-        for index in r_si:
-            z_new.append(y[index])
-            total += 1
-            if total >= batch_size:
-                break
-        ct.print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
-
-        return np.array(x_new), np.array(y_new), np.array(z_new)
 
     # --------------------生成batch
     def batch_iter_wq(self, question_list_index, relation_list_index, batch_size=100):
@@ -1043,32 +808,7 @@ class DataClass:
             rs.append(i)
         return rs
 
-    def find_entity_and_relations_paths(self, path, entity_id):
-        """
-        从文件系统中获取实体
-        :return:
-        """
-        # file_path = r"D:\ZAIZHI\freebase-data\topic-json"
 
-        file_txt = read_rdf_from_gzip_or_alias(path, entity_id)
-        json_file = json.loads(file_txt)
-        id = ""
-        ps = []
-        if not id.startswith('/m/'):
-            ct.print(id)
-            return id, ps
-        try:
-            id = json_file["id"]
-            property_list = json_file["property"]
-            for p in property_list:
-                ps.append(p)
-
-                # 判断当前层是否
-
-        except Exception as e1:
-            ct.print("error ", e1)
-        finally:
-            return id, ps
 
     # ---------------------------------零碎的小东西
     def get_padding_num(self):
@@ -1168,21 +908,21 @@ class DataClass:
                                     , "%s\t%s" % (question, neg_r))
         ct.print("build_all_q_r_tuple q_neg_r_tuple")
 
-        for index in range(questions_len_train):
-            # name = self.entity1_list[index]
-            question = self.question_list[index]
-            ps_to_except1 = self.relation_path_clear_str_all[index]
-            # r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
-            for neg_r in ps_to_except1:
-                q_r_tuple = (question, neg_r)
-                self.q_pos_r_tuple.append(q_r_tuple)
-                if is_record:
-                    if self.mode == "wq":
-                        ct.just_log("../data/web_questions/q_pos_r_tuple.txt", "%s\t%s" % (question, neg_r))
-                    if self.mode == "sq":
-                        ct.just_log("%s/q_pos_r_tuple.txt" % config.get_sq_topic_path(),
-                                    "%s\t%s" % (question, neg_r))
-        ct.print("build_all_q_r_tuple q_pos_r_tuple")
+        # for index in range(questions_len_train):
+        #     # name = self.entity1_list[index]
+        #     question = self.question_list[index]
+        #     ps_to_except1 = self.relation_path_clear_str_all[index]
+        #     # r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+        #     for neg_r in ps_to_except1:
+        #         q_r_tuple = (question, neg_r)
+        #         self.q_pos_r_tuple.append(q_r_tuple)
+        #         if is_record:
+        #             if self.mode == "wq":
+        #                 ct.just_log("../data/web_questions/q_pos_r_tuple.txt", "%s\t%s" % (question, neg_r))
+        #             if self.mode == "sq":
+        #                 ct.just_log("%s/q_pos_r_tuple.txt" % config.get_sq_topic_path(),
+        #                             "%s\t%s" % (question, neg_r))
+        # ct.print("build_all_q_r_tuple q_pos_r_tuple")
 
     def build_train_test_q(self):
         for q in self.train_question_list_index:
@@ -1277,7 +1017,7 @@ def test_random_choose_indexs_debug():
     for i in range(20):
         d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
                               batch_size=10)
-        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index, "test")
+        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index, "test",1)
 
 
 def test_build():
@@ -1296,10 +1036,11 @@ def test_sq():
     d = DataClass("sq")
     # d.build_all_q_r_tuple(config.get_static_q_num_debug(),
     #                       config.get_static_num_debug(), is_record=True)
-    print(1)
+    print(0000000000)
 
 
 if __name__ == "__main__":
+    # test_random_choose_indexs_debug()
     test_sq()
     # a = read_rdf_from_gzip_or_alias(path=r"F:\3_Server\freebase-data\topic-json", file_name="1")
     # ct.print(a)

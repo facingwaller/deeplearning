@@ -737,7 +737,10 @@ class ct:
         ms = config.get_print_type()
         if m in ms:
             print(msg)
-
+    @staticmethod
+    def print_t():
+        timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        ct.print(timestamp,"time")
     # -------------------文件读取
     @staticmethod
     def file_read_all_lines(file_name):
