@@ -739,7 +739,8 @@ class DataClass:
         if self.mode == "wq":
             rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
         if self.mode == "sq":
-            rs = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name, ps_to_except=ps_to_except1)
+            rs = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name,
+                                                             ps_to_except=ps_to_except1,not_allow_repeat=True)
 
         # rs = list(set(rs))
         # 加入正确的
@@ -894,8 +895,12 @@ class DataClass:
                 r_all_neg = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name, ps_to_except=ps_to_except1)
             else:
                 raise Exception("mode error")
+            # todo :检查这里是否多干掉了一个
             error_relation_num = min(len(r_all_neg), error_relation_num)
             r_all_neg = r_all_neg[0:error_relation_num]
+            if len(r_all_neg)==0 :
+                print(111112321312321)
+            print(len(r_all_neg))
             for neg_r in r_all_neg:
                 q_r_tuple = (index, question, neg_r)
                 self.q_neg_r_tuple.append(q_r_tuple)
@@ -903,7 +908,7 @@ class DataClass:
                     if self.mode == "wq":
                         ct.just_log("../data/web_questions/q_neg_r_tuple.txt", "%s\t%s" % (question, neg_r))
                     if self.mode == "sq":
-                        ct.just_log("%s/q_neg_r_tuple.txt" % config.get_sq_topic_path()
+                        ct.just_log("%s/q_neg_r_tuple1.txt" % config.get_sq_files_path()
                                     , "%s\t%s" % (question, neg_r))
         ct.print("build_all_q_r_tuple q_neg_r_tuple")
 
@@ -1100,10 +1105,9 @@ def test_build():
 
 def test_sq():
     dh = DataClass("sq")
-    # dh.build_all_q_r_tuple(config.get_static_q_num_debug(),
-    #                       config.get_static_num_debug(), is_record=True)
-    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
-                                          10)
+    dh.build_all_q_r_tuple(config.get_static_q_num_debug(),
+                           config.get_static_num_debug(), is_record=True)
+    # my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,10)
     # for gen in my_generator:
     #     train_q = gen[0]
     #     train_cand = gen[1]

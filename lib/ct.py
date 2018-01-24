@@ -474,7 +474,7 @@ class ct:
     # to do : read_entity_and_get_all_neg_relations_sq
     # 获取所有neg的关系
     @staticmethod
-    def read_entity_and_get_all_neg_relations_sq(entity_id, ps_to_except):
+    def read_entity_and_get_all_neg_relations_sq(entity_id, ps_to_except,not_allow_repeat=True):
         path = config.get_sq_topic_path()
         path = path +"/m."+ entity_id+".gz"
         text_lines = ct.read_all_text_from_gzip(path)
@@ -486,6 +486,8 @@ class ct:
             if r1 not in ps_to_except:
                 r_list.append(r1)
                 e2_list.append(e2)
+        if not_allow_repeat:
+            r_list=list(set(r_list))
         return r_list
 
     @staticmethod
