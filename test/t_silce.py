@@ -1,4 +1,13 @@
 import numpy as np
+
+
+
+a = "m/0n1vy1h"
+print(a[2:])
+
+
+
+
 y = [[1, 11],
      [2, 3],
      [4, 5],

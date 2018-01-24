@@ -143,7 +143,6 @@ class DataClass:
     relations = []
     relations_filter = []  # 待排除的关系 e.g. "type object creator"
     # ---------------------DataClass
-    train_path = "../data/simple_questions/annotated_fb_data_train-1.txt"
     entity1_list = []  # id
     entity1_value_list = []  # 值
 
@@ -161,7 +160,8 @@ class DataClass:
 
     fb = []
     # ----------------
-    loss_ok = 0
+    mode = ""  # 区分不同模式下函数的调用,可以考虑改成继承
+    loss_ok = 0  # 记录loss=0的次数，停止
 
     # ----------------------分割数据，预处理，转换成index形式
 
@@ -215,6 +215,7 @@ class DataClass:
         self.question_list = []
 
         self.rdf_list = []
+        self.mode = mode
         if mode == "test":
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
@@ -230,9 +231,14 @@ class DataClass:
             ct.print("init_fb finish.")
             # 初始化排除的关系
             # self.init_filter_relations()
+        elif mode == "sq":
+            self.init_simple_questions("../data/simple_questions/fb_1000_files/annotated_fb_data_train-1000.txt")
+            ct.print("init_simple_questions finish.")
+            self.init_fb("../data/simple_questions/fb_1000_files/")
+            ct.print("init_fb finish.")
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
-            self.init_fb("../data/freebase/")
+            self.init_fb("../data/freebase/fb_1000/")
 
         # 将问题和关系的字符串变成以空格隔开的一个单词的list
 
@@ -293,11 +299,10 @@ class DataClass:
             self.cap_nums(self.relation_list_index, rate)
         ct.print("init finish!")
 
-        self.build_embedding_weight(config.wiki_vector_path())
+        self.build_embedding_weight(config.wiki_vector_path(mode))
         ct.print("load embedding ok!")
-
         self.build_all_q_r_tuple(config.get_static_q_num_debug(),
-                                 config.get_static_num_debug())
+                                 config.get_static_num_debug(), is_record=False)
         ct.print("build_all_q_r_tuple 生成所有的q和neg r的组合")
         # 打乱
 
@@ -314,9 +319,8 @@ class DataClass:
     # ---------------------simple questions
 
     def init_simple_questions(self, file_name):
-        line_list = []
+        # line_list = []
         idx = 0
-
         # www.freebase.com/m/04whkz5	www.freebase.com/book/written_work/subjects
         # www.freebase.com/m/01cj3p
         # what is the book e about
@@ -327,37 +331,99 @@ class DataClass:
                     line_seg = line.split('\t')
                     # www.freebase.com/m/04whkz5
                     entity1 = line_seg[0].split('/')[2]
-                    relation1 = line_seg[1].replace("www.freebase.com/", ""). \
-                        replace("/", "_").replace("_", " ").strip()
+                    relation1 = ct.clear_relation(line_seg[1])
+
                     entity2 = line_seg[2].split('/')[2]
-                    question = line_seg[3].replace("\r\n", "")
+                    question = ct.clear_question(line_seg[3])
 
                     self.entity1_list.append(entity1)
                     self.relation_list.append(relation1)
-                    self.entity1_list.append(entity2)
+                    # self.entity1_list.append(entity2)
                     self.question_list.append(question)
-                    self.rdf_list.append([entity1, relation1, entity2])
+                    self.relation_path_clear_str_all.append([relation1])
+                    # self.rdf_list.append([entity1, relation1, entity2])
                     # check it
-                    line_list.append(line)
+                    # line_list.append(line)
             except Exception as e:
                 ct.print("index = ", idx)
                 logging.error("error ", e)
-        logging.info("load embedding finish!")
+        ct.print("load embedding finish!")
+
+    # brazil	/m/015fr@@1~/m/03385m^/location/country/currency_used@@1~text
+    # Brazilian real	what type of money does brazil have?
+    def init_web_questions(self, fname=r'../data/web_questions/rdf.txt'):
+        total_useless = 0
+        index = -1
+        with codecs.open(fname, mode='r', encoding='utf-8') as read_file:
+            for line in read_file.readlines():
+                # line = f1.readline()
+                line = ct.clean_str_simple(line)
+                entity1 = line.split('\t')[0]
+                relation_path = line.split('\t')[1]
+                # answer = line.split('\t')[2]
+                question = line.split('\t')[3]
+
+                if relation_path.__contains__("###"):
+                    # self.relation_path_clear.append(["###"])
+                    # self.relation_list.append("###")
+                    total_useless += 0
+                    continue
+
+                index += 1
+                self.entity1_list.append(entity1)
+                self.relation_path.append(relation_path)
+                self.question_list.append(question.replace("\n", ""))
+
+                # 解出1行所有正确的关系，
+                relation_path_rs_all = ct.decode_all_relations(relation_path)
+                # 随机获取1行作为他的关系
+                one_relation = ct.random_get_one_from_list(relation_path_rs_all)
+
+                self.relation_path_one.append(one_relation)
+                # 展开一个关系，加入
+                temp_relation = ""
+                for o_r in one_relation:
+                    temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
+                #
+                self.relation_list.append(temp_relation)
+
+                # 处理一下添加到这里
+                # self.relation_list 这个格式是 空格隔开的单词
+                self.relation_path_clear.append(relation_path_rs_all)
+
+                # 输出
+                # msg = "%d\t%s\t"%(index,entity1)
+
+                # 将处理后的路径集合，转换成string格式加入relation_path_clear_str_all
+                relation_path_rs_str_all = []
+                for x in relation_path_rs_all:
+                    temp_relation = ""
+                    for o_r in x:
+                        temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
+                    # 增加关系 ' tv tv actor starring roles  tv regular tv appearance character text '
+                    relation_path_rs_str_all.append(temp_relation)
+                # to do: here to record r path 在这 记录关系路径
+                # msg = msg + "^".join(relation_path_rs_str_all)
+                # ct.just_log("../data/web_questions/q_relations_path.txt",msg )
+                self.relation_path_clear_str_all.append(relation_path_rs_str_all)
+
+            ct.print("end total_useless = %d " % total_useless)
 
     # ---------------------freebase
     def init_fb(self, file_name="../data/freebase/"):
-        file_name1 = "freebase_entity.txt"
-        file_name2 = "freebase_rdf.txt"
-        file_name3 = "freebase_relation_clear.txt"  # // /location/location/containedby
+        # file_name1 = "freebase_entity.txt"
+        # file_name2 = "freebase_rdf.txt"
+        file_name3 = "freebase_relation_clear.txt"  # 所有的关系
         # 装载entity_id
-        with codecs.open(file_name + file_name1, mode="r", encoding="utf-8") as read_file:
-            for line in read_file.readlines():
-                self.entitys.append(line.replace("\n", "").replace("/m/", "").replace("\r", ""))
-        ct.print("entitys len:" + str(len(self.entitys)))
+        # with codecs.open(file_name + file_name1, mode="r", encoding="utf-8") as read_file:
+        #     for line in read_file.readlines():
+        #         self.entitys.append(line.replace("\n", "").replace("/m/", "").replace("\r", ""))
+        # ct.print("entitys len:" + str(len(self.entitys)))
         # 装载freebase的关系
         with codecs.open(file_name + file_name3, mode="r", encoding="utf-8") as read_file:
             for line in read_file.readlines():
-                self.relations.append(line.replace("\n", "").replace("/", " ").replace("_", " ").strip())
+                self.relations.append(
+                    line.replace("\n", "").replace("/", " ").replace(".", " ").replace("_", " ").strip())
         ct.print("relations len:" + str(len(self.relations)))
         # relation_path_clear_str_all
 
@@ -977,66 +1043,6 @@ class DataClass:
             rs.append(i)
         return rs
 
-    # brazil	/m/015fr@@1~/m/03385m^/location/country/currency_used@@1~text
-    # Brazilian real	what type of money does brazil have?
-    def init_web_questions(self, fname=r'../data/web_questions/rdf.txt'):
-        total_useless = 0
-        index = -1
-        with codecs.open(fname, mode='r', encoding='utf-8') as read_file:
-            for line in read_file.readlines():
-                # line = f1.readline()
-                line = ct.clean_str_simple(line)
-                entity1 = line.split('\t')[0]
-                relation_path = line.split('\t')[1]
-                # answer = line.split('\t')[2]
-                question = line.split('\t')[3]
-
-                if relation_path.__contains__("###"):
-                    # self.relation_path_clear.append(["###"])
-                    # self.relation_list.append("###")
-                    total_useless += 0
-                    continue
-
-                index += 1
-                self.entity1_list.append(entity1)
-                self.relation_path.append(relation_path)
-                self.question_list.append(question.replace("\n", ""))
-
-                # 解出1行所有正确的关系，
-                relation_path_rs_all = ct.decode_all_relations(relation_path)
-                # 随机获取1行作为他的关系
-                one_relation = ct.random_get_one_from_list(relation_path_rs_all)
-
-                self.relation_path_one.append(one_relation)
-                # 展开一个关系，加入
-                temp_relation = ""
-                for o_r in one_relation:
-                    temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
-                #
-                self.relation_list.append(temp_relation)
-
-                # 处理一下添加到这里
-                # self.relation_list 这个格式是 空格隔开的单词
-                self.relation_path_clear.append(relation_path_rs_all)
-
-                # 输出
-                # msg = "%d\t%s\t"%(index,entity1)
-
-                # 将处理后的路径集合，转换成string格式加入relation_path_clear_str_all
-                relation_path_rs_str_all = []
-                for x in relation_path_rs_all:
-                    temp_relation = ""
-                    for o_r in x:
-                        temp_relation += str(o_r[0] + " ").replace("/", " ").replace("_", " ")
-                    # 增加关系 ' tv tv actor starring roles  tv regular tv appearance character text '
-                    relation_path_rs_str_all.append(temp_relation)
-                # todo: here to record r path 在这 记录关系路径
-                # msg = msg + "^".join(relation_path_rs_str_all)
-                # ct.just_log("../data/web_questions/q_relations_path.txt",msg )
-                self.relation_path_clear_str_all.append(relation_path_rs_str_all)
-
-            ct.print("end total_useless = %d " % total_useless)
-
     def find_entity_and_relations_paths(self, path, entity_id):
         """
         从文件系统中获取实体
@@ -1129,7 +1135,7 @@ class DataClass:
 
 
     # 生成一个epoches中的一个batch
-    def build_all_q_r_tuple(self, questions_len_train, error_relation_num=9999):
+    def build_all_q_r_tuple(self, questions_len_train, error_relation_num=9999, is_record=False):
         # 组合所有的问题和错误关系放进一个tuple中
         # self.question_list
         # self.relation_path_clear_str_all 正确关系
@@ -1137,29 +1143,46 @@ class DataClass:
         self.q_neg_r_tuple = []
         self.q_pos_r_tuple = []
         # questions_len_train = len(self.question_list)
+        questions_len_train = min(questions_len_train, len(self.entity1_list))
+
         for index in range(questions_len_train):
             name = self.entity1_list[index]
             question = self.question_list[index]
             ps_to_except1 = self.relation_path_clear_str_all[index]
-            r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+            if self.mode == "wq":
+                r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+            elif self.mode == "sq":
+                r_all_neg = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name, ps_to_except=ps_to_except1)
+            else:
+                raise Exception("mode error")
             error_relation_num = min(len(r_all_neg), error_relation_num)
             r_all_neg = r_all_neg[0:error_relation_num]
             for neg_r in r_all_neg:
                 q_r_tuple = (index, question, neg_r)
                 self.q_neg_r_tuple.append(q_r_tuple)
-                # ct.just_log("../data/web_questions/q_neg_r_tuple.txt", "%s\t%s" % (question, neg_r))
+                if is_record:
+                    if self.mode == "wq":
+                        ct.just_log("../data/web_questions/q_neg_r_tuple.txt", "%s\t%s" % (question, neg_r))
+                    if self.mode == "sq":
+                        ct.just_log("%s/q_neg_r_tuple.txt" % config.get_sq_topic_path()
+                                    , "%s\t%s" % (question, neg_r))
         ct.print("build_all_q_r_tuple q_neg_r_tuple")
 
-        # for index in range(questions_len_train):
-        #     # name = self.entity1_list[index]
-        #     question = self.question_list[index]
-        #     ps_to_except1 = self.relation_path_clear_str_all[index]
-        #     # r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
-        #     for neg_r in ps_to_except1:
-        #         q_r_tuple = (question, neg_r)
-        #         self.q_pos_r_tuple.append(q_r_tuple)
-        #        # ct.just_log("../data/web_questions/q_pos_r_tuple.txt", "%s\t%s" % (question, neg_r))
-        # ct.print("build_all_q_r_tuple q_pos_r_tuple")
+        for index in range(questions_len_train):
+            # name = self.entity1_list[index]
+            question = self.question_list[index]
+            ps_to_except1 = self.relation_path_clear_str_all[index]
+            # r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+            for neg_r in ps_to_except1:
+                q_r_tuple = (question, neg_r)
+                self.q_pos_r_tuple.append(q_r_tuple)
+                if is_record:
+                    if self.mode == "wq":
+                        ct.just_log("../data/web_questions/q_pos_r_tuple.txt", "%s\t%s" % (question, neg_r))
+                    if self.mode == "sq":
+                        ct.just_log("%s/q_pos_r_tuple.txt" % config.get_sq_topic_path(),
+                                    "%s\t%s" % (question, neg_r))
+        ct.print("build_all_q_r_tuple q_pos_r_tuple")
 
     def build_train_test_q(self):
         for q in self.train_question_list_index:
@@ -1172,10 +1195,11 @@ class DataClass:
 
     # ---
     def test_cap_nums(self):
-        a  = [1,2,3,4,5,6,7,8,9,10]
-        b,c = self.cap_nums(a,0.8)
+        a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        b, c = self.cap_nums(a, 0.8)
         ct.print(b)
         ct.print(c)
+
     def clear_relation(self):
         ct.print("-->clear_relation")
         file_name = "../data/freebase/freebase_relation.txt"
@@ -1268,8 +1292,15 @@ def test_build():
     ct.print("111")
 
 
+def test_sq():
+    d = DataClass("sq")
+    # d.build_all_q_r_tuple(config.get_static_q_num_debug(),
+    #                       config.get_static_num_debug(), is_record=True)
+    print(1)
+
+
 if __name__ == "__main__":
-    test_build()
+    test_sq()
     # a = read_rdf_from_gzip_or_alias(path=r"F:\3_Server\freebase-data\topic-json", file_name="1")
     # ct.print(a)
     # clear_relation()

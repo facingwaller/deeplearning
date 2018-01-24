@@ -16,7 +16,15 @@ class classObject:
 from lib.config import config
 
 log_path = ""
+
+
 class ct:
+    """
+    ------1. 配置
+    ------2. 日志
+
+    """
+
     # -------------------配置
     @staticmethod
     def get_topic_path():
@@ -38,10 +46,10 @@ class ct:
         return list[random.randint(0, len(list) - 1)]
 
     @staticmethod
-    def random_get_some_from_list(list,num):
+    def random_get_some_from_list(list, num):
         shuffle_indices = np.random.permutation(np.arange(len(list)))  # 打乱样本下标
         res = []
-        num = min(num,len(list))
+        num = min(num, len(list))
         shuffle_indices = shuffle_indices[0:num]
         for index in shuffle_indices:
             res.append(list[index])
@@ -49,9 +57,8 @@ class ct:
 
     @staticmethod
     def test_random_get_some_from_list():
-        a = ct.random_get_some_from_list([11],2)
+        a = ct.random_get_some_from_list([11], 2)
         print(a)
-
 
     @staticmethod
     def test_random_get_one_from_list():
@@ -70,7 +77,18 @@ class ct:
     # ------------格式化单行的关系格式
     @staticmethod
     def clear_relation(relation):
-        return relation.replace("/", "_").replace("_", " ").strip()
+        return relation \
+            .replace("www.freebase.com/", "").replace(".", " ") \
+            .replace("/", "_").replace("_", " ").strip()
+
+    @staticmethod
+    def clear_question(relation):
+        return relation.replace("\r", "").replace("\n", "").replace(")", " ") \
+            .replace(".", " ").replace("\"", " ").replace("\t", " ") \
+            .replace("&", " ").replace("-", " ").replace(",", " ") \
+            .replace(":", " ").replace("\\", " ").replace("(", " ") \
+            .replace("/", " ").replace("!", " ").replace(")", " ") \
+            .replace("?", "").replace("'", " ").strip().lower()
 
     # ----------------用指定数字填充或者截断
     @staticmethod
@@ -246,6 +264,20 @@ class ct:
 
         return g2
 
+    @staticmethod
+    def read_all_text_from_gzip(path):
+        lines = []
+        try:
+            with gzip.open(filename=path , mode="rt", encoding="utf-8") as g:
+                for g1 in g:
+                    # gs.append(str(g1))
+                    # g2 = "".join(gs)
+                    lines.append(str(g1))
+        except Exception as e1:
+            ct.print(str(e1), "error")
+
+        return lines
+
     # @staticmethod
     # def get_entity_json_by_id(path,entity_id):
     #     file_txt = ct.read_rdf_from_gzip_or_alias(path, entity_id)
@@ -379,7 +411,7 @@ class ct:
             in_line = False
             for l1 in lines:
                 if str(r1).__contains__(l1):
-                    in_line=True
+                    in_line = True
                     break
             # if str(r1).strip() not in lines:
             #     new_rs.append(r1)
@@ -396,7 +428,7 @@ class ct:
             if p not in ps_to_except:
                 ps_to_return.append(p)
         # index = random.randint(0, len(ps_to_return) - 1)
-        # todo : 临时改成 固定2个随机
+
         if len(ps) == len(ps_to_return):
             print("get_one_relations_except_ps failed ")
             raise Exception("except failed!!!!!")
@@ -439,6 +471,28 @@ class ct:
         # print(r3)
         return r3
 
+    # to do : read_entity_and_get_all_neg_relations_sq
+    # 获取所有neg的关系
+    @staticmethod
+    def read_entity_and_get_all_neg_relations_sq(entity_id, ps_to_except):
+        path = config.get_sq_topic_path()
+        path = path +"m."+ entity_id+".gz"
+        text_lines = ct.read_all_text_from_gzip(path)
+        r_list = []
+        e2_list = []
+        for l in text_lines:
+            r1 = ct.clear_relation(str(l).split('\t')[0])
+            e2 = str(l).split('\t')[1].replace('\n', "")
+            if r1 not in ps_to_except:
+                r_list.append(r1)
+                e2_list.append(e2)
+        return r_list
+
+    @staticmethod
+    def test_read_entity_and_get_all_neg_relations_sq():
+        r_list = ct.read_entity_and_get_all_neg_relations_sq("m.0_6bnq_", ["type.object.name"])
+        for r in r_list:
+            print(r)
     # 读取实体的所有关系
     @staticmethod
     def read_entity_and_get_all_relations(entity_id="10th_of_august"):
@@ -555,6 +609,7 @@ class ct:
                     print(r1[r11_index].deep)
                     print(1111111111111111111111111111)
 
+    # ------------- 2. 日志
     @staticmethod
     def log_path_static():
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -575,7 +630,7 @@ class ct:
     @staticmethod
     def just_log2(file_name, msg):
         time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
-        file_name = log_path+"/" + file_name + time_str + ".txt"
+        file_name = log_path + "/" + file_name + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -587,18 +642,17 @@ class ct:
     def log3(msg):
         time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
         time_str += ct.time_str1
-        file_name = log_path+"/simple_" + time_str + ".txt"
+        file_name = log_path + "/simple_" + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
-
 
     @staticmethod
     def log_vailed(msg):
 
         time_str = time.strftime('%Y-%m-%d-%H ', time.localtime(time.time()))
         time_str += ct.time_str1
-        file_name = log_path+"/valied_" + time_str + ".txt"
+        file_name = log_path + "/valied_" + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -607,6 +661,7 @@ class ct:
     def get_key(st):
         return st.score
 
+    # -------------------------------
     @staticmethod
     def get_key_matix(st):
         return st.cosine_matix
@@ -683,7 +738,7 @@ class ct:
         if m in ms:
             print(msg)
 
-    #
+    # -------------------文件读取
     @staticmethod
     def file_read_all_lines(file_name):
         lines = []
@@ -693,10 +748,11 @@ class ct:
                 # .replace("\n", "").replace("/", " ").replace("_", " ").strip()
         return lines
 
+
 log_path = ct.log_path_static()
 if __name__ == "__main__":
-
-    ct.test_random_get_some_from_list( )
+    ct.test_read_entity_and_get_all_neg_relations_sq()
+    # ct.test_random_get_some_from_list()
     # ct.test_read_entity_and_get_all_relations()
     # ct.test_decode_all_relations()
     # ct.test_nump_sort()
