@@ -296,8 +296,8 @@ class freebase:
 
     # 从标注的问题中提取出对应的rdf和e1
     @staticmethod
-    def excat_entity_in_annotated_fb_data():
-        lines = ct.file_read_all_lines("../data/simple_questions/annotated_fb_data_train-1000.txt")
+    def excat_entity_in_annotated_fb_data(fname="../data/simple_questions/annotated_fb_data_train-1000.txt"):
+        lines = ct.file_read_all_lines(fname)
         e1_set = set()
         for l in lines:
             l = str(l).replace("www.freebase.com/", "")
@@ -306,7 +306,7 @@ class freebase:
             e1_set.add(e1)
             e1_set.add(e2)
         for e in e1_set:
-            ct.just_log("../data/simple_questions/annotated_fb_data_train-1000-entitys.txt", e)
+            ct.just_log(fname+"-entity.txt", e)
         print(1)
 
     @staticmethod
