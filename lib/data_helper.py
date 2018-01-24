@@ -1033,9 +1033,16 @@ def test_build():
 
 
 def test_sq():
-    d = DataClass("sq")
+    dh = DataClass("sq")
     # d.build_all_q_r_tuple(config.get_static_q_num_debug(),
     #                       config.get_static_num_debug(), is_record=True)
+    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
+                                                      10 )
+    for gen in my_generator:
+        train_q = gen[0]
+        train_cand = gen[1]
+        train_neg = gen[2]
+        print(train_q)
     print(0000000000)
 
 

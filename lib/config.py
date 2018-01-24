@@ -84,9 +84,9 @@ ms = ["train", "test"
     , "debug"
       , "none"
     ,"time"
-    #, "show_shape"
-      # , "data"
-      # , "debug_epoches"
+    , "show_shape"
+      , "data"
+      , "debug_epoches"
       ]
 
 
