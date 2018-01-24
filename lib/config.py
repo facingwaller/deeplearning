@@ -15,10 +15,10 @@ tf.flags.DEFINE_integer("word_dimension", 100, "单词的维度 ")
 # word2vec_train 用word2vec重新组建W矩阵，并随后更新
 tf.flags.DEFINE_string("word_model", "word2vec_train", "可选有|tf_embedding|word2vec_train|word2vec")
 
-testid = 1
+testid = 0
 # ==正常调参
 if testid == 100:
-    epoches = 100 * 100*100  # 遍历多少轮
+    epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
     evaluate_every = 100
     evaluate_batchsize = 100
@@ -27,6 +27,7 @@ if testid == 100:
     wrong_relation_num = 99999  # 错误的关系，设置9999可以是全部的意思
     stop_loss_zeor_count = 10000
     rnn_size = 300
+    mode = "sq"
 elif testid == 1:
     # 极限情况下调,1个问题，全关系
     epoches = 100  # 遍历多少轮
@@ -38,21 +39,37 @@ elif testid == 1:
     wrong_relation_num = 9999  # 错误的关系，设置9999可以是全部的意思
     stop_loss_zeor_count = 2000
     rnn_size = 100
+    mode = "wq"
 elif testid == 0:
     # 极限情况下调,1个问题，全关系
     epoches = 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
     evaluate_every = 60  # 100训练X次验证一次
-    evaluate_batchsize = batch_size * 5  # 验证一次的问题数目
-    questions_len_train = 99999  # 所有问题数目
+    evaluate_batchsize = batch_size  # 验证一次的问题数目
+    questions_len_train = 10 * 2  # 所有问题数目
     questions_len_test = questions_len_train
     wrong_relation_num = 9999  # 错误的关系，设置9999可以是全部的意思
     stop_loss_zeor_count = 2000
     rnn_size = 100
+    mode = "sq"
 else:
-    print("?????")
+    epoches = 100 * 100 * 100  # 遍历多少轮
+    batch_size = 10  # 1个batch的大小
+    evaluate_every = 100
+    evaluate_batchsize = 100
+    questions_len_train = 800  # 应该设置大一点,2-10倍
+    questions_len_test = int(questions_len_train / 4)
+    wrong_relation_num = 99999  # 错误的关系，设置9999可以是全部的意思
+    stop_loss_zeor_count = 10000
+    rnn_size = 300
+    mode = "sq"
+    raise Exception("testid 参数有误")
+
+if questions_len_test < evaluate_batchsize:
+    raise Exception("验证batch的size要大于总问题个数")
 
 # 模型
+tf.flags.DEFINE_string("mode", mode, "是否增加attention机制 ")
 tf.flags.DEFINE_boolean("need_cal_attention", True, "是否增加attention机制 ")
 tf.flags.DEFINE_boolean("need_max_pooling", False, "是否增加max_pooling机制 ")
 tf.flags.DEFINE_boolean("need_test", True, "是否测试 ")
@@ -60,7 +77,6 @@ tf.flags.DEFINE_boolean("fix_model", True, "是否开启纠错模式 ")
 
 tf.flags.DEFINE_integer("questions_len_train", questions_len_train, "questions_len_train  ")
 tf.flags.DEFINE_integer("questions_len_test", questions_len_test, "questions_len_test  ")
-
 
 # 训练-验证-测试
 tf.flags.DEFINE_integer("epoches", epoches, "epoches")
@@ -78,21 +94,20 @@ tf.flags.DEFINE_integer("evaluate_batchsize", evaluate_batchsize, "test_batchsiz
 tf.flags.DEFINE_integer("test_every", evaluate_every, "test_every ")
 tf.flags.DEFINE_integer("test_batchsize", evaluate_batchsize, "test_batchsize ")
 
-
 tf.flags.DEFINE_integer("stop_loss_zeor_count", stop_loss_zeor_count, "loss=0 停止的次数 ")
 ms = ["train", "test"
     , "debug"
-      , "none"
-    ,"time"
+    , "none"
+    , "time"
     , "show_shape"
-      , "data"
-      , "debug_epoches"
+    , "data"
+      # , "debug_epoches"
       ]
 
 
 def get_config_msg():
     FLAGS._parse_flags()
-    FLAGS_Parameters = "\nParameters:"
+    FLAGS_Parameters = "\nParameters:\n"
     for attr, value in sorted(FLAGS.__flags.items()):
         FLAGS_Parameters += "{}={}\n".format(attr.upper(), value)
 
@@ -127,6 +142,7 @@ class config:
     @staticmethod
     def get_sq_topic_path():
         return '../data/simple_questions/fb_1000/'
+
     # 使用极少数条数据做测试
     @staticmethod
     def is_debug_few():

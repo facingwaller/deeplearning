@@ -5,13 +5,13 @@ import gzip
 import json
 import numpy as np
 import os
-
+# 抽取fb_5m里面的实体
 
 class freebase:
     # 列出FB_2M 中所有提及的 entity 和 relation 输出到 data/fb2m
     # www.freebase.com/m/018fj69	www.freebase.com/music/recording/artist	www.freebase.com/m/01wbgdv
     @staticmethod
-    def excat_fbxm(file_name='../data/fb2m/freebase-FB2M.txt'):
+    def extract_fbxm(file_name='../data/fb2m/freebase-FB2M.txt'):
         f1_writer = codecs.open("../data/fb2m/e.txt", mode="w", encoding="utf-8")
         f2_writer = codecs.open("../data/fb2m/r.txt", mode="w", encoding="utf-8")
         e1 = []
@@ -55,5 +55,10 @@ class freebase:
 
         f1_writer.close()
         f2_writer.close()
+
+    # -----从fb_raw里面抽取出entity_name作为subject的所有rdf
+    @staticmethod
+    def extract_rdf_from_fb(entity_name):
+        print(1)
 if __name__ == "__main__":
     freebase.excat_fbxm()

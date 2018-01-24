@@ -511,7 +511,7 @@ class DataClass:
         :param batch_size:
         :return:
         """
-        ct.print("enter:batch_iter_wq_debug")
+        ct.print("enter:batch_iter_wq_debug_random")
         x = question_list_index.copy()
         y = relation_list_index.copy()
         x_new = []
@@ -697,10 +697,6 @@ class DataClass:
         y_new = []  # 关系集合
         z_new = []  #
         labels = []  # 标签集合
-        length = len(x)
-        # ct.print("x length %d " % length)
-        # shuffle_indices = self.shuffle_indices_debug
-        # index = self.shuffle_indices_debug
 
 
         # shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
@@ -738,7 +734,10 @@ class DataClass:
         ps_to_except1 = [ps_to_except1]
         padding_num = self.converter.vocab_size - 1
         # r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
-        rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+        if self.mode == "wq":
+            rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+        if self.mode == "sq":
+            rs = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name, ps_to_except=ps_to_except1)
 
         # rs = list(set(rs))
         # 加入正确的
@@ -1042,7 +1041,7 @@ def test_sq():
         train_q = gen[0]
         train_cand = gen[1]
         train_neg = gen[2]
-        print(train_q)
+        # print(train_q)
     print(0000000000)
 
 

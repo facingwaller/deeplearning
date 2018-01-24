@@ -257,7 +257,7 @@ def checkpoint(sess):
 def main():
     now = "\n\n\n" + str(datetime.datetime.now().isoformat())
     # test 是完整的; small 是少量 ; debug 只是一次
-    model = "wq"
+    model = FLAGS.mode
     ct.print("tf:%s model:%s " % (str(tf.__version__), model))  # 1.2.1
     ct.just_log2("info", now)
     ct.just_log2("valid", now)
