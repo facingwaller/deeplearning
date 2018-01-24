@@ -7,16 +7,18 @@ import numpy as np
 import os
 from lib.ct import ct
 from gensim import models
+
 path_fb2m = '../data/fb2m/freebase-FB2M.txt'
 import lib.data_helper as data_helper
+
 
 class freebase:
     # 列出FB_2M 中所有提及的 entity 和 relation 输出到 data/fb2m
     # www.freebase.com/m/018fj69	www.freebase.com/music/recording/artist	www.freebase.com/m/01wbgdv
     @staticmethod
-    def excat_fbxm(file_name='../data/fb2m/freebase-FB2M.txt'):
-        f1_writer = codecs.open("../data/fb2m/e.txt", mode="w", encoding="utf-8")
-        f2_writer = codecs.open("../data/fb2m/r.txt", mode="w", encoding="utf-8")
+    def excat_fbxm(file_name='../data/fb2m/freebase-FB2M.txt', path="../data/simple_questions"):
+        f1_writer = codecs.open("%s/e.txt" % path, mode="w", encoding="utf-8")
+        f2_writer = codecs.open("%s/r.txt" % path, mode="w", encoding="utf-8")
         e1 = []
         r1 = []
         index = 0
@@ -34,9 +36,9 @@ class freebase:
                     print(e2)
                     return
 
-                if count != 3:
-                    print(count)
-                    continue
+                # if count != 3:
+                #     print(count)
+                #     continue
                 line = line.replace("www.freebase.com/", "").replace("\n", "")
                 # f1_writer.write(line.split('\t')[0])
                 e1.append(line.split('\t')[0])
@@ -226,12 +228,12 @@ class freebase:
 
     # 从freebase中抽取实体的相关信息到一个单独的文件
     @staticmethod
-    def excat_entity_rdf_from_fb(e_path, out_path, is_record):
+    def excat_entity_rdf_from_fb(e_path, out_path, out_path2, is_record):
         # e_path = '../data/fb2m/e.txt'
         print("excat_entity_rdf_from_fb")
         # 1 读取所有entity (e1)
         e_set = ct.file_read_all_lines(e_path)
-        print("init e_lines")
+        print("init e_lines %d" % e_set.__len__())
         e_set = set([str(x).replace("\r", "").replace("\n", "").replace("m/", "m.") for x in e_set])
         e_dict = dict()
         i = 0
@@ -264,11 +266,13 @@ class freebase:
         del e_set  # 减少内存
         print("start output")
         i = 0
+        total = 0
 
         for e, e_v in e_dict.items():
             i += 1
             if i % 10000 == 0:
-                print(i / 10000)
+                print("%s / %s " % (i / 10000, total))
+                ct.print_t()
             # print("%s "%(e,))
             for r_e2 in e_v:
                 r_lear_set.add(r_e2[0])
@@ -282,14 +286,16 @@ class freebase:
                     f_out.write(("%s\t%s\n" % (r_e2[0], r_e2[1])).encode('utf-8'))
 
         for r in r_lear_set:
-            ct.just_log('%s/freebase_relation_clear.txt' % (out_path), r)
+            ct.just_log('%s/freebase_relation_clear.txt' % (out_path2), r)
         print(432432423)
 
     @staticmethod
     def excat_annotated_fb_data(num):
-        lines = ct.file_read_all_lines("../data/simple_questions/annotated_fb_data_train.txt")
-        lines = lines[0:num]
-        with codecs.open("../data/simple_questions/annotated_fb_data_train-%d.txt" % num, mode="a",
+        fname = "../data/simple_questions/annotated_fb_data_all.txt"
+        lines = ct.file_read_all_lines(fname)
+        if num > 0:
+            lines = lines[0:num]
+        with codecs.open("%s-%d.txt" % (fname, num), mode="a",
                          encoding="utf-8") as f1_writer:
             for l in lines:
                 f1_writer.write(l)
@@ -306,11 +312,11 @@ class freebase:
             e1_set.add(e1)
             e1_set.add(e2)
         for e in e1_set:
-            ct.just_log(fname+"-entity.txt", e)
+            ct.just_log(fname + "-entity.txt", e)
         print(1)
 
     @staticmethod
-    def prodeuce_embedding_vec_file( filename):
+    def prodeuce_embedding_vec_file(filename):
         dh = data_helper.DataClass("sq")
         model = models.Word2Vec.load(filename)
         # 遍历每个单词，查出word2vec然后输出
@@ -324,27 +330,33 @@ class freebase:
             except Exception as e1:
                 msg1 = "%s : %s " % (word, e1)
                 ct.print(msg1)
-                ct.just_log("../data/simple_questions/fb_1000_files/wiki.vector.log", msg1)
+                ct.just_log("../data/simple_questions/fb_0_files/wiki.vector.log", msg1)
                 v = model['end']
             m_v = ' '.join([str(x) for x in list(v)])
             msg = "%s %s" % (word, str(m_v))
             # ct.print(msg)
-            ct.just_log("../data/simple_questions/fb_1000_files/wiki.vector", msg)
+            ct.just_log("../data/simple_questions/fb_0_files/wiki.vector", msg)
         m_v = ' '.join([str(x) for x in list(v)])
         msg = "%s %s" % (word, str(m_v))
         msg = "%s %s" % ('end', msg)
-        ct.just_log("../data/simple_questions/fb_1000_files/wiki.vector", msg)
-
+        ct.just_log("../data/simple_questions/fb_0_files/wiki.vector", msg)
 
 
 if __name__ == "__main__":
-    #
-    # s2 :freebase.excat_annotated_fb_data(1000)
+    # s1 :
+    # freebase.excat_annotated_fb_data(0)
+
+    # s2
+    # freebase.excat_fbxm(file_name="../data/simple_questions/annotated_fb_data_all.txt-0.txt",
+    #          path="../data/simple_questions/fb_0_files")
     # s3
-    # p1 = "../data/simple_questions/annotated_fb_data_train-1000-entitys.txt"
-    # out_path = '../data/simple_questions/fb_1000'
-    # freebase.excat_entity_rdf_from_fb(p1, out_path, is_record=False)
-    # s4 : freebase.excat_entity_in_annotated_fb_data
+    # p1 = "../data/simple_questions/fb_0_files/e.txt"
+    # # # p1 = "../data/simple_questions/annotated_fb_data_all.txt-0.txt"
+    # out_path = '../data/simple_questions/fb_0'
+    # out_path2 = '../data/simple_questions/fb_0_files'
+    # freebase.excat_entity_rdf_from_fb(p1, out_path, out_path2, is_record=True)
+
+    # s4 :  freebase.excat_entity_in_annotated_fb_data
 
     # filename1 = '../data/word2vec/train.model.1516630487.7132027'
     # filename2 = '../data/word2vec/wiki.vector'

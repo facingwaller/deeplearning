@@ -476,7 +476,7 @@ class ct:
     @staticmethod
     def read_entity_and_get_all_neg_relations_sq(entity_id, ps_to_except):
         path = config.get_sq_topic_path()
-        path = path +"m."+ entity_id+".gz"
+        path = path +"/m."+ entity_id+".gz"
         text_lines = ct.read_all_text_from_gzip(path)
         r_list = []
         e2_list = []
@@ -734,9 +734,10 @@ class ct:
         #       # , "data"
         #       # , "debug_epoches"
         #       ]
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         ms = config.get_print_type()
         if m in ms:
-            print(msg)
+            print("%s : %s"%(timestamp,msg))
     @staticmethod
     def print_t():
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")

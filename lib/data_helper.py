@@ -122,9 +122,9 @@ class DataClass:
             # 初始化排除的关系
             # self.init_filter_relations()
         elif mode == "sq":
-            self.init_simple_questions("../data/simple_questions/fb_1000_files/annotated_fb_data_train-1000.txt")
+            self.init_simple_questions("../data/simple_questions/fb_0_files/annotated_fb_data_all.txt-0.txt")
             ct.print("init_simple_questions finish.")
-            self.init_fb("../data/simple_questions/fb_1000_files/")
+            self.init_fb("../data/simple_questions/fb_0_files/")
             ct.print("init_fb finish.")
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
@@ -140,8 +140,8 @@ class DataClass:
         self.converter = read_utils.TextConverter(q_words)
 
         # self.converter.save_to_file_raw(
-        #      log_path+"/vocab_" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
-
+        #     log_path + "/vocab_" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
+        # ct.print("save_to_file_raw ok!")
         # self.converter.save_to_file("model/converter.pkl")
         # ct.print(self.converter)
 
@@ -159,7 +159,7 @@ class DataClass:
         # ct.print(mean_of_quesitons)
 
         self.max_document_length = max(max_document_length1, max_document_length2)
-        ct.print("max =%d ; %d,%d" % (self.max_document_length, max_document_length1, max_document_length2))
+        # ct.print("max =%d ; %d,%d" % (self.max_document_length, max_document_length1, max_document_length2))
         # max(max_document_length1, max_document_length2, max_document_length3)
         # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
         #
@@ -191,10 +191,13 @@ class DataClass:
 
         self.build_embedding_weight(config.wiki_vector_path(mode))
         ct.print("load embedding ok!")
-        self.build_all_q_r_tuple(config.get_static_q_num_debug(),
-                                 config.get_static_num_debug(), is_record=False)
-        ct.print("build_all_q_r_tuple 生成所有的q和neg r的组合")
-        # 打乱
+        # self.build_all_q_r_tuple(config.get_static_q_num_debug(),
+        #                          config.get_static_num_debug(), is_record=False)
+        self.load_all_q_r_tuple(config.get_static_q_num_debug(),
+                                config.get_static_num_debug(), is_record=False)
+        # todo :change load q_r tuple
+
+        # ct.print("build_all_q_r_tuple 生成所有的q和neg r的组合")
 
     # ---------------------simple questions
 
@@ -227,7 +230,7 @@ class DataClass:
             except Exception as e:
                 ct.print("index = ", idx)
                 logging.error("error ", e)
-        ct.print("load embedding finish!")
+        ct.print("entity1_list:%d " % len(self.entity1_list))
 
     # brazil	/m/015fr@@1~/m/03385m^/location/country/currency_used@@1~text
     # Brazilian real	what type of money does brazil have?
@@ -698,7 +701,6 @@ class DataClass:
         z_new = []  #
         labels = []  # 标签集合
 
-
         # shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
         # ct.print("shuffle_indices", str(shuffle_indices))
 
@@ -806,8 +808,6 @@ class DataClass:
         for i in relation_path_rs:
             rs.append(i)
         return rs
-
-
 
     # ---------------------------------零碎的小东西
     def get_padding_num(self):
@@ -923,6 +923,73 @@ class DataClass:
         #                             "%s\t%s" % (question, neg_r))
         # ct.print("build_all_q_r_tuple q_pos_r_tuple")
 
+    # 生成一个epoches中的一个batch
+    def load_all_q_r_tuple(self, questions_len_train, error_relation_num=9999, is_record=False):
+        # 组合所有的问题和错误关系放进一个tuple中
+        fname = ""
+        if self.mode == "wq":
+            fname = "../data/web_questions/q_neg_r_tuple.txt"
+        if self.mode == "sq":
+            fname = "%s/q_neg_r_tuple.txt" % config.get_sq_files_path()
+        # 加载fname
+        # 处理
+        # 得到self.q_neg_r_tuple
+        # q_r_tuple = (index, question, neg_r)
+        # self.q_neg_r_tuple.append(q_r_tuple)
+        text_lines = ct.file_read_all_lines(fname)
+        index = -1
+        self.q_neg_r_tuple = []
+        for l in text_lines:
+            index += 1
+            question = str(l).split("\t")[0]
+            neg_r = str(l).split("\t")[1].replace("\n","")
+            q_r_tuple = (index, question, neg_r)
+            self.q_neg_r_tuple.append(q_r_tuple)
+
+        # self.q_neg_r_tuple = []
+        # self.q_pos_r_tuple = []
+        # # questions_len_train = len(self.question_list)
+        # questions_len_train = min(questions_len_train, len(self.entity1_list))
+        #
+        # for index in range(questions_len_train):
+        #     name = self.entity1_list[index]
+        #     question = self.question_list[index]
+        #     ps_to_except1 = self.relation_path_clear_str_all[index]
+        #     if self.mode == "wq":
+        #         r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+        #     elif self.mode == "sq":
+        #         r_all_neg = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name, ps_to_except=ps_to_except1)
+        #     else:
+        #         raise Exception("mode error")
+        #     error_relation_num = min(len(r_all_neg), error_relation_num)
+        #     r_all_neg = r_all_neg[0:error_relation_num]
+        #     for neg_r in r_all_neg:
+        #         q_r_tuple = (index, question, neg_r)
+        #         self.q_neg_r_tuple.append(q_r_tuple)
+        #         if is_record:
+        #             if self.mode == "wq":
+        #                 ct.just_log("../data/web_questions/q_neg_r_tuple.txt", "%s\t%s" % (question, neg_r))
+        #             if self.mode == "sq":
+        #                 ct.just_log("%s/q_neg_r_tuple.txt" % config.get_sq_topic_path()
+        #                             , "%s\t%s" % (question, neg_r))
+        ct.print("load_all_q_r_tuple finish")
+
+        # for index in range(questions_len_train):
+        #     # name = self.entity1_list[index]
+        #     question = self.question_list[index]
+        #     ps_to_except1 = self.relation_path_clear_str_all[index]
+        #     # r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
+        #     for neg_r in ps_to_except1:
+        #         q_r_tuple = (question, neg_r)
+        #         self.q_pos_r_tuple.append(q_r_tuple)
+        #         if is_record:
+        #             if self.mode == "wq":
+        #                 ct.just_log("../data/web_questions/q_pos_r_tuple.txt", "%s\t%s" % (question, neg_r))
+        #             if self.mode == "sq":
+        #                 ct.just_log("%s/q_pos_r_tuple.txt" % config.get_sq_topic_path(),
+        #                             "%s\t%s" % (question, neg_r))
+        # ct.print("build_all_q_r_tuple q_pos_r_tuple")
+
     def build_train_test_q(self):
         for q in self.train_question_list_index:
             q1 = self.converter.arr_to_text_by_space(q)
@@ -1016,7 +1083,7 @@ def test_random_choose_indexs_debug():
     for i in range(20):
         d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
                               batch_size=10)
-        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index, "test",1)
+        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index, "test", 1)
 
 
 def test_build():
@@ -1027,21 +1094,22 @@ def test_build():
     # d.prodeuce_embedding_vec_file(filename1) 生成wiki.vector文件
     # a1, a2, a3 = d.build_embedding_weight(filename2)
     # d.build_all_q_r_tuple() 只需要运行一次
-    d.build_train_test_q()
+    # d.build_train_test_q()
     ct.print("111")
 
 
 def test_sq():
     dh = DataClass("sq")
-    # d.build_all_q_r_tuple(config.get_static_q_num_debug(),
+    # dh.build_all_q_r_tuple(config.get_static_q_num_debug(),
     #                       config.get_static_num_debug(), is_record=True)
     my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
-                                                      10 )
-    for gen in my_generator:
-        train_q = gen[0]
-        train_cand = gen[1]
-        train_neg = gen[2]
-        # print(train_q)
+                                          10)
+    # for gen in my_generator:
+    #     train_q = gen[0]
+    #     train_cand = gen[1]
+    #     train_neg = gen[2]
+    #     # print(train_q)
+    #     print("ok")
     print(0000000000)
 
 
