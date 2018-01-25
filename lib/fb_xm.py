@@ -289,6 +289,86 @@ class freebase:
             ct.just_log('%s/freebase_relation_clear.txt' % (out_path2), r)
         print(432432423)
 
+    # 从freebase中抽取实体的相关信息到一个单独的文件
+    @staticmethod
+    def excat_entity_rdf_from_fb2m(e_path, out_path, out_path2, is_record):
+        # e_path = '../data/fb2m/e.txt'
+        print("excat_entity_rdf_from_fb")
+        # 1 读取所有entity (e1)
+        e_set = ct.file_read_all_lines(e_path)
+        print("init e_lines %d" % e_set.__len__())
+        e_set = set([str(x).replace("\r", "").replace("\n", "").replace("m/", "m.") for x in e_set])
+        e_dict = dict()
+        i = 0
+        print("init e_set")
+        r_lear_set = set()
+
+        # 2 挨个读取freebase文件 输出到e_dict
+        # for f_index in range(0, 24):  # 24
+        #     with gzip.open('../data/freebase_full/fb_combine/%d.gz' % (f_index,), 'rb') as f_in:
+        #         for l in f_in:
+        #             i += 1
+        #             if i % 100000 == 0:
+        #                 print("%d - 2400 " % (i / 100000))
+        #             l_list = l.decode('utf-8').strip().split('\t')
+        #             e1 = l_list[0]
+        #             # 3 逐行判断是否RDF中 s 是 e1
+        #             if e1 in e_set:
+        #                 # 4 如果在其中则将其添加到e1的压缩包中
+        #                 r_e2 = (l_list[1].replace("\r", "").replace("\n", ""),
+        #                         l_list[2].replace("\r", "").replace("\n", ""))
+        #                 if e1 in e_dict:
+        #                     e_v1 = e_dict[e1]
+        #                     e_v1.append(r_e2)
+        #                     e_dict[e1] = e_v1
+        #                 else:
+        #                     e_dict[e1] = [r_e2]
+        fb2m_text_lines = ct.file_read_all_lines("../data/simple_questions/fb2m/freebase-FB2M.txt")
+        for l in fb2m_text_lines:
+            i += 1
+            if i % 10000 == 0:
+                print("%d - 1084 " % (i / 10000))
+            l_list = str(l).replace("\n", "").replace("\r", "") \
+                .replace("www.freebase.com/", "").replace("m/", "m.").split("\t")
+            e1 = l_list[0]
+            if e1 in e_set:
+                # 4 如果在其中则将其添加到e1的压缩包中
+                r_e2 = (l_list[1],
+                        l_list[2])
+                if e1 in e_dict:
+                    e_v1 = e_dict[e1]
+                    e_v1.append(r_e2)
+                    e_dict[e1] = e_v1
+                else:
+                    e_dict[e1] = [r_e2]
+
+        # 4 输出所有
+        del e_set  # 减少内存
+        print("start output")
+        i = 0
+        total = 0
+
+        for e, e_v in e_dict.items():
+            i += 1
+            if i % 10000 == 0:
+                print("%s / %s " % (i / 10000, total))
+                ct.print_t()
+            # print("%s "%(e,))
+            for r_e2 in e_v:
+                r_lear_set.add(r_e2[0])
+
+            # is_record = False
+            if not is_record:
+                continue
+            with gzip.open('%s/%s.gz' % (out_path, e), 'wb') as f_out:
+                for r_e2 in e_v:
+                    # print("%s-%s"%(r_e2[0],r_e2[1]))
+                    f_out.write(("%s\t%s\n" % (r_e2[0], r_e2[1])).encode('utf-8'))
+
+        for r in r_lear_set:
+            ct.just_log('%s/freebase_relation_clear.txt' % (out_path2), r)
+        print(432432423)
+
     @staticmethod
     def excat_annotated_fb_data(num):
         fname = "../data/simple_questions/annotated_fb_data_all.txt"
@@ -316,7 +396,7 @@ class freebase:
         print(1)
 
     @staticmethod
-    def prodeuce_embedding_vec_file(filename):
+    def prodeuce_embedding_vec_file(filename, path="../data/simple_questions/fb_0_2m_files"):
         dh = data_helper.DataClass("sq")
         model = models.Word2Vec.load(filename)
         # 遍历每个单词，查出word2vec然后输出
@@ -330,40 +410,68 @@ class freebase:
             except Exception as e1:
                 msg1 = "%s : %s " % (word, e1)
                 ct.print(msg1)
-                ct.just_log("../data/simple_questions/fb_0_files/wiki.vector.log", msg1)
+                ct.just_log(path + "/wiki.vector.log", msg1)
                 v = model['end']
             m_v = ' '.join([str(x) for x in list(v)])
             msg = "%s %s" % (word, str(m_v))
-            # ct.print(msg)
-            ct.just_log("../data/simple_questions/fb_0_files/wiki.vector", msg)
+            ct.just_log(path + "/wiki.vector", msg)
+        # 多记录一个单词
+        word = 'end'
+        v = model[word]
         m_v = ' '.join([str(x) for x in list(v)])
         msg = "%s %s" % (word, str(m_v))
-        msg = "%s %s" % ('end', msg)
-        ct.just_log("../data/simple_questions/fb_0_files/wiki.vector", msg)
+        ct.just_log(path + "/wiki.vector", msg)
+
+    @staticmethod
+    def build_all_q_r_tuple():
+        dh = data_helper.DataClass("sq")
+        dh.build_all_q_r_tuple(99999,9999999, is_record=True)
+    @staticmethod
+    def test1_v1():
+        # s1 :
+        # freebase.excat_annotated_fb_data(0)
+
+        # s2
+        # freebase.excat_fbxm(file_name="../data/simple_questions/annotated_fb_data_all.txt-0.txt",
+        #          path="../data/simple_questions/fb_0_files")
+        # s3
+        # p1 = "../data/simple_questions/fb_0_files/e.txt"
+        # # # p1 = "../data/simple_questions/annotated_fb_data_all.txt-0.txt"
+        # out_path = '../data/simple_questions/fb_0'
+        # out_path2 = '../data/simple_questions/fb_0_files'
+        # freebase.excat_entity_rdf_from_fb(p1, out_path, out_path2, is_record=True)
+
+        # s4 :  freebase.excat_entity_in_annotated_fb_data
+
+        # filename1 = '../data/word2vec/train.model.1516630487.7132027'
+        # filename2 = '../data/word2vec/wiki.vector'
+        # freebase.prodeuce_embedding_vec_file(filename1) #  生成wiki.vector文件
+
+        # for i in range(314):
+        # freebase.split_fb_raw_data(range(314))
+        # freebase.filter_raw_one(i)
+        # print("%d ok" % i)
+        print(1)
+
+    # 第二版本的抽取流程
+    @staticmethod
+    def process_v2():
+        # 在fb2m中寻找所有entity对应的rdf，按照之前的格式存到指定目录(fb_0_2m_rdf)        的gzip
+        # p1 = "../data/simple_questions/fb_0_2m_files/e.txt"
+        # out_path = '../data/simple_questions/fb_0_2m_rdf'
+        # out_path2 = '../data/simple_questions/fb_0_2m_files'
+        # freebase.excat_entity_rdf_from_fb2m(p1, out_path, out_path2, is_record=True)
+        # print(432532)
+
+        # s3 :  freebase.excat_entity_in_annotated_fb_data
+        # filename1 = '../data/word2vec/train.model.1516630487.7132027'
+        # path = "../data/simple_questions/fb_0_2m_files"
+        # freebase.prodeuce_embedding_vec_file(filename1, path)  # 生成wiki.vector文件
+        # s4 :
+        freebase.build_all_q_r_tuple()
+        print(54356345345)
 
 
 if __name__ == "__main__":
-    # s1 :
-    # freebase.excat_annotated_fb_data(0)
-
-    # s2
-    # freebase.excat_fbxm(file_name="../data/simple_questions/annotated_fb_data_all.txt-0.txt",
-    #          path="../data/simple_questions/fb_0_files")
-    # s3
-    # p1 = "../data/simple_questions/fb_0_files/e.txt"
-    # # # p1 = "../data/simple_questions/annotated_fb_data_all.txt-0.txt"
-    # out_path = '../data/simple_questions/fb_0'
-    # out_path2 = '../data/simple_questions/fb_0_files'
-    # freebase.excat_entity_rdf_from_fb(p1, out_path, out_path2, is_record=True)
-
-    # s4 :  freebase.excat_entity_in_annotated_fb_data
-
-    # filename1 = '../data/word2vec/train.model.1516630487.7132027'
-    # filename2 = '../data/word2vec/wiki.vector'
-    # freebase.prodeuce_embedding_vec_file(filename1) #  生成wiki.vector文件
-
-    # for i in range(314):
-    # freebase.split_fb_raw_data(range(314))
-    # freebase.filter_raw_one(i)
-    # print("%d ok" % i)
+    freebase.process_v2()
     print(1)

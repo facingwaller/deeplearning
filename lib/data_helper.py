@@ -122,9 +122,9 @@ class DataClass:
             # 初始化排除的关系
             # self.init_filter_relations()
         elif mode == "sq":
-            self.init_simple_questions("../data/simple_questions/fb_0_files/annotated_fb_data_all.txt-0.txt")
+            self.init_simple_questions(config.par('sq_q_path'))
             ct.print("init_simple_questions finish.")
-            self.init_fb("../data/simple_questions/fb_0_files/")
+            self.init_fb(config.par('sq_fb_path'))
             ct.print("init_fb finish.")
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
@@ -191,10 +191,11 @@ class DataClass:
 
         self.build_embedding_weight(config.wiki_vector_path(mode))
         ct.print("load embedding ok!")
+
         # self.build_all_q_r_tuple(config.get_static_q_num_debug(),
         #                          config.get_static_num_debug(), is_record=False)
-        self.load_all_q_r_tuple(config.get_static_q_num_debug(),
-                                config.get_static_num_debug(), is_record=False)
+        # self.load_all_q_r_tuple(config.get_static_q_num_debug(),
+        #                         config.get_static_num_debug(), is_record=False)
         # todo :change load q_r tuple
 
         # ct.print("build_all_q_r_tuple 生成所有的q和neg r的组合")
@@ -740,7 +741,7 @@ class DataClass:
             rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
         if self.mode == "sq":
             rs = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name,
-                                                             ps_to_except=ps_to_except1,not_allow_repeat=True)
+                                                             ps_to_except=ps_to_except1, not_allow_repeat=True)
 
         # rs = list(set(rs))
         # 加入正确的
@@ -883,9 +884,12 @@ class DataClass:
         self.q_neg_r_tuple = []
         self.q_pos_r_tuple = []
         # questions_len_train = len(self.question_list)
+
         questions_len_train = min(questions_len_train, len(self.entity1_list))
 
         for index in range(questions_len_train):
+            if index == 19 :
+                print(11113213123)
             name = self.entity1_list[index]
             question = self.question_list[index]
             ps_to_except1 = self.relation_path_clear_str_all[index]
@@ -895,12 +899,14 @@ class DataClass:
                 r_all_neg = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name, ps_to_except=ps_to_except1)
             else:
                 raise Exception("mode error")
-            # todo :检查这里是否多干掉了一个
+
             error_relation_num = min(len(r_all_neg), error_relation_num)
             r_all_neg = r_all_neg[0:error_relation_num]
-            if len(r_all_neg)==0 :
-                print(111112321312321)
-            print(len(r_all_neg))
+            if len(r_all_neg) == 0:
+                # print("index = %d  , 0 ",index)
+                ct.just_log("%s/q_neg_r_tuple_0_error_r.txt" % config.par('sq_fb_path')
+                            , "%s\t%s" % (name, index))
+            # print(len(r_all_neg))
             for neg_r in r_all_neg:
                 q_r_tuple = (index, question, neg_r)
                 self.q_neg_r_tuple.append(q_r_tuple)
@@ -908,7 +914,7 @@ class DataClass:
                     if self.mode == "wq":
                         ct.just_log("../data/web_questions/q_neg_r_tuple.txt", "%s\t%s" % (question, neg_r))
                     if self.mode == "sq":
-                        ct.just_log("%s/q_neg_r_tuple1.txt" % config.get_sq_files_path()
+                        ct.just_log("%s/q_neg_r_tuple1.txt" % config.par('sq_fb_path')
                                     , "%s\t%s" % (question, neg_r))
         ct.print("build_all_q_r_tuple q_neg_r_tuple")
 
@@ -935,7 +941,7 @@ class DataClass:
         if self.mode == "wq":
             fname = "../data/web_questions/q_neg_r_tuple.txt"
         if self.mode == "sq":
-            fname = "%s/q_neg_r_tuple.txt" % config.get_sq_files_path()
+            fname = "%s/q_neg_r_tuple.txt" % config.par('sq_fb_rdf_path')
         # 加载fname
         # 处理
         # 得到self.q_neg_r_tuple
@@ -947,7 +953,7 @@ class DataClass:
         for l in text_lines:
             index += 1
             question = str(l).split("\t")[0]
-            neg_r = str(l).split("\t")[1].replace("\n","")
+            neg_r = str(l).split("\t")[1].replace("\n", "")
             q_r_tuple = (index, question, neg_r)
             self.q_neg_r_tuple.append(q_r_tuple)
 

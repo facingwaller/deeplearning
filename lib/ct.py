@@ -475,7 +475,7 @@ class ct:
     # 获取所有neg的关系
     @staticmethod
     def read_entity_and_get_all_neg_relations_sq(entity_id, ps_to_except,not_allow_repeat=True):
-        path = config.get_sq_topic_path()
+        path = config.par('sq_fb_rdf_path')  # config.get_sq_topic_path()
         path = path +"/m."+ entity_id+".gz"
         text_lines = ct.read_all_text_from_gzip(path)
         r_list = []
