@@ -12,16 +12,16 @@ import datetime
 import lib.my_log as mylog
 from lib.config import config
 from lib.ct import ct, log_path
-import jieba
+# import jieba
 
 
 class baike_helper:
     def __init__(self):
-        jieba.set_dictionary('../data/jieba_dict/dict.txt.big')
-        self.stopwordset = set()
-        with open('../data/jieba_dict/stopwords.txt', 'r', encoding='utf-8') as sw:
-            for line in sw:
-                self.stopwordset.add(line.strip('\n'))
+        # jieba.set_dictionary('../data/jieba_dict/dict.txt.big')
+        # self.stopwordset = set()
+        # with open('../data/jieba_dict/stopwords.txt', 'r', encoding='utf-8') as sw:
+        #     for line in sw:
+        #         self.stopwordset.add(line.strip('\n'))
         print(1)
 
     # 统计关系的数目并做分析，排序
