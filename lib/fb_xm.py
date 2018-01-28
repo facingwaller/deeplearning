@@ -10,17 +10,18 @@ from gensim import models
 
 path_fb2m = '../data/fb2m/freebase-FB2M.txt'
 import lib.data_helper as data_helper
+# import cPickle as pickle
 
 
 class freebase:
     # 列出FB_2M 中所有提及的 entity 和 relation 输出到 data/fb2m
     # www.freebase.com/m/018fj69	www.freebase.com/music/recording/artist	www.freebase.com/m/01wbgdv
     @staticmethod
-    def excat_fbxm(file_name='../data/fb2m/freebase-FB2M.txt', path="../data/simple_questions"):
+    def excat_fbxm(file_name='../data/fb2m/freebase-FB2M.txt', path="../data/simple_questions",extract_o=True):
         f1_writer = codecs.open("%s/e.txt" % path, mode="w", encoding="utf-8")
         f2_writer = codecs.open("%s/r.txt" % path, mode="w", encoding="utf-8")
-        e1 = []
-        r1 = []
+        e1 = set()
+        r1 = set()
         index = 0
         with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
             for line in read_file.readlines():
@@ -41,15 +42,16 @@ class freebase:
                 #     continue
                 line = line.replace("www.freebase.com/", "").replace("\n", "")
                 # f1_writer.write(line.split('\t')[0])
-                e1.append(line.split('\t')[0])
+                e1.add(line.split('\t')[0])
                 e2 = line.split('\t')[2]
-                e2_s = e2.split(' ')
-                if len(e2_s) > 0:
-                    for e2_s1 in e2_s:
-                        e1.append(e2_s1)
-                else:
-                    e1.append(e2)
-                r1.append(line.split('\t')[1])
+                if extract_o:
+                    e2_s = e2.split(' ')
+                    if len(e2_s) > 0:
+                        for e2_s1 in e2_s:
+                            e1.add(e2_s1)
+                    else:
+                        e1.add(e2)
+                r1.add(line.split('\t')[1])
                 # print("==========")
 
         for _ in e1:
@@ -227,14 +229,17 @@ class freebase:
                             # 输出剩下的
 
     # 从freebase中抽取实体的相关信息到一个单独的文件
+    # update:写入多个文件改成写入一个文件
     @staticmethod
     def excat_entity_rdf_from_fb(e_path, out_path, out_path2, is_record):
         # e_path = '../data/fb2m/e.txt'
-        print("excat_entity_rdf_from_fb")
+        print("excat _entity_rdf_from_fb")
         # 1 读取所有entity (e1)
         e_set = ct.file_read_all_lines(e_path)
-        print("init e_lines %d" % e_set.__len__())
+
         e_set = set([str(x).replace("\r", "").replace("\n", "").replace("m/", "m.") for x in e_set])
+        e_l = e_set.__len__()
+        print("init e_lines %d" %e_l )
         e_dict = dict()
         i = 0
         print("init e_set")
@@ -254,46 +259,56 @@ class freebase:
                         # 4 如果在其中则将其添加到e1的压缩包中
                         r_e2 = (l_list[1].replace("\r", "").replace("\n", ""),
                                 l_list[2].replace("\r", "").replace("\n", ""))
-                        if e1 in e_dict:
+                        # 方法1
+                        # if e1 in e_dict:
+                        #     e_v1 = e_dict[e1]
+                        #     e_v1.append(r_e2)
+                        #     e_dict[e1] = e_v1
+                        # else:
+                        #     e_dict[e1] = [r_e2]
+                        # 方法2，理论上效果更快
+                        try:
                             e_v1 = e_dict[e1]
                             e_v1.append(r_e2)
                             e_dict[e1] = e_v1
-                        else:
-                            # e_v1 = []
-                            # e_v1.append(r_e2)
+                        except:
                             e_dict[e1] = [r_e2]
         # 4 输出所有
         del e_set  # 减少内存
         print("start output")
         i = 0
-        total = 0
-
-        for e, e_v in e_dict.items():
-            i += 1
-            if i % 10000 == 0:
-                print("%s / %s " % (i / 10000, total))
-                ct.print_t()
-            # print("%s "%(e,))
-            for r_e2 in e_v:
-                r_lear_set.add(r_e2[0])
-
-            # is_record = False
-            if not is_record:
-                continue
-            with gzip.open('%s/%s.gz' % (out_path, e), 'wb') as f_out:
+        total = 24
+        with gzip.open('%s/rdf.gz' % (out_path ), 'wb') as f_out:
+            for e, e_v in e_dict.items():
+                i += 1
+                if i % 10000 == 0:
+                    print("%s / %s " % (i / 10000, total))
+                    ct.print_t()
+                # print("%s "%(e,))
                 for r_e2 in e_v:
-                    # print("%s-%s"%(r_e2[0],r_e2[1]))
-                    f_out.write(("%s\t%s\n" % (r_e2[0], r_e2[1])).encode('utf-8'))
+                    r_lear_set.add(r_e2[0])
 
+                # is_record = False
+                if not is_record:
+                    continue
+
+                for r_e2 in e_v:
+                    f_out.write(("%s\t%s\t%s\n" % (e,r_e2[0], r_e2[1])).encode('utf-8'))
+
+            # with gzip.open('%s/%s.gz' % (out_path, e), 'wb') as f_out:
+            #     for r_e2 in e_v:
+            #         # print("%s-%s"%(r_e2[0],r_e2[1]))
+            #         f_out.write(("%s\t%s\n" % (r_e2[0], r_e2[1])).encode('utf-8'))
+        print("e in fb2m len=%d ? e in fb _len=%d"%(e_l,i))
         for r in r_lear_set:
             ct.just_log('%s/freebase_relation_clear.txt' % (out_path2), r)
-        print(432432423)
+        print(22222222222222222222222222)
 
     # 从freebase中抽取实体的相关信息到一个单独的文件
     @staticmethod
     def excat_entity_rdf_from_fb2m(e_path, out_path, out_path2, is_record):
         # e_path = '../data/fb2m/e.txt'
-        print("excat_entity_rdf_from_fb")
+        print("exca t_entity_rdf_from_fb")
         # 1 读取所有entity (e1)
         e_set = ct.file_read_all_lines(e_path)
         print("init e_lines %d" % e_set.__len__())
@@ -427,19 +442,23 @@ class freebase:
         dh = data_helper.DataClass("sq")
         dh.build_all_q_r_tuple(99999,9999999, is_record=True)
     @staticmethod
-    def test1_v1():
+    def process_v1():
+        # s0 :
+        # freebase.excat_fbxm("../data/simple_questions/fb2m/freebase-FB2M.txt",
+        #                    "../data/simple_questions/fb_1_files",False)
         # s1 :
         # freebase.excat_annotated_fb_data(0)
 
         # s2
         # freebase.excat_fbxm(file_name="../data/simple_questions/annotated_fb_data_all.txt-0.txt",
-        #          path="../data/simple_questions/fb_0_files")
+        #           path="../data/simple_questions/fb_0_files")
         # s3
-        # p1 = "../data/simple_questions/fb_0_files/e.txt"
-        # # # p1 = "../data/simple_questions/annotated_fb_data_all.txt-0.txt"
-        # out_path = '../data/simple_questions/fb_0'
-        # out_path2 = '../data/simple_questions/fb_0_files'
-        # freebase.excat_entity_rdf_from_fb(p1, out_path, out_path2, is_record=True)
+
+        p1 = "../data/simple_questions/fb_1_files/e1_2.txt"
+        # # # # p1 = "../data/simple_questions/annotated_fb_data_all.txt-0.txt"
+        out_path = '../data/simple_questions/fb_1_rdf'
+        out_path2 = '../data/simple_questions/fb_1_files'
+        freebase.excat_entity_rdf_from_fb(p1, out_path, out_path2, is_record=True)
 
         # s4 :  freebase.excat_entity_in_annotated_fb_data
 
@@ -471,7 +490,7 @@ class freebase:
         freebase.build_all_q_r_tuple()
         print(54356345345)
 
-
+    
 if __name__ == "__main__":
-    freebase.process_v2()
+    freebase.process_v1()
     print(1)
