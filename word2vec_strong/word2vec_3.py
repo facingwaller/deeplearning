@@ -25,18 +25,18 @@ def listAllFilePathInDirectory(dirPath):
     return loadedFilesPath
 
 
-# sentences = word2vec.LineSentence(os.path.join(current_dir, "../data/word2vec/wiki_texts.txt.001"))
+sentences = word2vec.LineSentence(os.path.join(current_dir, "../data/word2vec/zh-cn/wiki_texts_seg.txt"))
 # 只取100维，可以训练的快一点，完全相同参数下，100维：85w words/s, 300维: ?? words/s
-# model = word2vec.Word2Vec(size=100, window=5, min_count=1)
-# model.build_vocab(sentences)
-# model.train(sentences, total_examples=model.corpus_count, epochs=model.iter)
-# model.save(os.path.join(current_dir, '../data/word2vec/train.model'))
+model = word2vec.Word2Vec(size=100, window=5, min_count=1)
+model.build_vocab(sentences)
+model.train(sentences, total_examples=model.corpus_count, epochs=model.iter)
+model.save(os.path.join(current_dir, '../data/word2vec/zh-cn/train.model'))
 
-model = Word2Vec.load("../data/word2vec/train.model.1516595478.602203")
-corpusFiles = listAllFilePathInDirectory("../data/word2vec/webquestions/")
-for f in corpusFiles:
-    print(f)
-    sentences = word2vec.LineSentence(f)
-    model.train(sentences, total_examples=model.corpus_count, epochs=model.iter)
-    model.save(os.path.join(current_dir, '../data/word2vec/train.model.'+str(time.time())))
-    print("end:%s "%f)
+# model = Word2Vec.load("../data/word2vec/train.model.1516595478.602203")
+# corpusFiles = listAllFilePathInDirectory("../data/word2vec/webquestions/")
+# for f in corpusFiles:
+#     print(f)
+#     sentences = word2vec.LineSentence(f)
+#     model.train(sentences, total_examples=model.corpus_count, epochs=model.iter)
+#     model.save(os.path.join(current_dir, '../data/word2vec/train.model.'+str(time.time())))
+#     print("end:%s "%f)

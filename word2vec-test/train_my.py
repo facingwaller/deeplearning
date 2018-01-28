@@ -4,7 +4,7 @@ import logging
 
 def main():
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-    fnam = "wiki_texts.txt"
+    fnam = "../data/word2vec/zh-cn/wiki_texts_seg_by_space.txt"
     sentences = word2vec.Text8Corpus(fnam)
     model = word2vec.Word2Vec(sentences, size=100, min_count=1)
 

@@ -1033,7 +1033,7 @@ class DataClass:
         for l in lines:
             f1_writer.write(l + "\n")
         f1_writer.close()
-        ct.print(1)
+
 
     def log_error_r(self, train, type):
         ct.just_log2("debug", "%s------" % type)

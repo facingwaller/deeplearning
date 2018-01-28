@@ -744,6 +744,11 @@ class ct:
     def print_t():
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         ct.print(timestamp,"time")
+
+    @staticmethod
+    def print_t(msg=""):
+        timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        ct.print(timestamp+":"+msg, "time")
     # -------------------文件读取
     @staticmethod
     def file_read_all_lines(file_name):
@@ -753,6 +758,11 @@ class ct:
                 lines.append(line)
                 # .replace("\n", "").replace("/", " ").replace("_", " ").strip()
         return lines
+
+    @staticmethod
+    def sort_dict(r_d,reverse=True):
+        r_d_sort2 = sorted(r_d.items(), key=lambda d: d[1],reverse=reverse)
+        return r_d_sort2
 
 
 log_path = ct.log_path_static()

@@ -30,6 +30,7 @@ python3 wiki_to_txt.py zhwiki-20160820-pages-articles.xml.bz2
 3.使用 OpenCC 將維基文章統一轉換為繁體中文
 ```
 opencc -i wiki_texts.txt -o wiki_zh_tw.txt -c s2tw.json
+
 ```
 4.使用`jieba` 對文本斷詞，並去除停用詞
 ```

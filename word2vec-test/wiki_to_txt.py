@@ -11,11 +11,12 @@ def main():
     #     exit()
 
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-    filename = "../data/enwiki-20171201-pages-articles.xml.bz2"
+    filename = "../data/word2vec/zh-cn/zhwiki-20171120-pages-articles.xml.bz2"
+    # filename = "../data/enwiki-20171201-pages-articles.xml.bz2"
     wiki_corpus = WikiCorpus(filename, dictionary={})
     texts_num = 0
 
-    with open("wiki_texts.txt",'w',encoding='utf-8') as output:
+    with open("../data/word2vec/zh-cn/wiki_texts.txt",'w',encoding='utf-8') as output:
         for text in wiki_corpus.get_texts():
             output.write(' '.join(text) + '\n')
             texts_num += 1

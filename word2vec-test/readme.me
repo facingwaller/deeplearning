@@ -6,6 +6,15 @@
 
 ```
 python3 wiki_to_txt.py zhwiki-20160820-pages-articles.xml.bz2
+
+opencc -i wiki_texts.txt -o wiki_zh_tw.txt -c t2s.json
+
+opencc.exe -i F:\PycharmProjects\dl2\deeplearning\data\word2vec\zh-cn\wiki_texts.txt -o F:\PycharmProjects\dl2\deeplearning\data\word2vec\zh-cn\wiki_texts_s.txt -c t2s.json
+
+4.使用`jieba` 對文本斷詞，並去除停用詞
+```
+python3 segment.py
+
 5.使用`gensim` 的 word2vec 模型進行訓練
 ```
 python3 train.py
