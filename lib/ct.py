@@ -586,6 +586,18 @@ class ct:
         return str(string).strip().lower().replace("?", "").replace(".", "").replace("'s", "")
 
     @staticmethod
+    def clean_str_rn(string):
+        return str(string).strip().strip('\n').strip('\r')
+    @staticmethod
+    def clean_str_rel(string):
+        return str(string).strip().strip('\n').strip('\r').replace(' ','') \
+                .replace(" ", "").replace("•", "").replace("-", "") \
+                .replace("【", "").replace("】", "") \
+                .replace("[", "").replace("]", "").replace('，','') \
+                .replace("”",'').replace('）','').replace('（','').replace('／','')
+
+
+    @staticmethod
     def check_len(list, len):
         try:
             for l1 in list:
@@ -758,11 +770,33 @@ class ct:
                 lines.append(line)
                 # .replace("\n", "").replace("/", " ").replace("_", " ").strip()
         return lines
+    @staticmethod
+    def file_read_all_lines_strip(file_name):
+        lines = []
+        with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
+            for line in read_file.readlines():
+                lines.append(line.replace("\n", "").replace("\r", "").strip())
+
+        return lines
 
     @staticmethod
     def sort_dict(r_d,reverse=True):
         r_d_sort2 = sorted(r_d.items(), key=lambda d: d[1],reverse=reverse)
         return r_d_sort2
+
+    @staticmethod
+    def end_with(str1,str_list):
+        for str2 in str_list:
+         if str(str1).endswith(str2):
+             return True
+        return False
+
+    @staticmethod
+    def contains_with(str1,str_list):
+        for str2 in str_list:
+         if str(str1).__contains__(str2):
+             return True
+        return False
 
 
 log_path = ct.log_path_static()
