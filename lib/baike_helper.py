@@ -623,6 +623,9 @@ class baike_helper:
         return ps
 
 
+
+
+
 def method_name():
     bk = baike_helper()
     f_in = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt"
@@ -647,6 +650,27 @@ def n_gram_math_all():
                 ct.just_log("../data/nlpcc2016/extract_entitys.txt", "NULL")
             print(ss)
 
+def find_r_all():
+    bkh = baike_helper()
+    # bkh.init_ner()
+    a.init_spo()
+    f_in = "../data/nlpcc2016/extract_entitys.txt"
+    index = 0
+    # 还差一个所有的o
+    with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
+        for line in read_file:
+            index += 1
+            print(index)
+            e_list  = line.replace("\r", "").replace("\n", "").split("\t")
+
+            for e in e_list:
+
+            # ss = bkh.ner(s)
+            # if len(ss) > 0:
+            #     ct.just_log("../data/nlpcc2016/extract_entitys.txt", '\t'.join(ss))
+            # else:
+            #     ct.just_log("../data/nlpcc2016/extract_entitys.txt", "NULL")
+            print(ss)
 
 if __name__ == '__main__':
     # baike_helper.e_r_combine()
