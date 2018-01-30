@@ -810,6 +810,8 @@ def find_all_ps_2_6_3():
         for l in rf:
             index += 1
             ct.print_t(index)
+            if index < 5000:
+                continue
             o = ct.clean_str_rn(l.split('\t')[1])
             ss = str(cand_s[index]).split('\t')  # N-GRAM 实体名
             s_set = set()  # 候选实体集合
@@ -838,9 +840,10 @@ def find_all_ps_2_6_3():
             # 输出所有可能的关系
             if len(ps) == 0:
                 ps = ['NULL']
+            else:
+                # ct.just_log('../data/nlpcc2016/result/ps.txt', '\t'.join(ps))
+                ct.just_log('../data/nlpcc2016/result/ps.txt', "%s\t%s\t%s\t%d" % (es[0], ps[0], o,index))
             ct.print_t(ps)
-            # ct.just_log('../data/nlpcc2016/result/ps.txt', '\t'.join(ps))
-            ct.just_log('../data/nlpcc2016/result/ps.txt', "%s\t%s\t%s"%(es[0],ps[0],o))
 
 
 if __name__ == '__main__':
