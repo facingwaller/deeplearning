@@ -1,29 +1,29 @@
 import codecs
-import logging
-import tensorflow as tf
-import gzip
-import json
-import numpy as np
-import os
-import lib.read_utils as read_utils
-import random
-from tensorflow.contrib import learn
-import datetime
-import lib.my_log as mylog
-from lib.config import config
+# import logging
+# import tensorflow as tf
+# import gzip
+# import json
+# import numpy as np
+# import os
+# import lib.read_utils as read_utils
+# import random
+# from tensorflow.contrib import learn
+# import datetime
+# import lib.my_log as mylog
+# from lib.config import config
 from lib.ct import ct, log_path
-import jieba
+# import jieba
 import re
 
 
 class baike_helper:
-    def __init__(self):
-        # jieba.set_dictionary('../data/jieba_dict/dict.txt.big')
-        # self.stopwordset = set()
-        # with open('../data/jieba_dict/stopwords.txt', 'r', encoding='utf-8') as sw:
-        #     for line in sw:
-        #         self.stopwordset.add(line.strip('\n'))
-        print(1)
+    # def __init__(self):
+    #     # jieba.set_dictionary('../data/jieba_dict/dict.txt.big')
+    #     # self.stopwordset = set()
+    #     # with open('../data/jieba_dict/stopwords.txt', 'r', encoding='utf-8') as sw:
+    #     #     for line in sw:
+    #     #         self.stopwordset.add(line.strip('\n'))
+    #     print(1)
 
     # 统计关系的数目并做分析，排序
     @staticmethod
@@ -592,7 +592,7 @@ class baike_helper:
         return origin_entitys_no_repeat
 
     def init_spo(self):
-        d_dict = dict()
+        self.kbqa = dict()
         f_in = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt"
         index = 0
         with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
@@ -605,16 +605,17 @@ class baike_helper:
                 p = ct.clean_str_rel(ls[1])
                 o1 = ls[2]
                 t1 = (p, o1)
-                if s in d_dict:
-                    s1 = d_dict[s]
+                if s in self.kbqa:
+                    s1 = self.kbqa[s]
                     s1.add(t1)
-                    d_dict[s] = s1
+                    self.kbqa[s] = s1
                 else:
                     s1 = set()
                     s1.add(t1)
-                    d_dict[s] = s1
+                    self.kbqa[s] = s1
         print(321312)
-        self.kbqa = d_dict
+        # self.kbqa = d_dict
+        
         # 通过属性值
 
     #  通过原始实体名，找到对应的所有属性值
@@ -796,7 +797,7 @@ def n_gram_math_all():
 def find_all_ps_2_6_3():
     bh = baike_helper()
     ct.print_t(1)
-    bh.init_p_pos()
+    bh.init_spo()
     ct.print_t(2)
     # bh.init_ner()
     bh.init_find_entity()
@@ -806,12 +807,13 @@ def find_all_ps_2_6_3():
     cand_s = ct.file_read_all_lines_strip(f_cand_q_in)
     ct.print_t(4)
     index = -1
-    with codecs.open(f_q_in, 'r', 'utf-8') as rf:
-        for l in rf:
+    with open(f_q_in,mode='r',encoding='utf-8') as rf:
+        for l in rf.readlines():
             index += 1
             ct.print_t(index)
-            if index < 5000:
-                continue
+            ct.print_t(l)
+            # if index < 5000:
+            #     continue
             o = ct.clean_str_rn(l.split('\t')[1])
             ss = str(cand_s[index]).split('\t')  # N-GRAM 实体名
             s_set = set()  # 候选实体集合
@@ -820,14 +822,16 @@ def find_all_ps_2_6_3():
             find_r = False
             for s1 in ss:
                 s1_result = bh.find_entity(s1)
-
                 for s11 in s1_result:
                     #         s_set.add(s11)
                     # # 找出所有可能的实体
                     # for s2 in s_set:
-                    if s11 == '机械设计基础(2010年高等教育出版社出版作者杨可桢)':
-                        print(532424)
-                    ps1 = bh.find_p_by_pos(s11, o)
+                    # if s11 == '机械设计基础(2010年高等教育出版社出版作者杨可桢)':
+                    #     print(532424)
+                    # 不加载
+                    # ps1 = bh.find_p_by_pos(s11, o)
+                    # 全加载
+                    ps1 = bh.find_p(s11, o)
                     if len(ps1) > 0:
                         ct.print_t("%s\t%s" % (s11, o))
                         es.append(s11)
