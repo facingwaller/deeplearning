@@ -238,7 +238,7 @@ class DataClass:
                 logging.error("error ", e)
         ct.print("entity1_list:%d " % len(self.entity1_list))
 
-    # -----------------cc 
+    # -----------------cc
     def init_cc_questions(self, file_name):
         # line_list = []
         idx = 0
