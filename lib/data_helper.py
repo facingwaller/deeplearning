@@ -126,6 +126,11 @@ class DataClass:
             ct.print("init_simple_questions finish.")
             self.init_fb(config.par('sq_fb_path'))
             ct.print("init_fb finish.")
+        elif mode == "cc":
+            self.init_cc_questions(config.par('cc_q_path'))
+            ct.print("init_simple_questions finish.")
+            self.init_fb(config.par('sq_fb_path'))
+            ct.print("init_fb finish.")
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
             self.init_fb("../data/freebase/fb_1000/")
@@ -233,6 +238,37 @@ class DataClass:
                 logging.error("error ", e)
         ct.print("entity1_list:%d " % len(self.entity1_list))
 
+    # -----------------cc 
+    def init_cc_questions(self, file_name):
+        # line_list = []
+        idx = 0
+        # www.freebase.com/m/04whkz5	www.freebase.com/book/written_work/subjects
+        # www.freebase.com/m/01cj3p
+        # what is the book e about
+        with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
+            try:
+                for line in read_file.readlines():
+                    idx += 1
+                    line_seg = line.split('\t')
+                    # www.freebase.com/m/04whkz5
+                    entity1 = line_seg[0].split('/')[2]
+                    relation1 = ct.clear_relation(line_seg[1])
+
+                    entity2 = line_seg[2].split('/')[2]
+                    question = ct.clear_question(line_seg[3])
+
+                    self.entity1_list.append(entity1)
+                    self.relation_list.append(relation1)
+                    # self.entity1_list.append(entity2)
+                    self.question_list.append(question)
+                    self.relation_path_clear_str_all.append([relation1])
+                    # self.rdf_list.append([entity1, relation1, entity2])
+                    # check it
+                    # line_list.append(line)
+            except Exception as e:
+                ct.print("index = ", idx)
+                logging.error("error ", e)
+        ct.print("entity1_list:%d " % len(self.entity1_list))
     # brazil	/m/015fr@@1~/m/03385m^/location/country/currency_used@@1~text
     # Brazilian real	what type of money does brazil have?
     def init_web_questions(self, fname=r'../data/web_questions/rdf.txt'):

@@ -552,7 +552,11 @@ class baike_helper:
 
     # 1 通过别名找到对应的原始实体
     def find_entity(self, dst):
-
+        """
+        通过别名找到对应的原始实体
+        :param dst:
+        :return:
+        """
         origin_entitys = []
         find = False
         for l in self.list1:
@@ -580,8 +584,12 @@ class baike_helper:
             if find:
                 origin_entitys.append(l)
                 find = False
-        print('3/3 %s' % (str(origin_entitys)))
-        return origin_entitys
+        print('3/3 %s' % (str(origin_entitys)))  # 按长度排序
+        origin_entitys_no_repeat = []
+        for e in origin_entitys:
+            if e not in origin_entitys_no_repeat:
+                origin_entitys_no_repeat.append(e)
+        return origin_entitys_no_repeat
 
     def init_spo(self):
         d_dict = dict()
@@ -591,8 +599,6 @@ class baike_helper:
             for line in read_file:
                 index += 1
                 if index % 10000 == 0:
-                    if index > 10000 * 2:
-                        break
                     print(index / 10000)
                 ls = str(line).strip('\n').strip('\r').split('\t')
                 s = ls[0]
@@ -615,15 +621,128 @@ class baike_helper:
     def find_p(self, s, o):
         s1 = self.kbqa.get(s, "")
         if s1 == "":
-            return None
+            return []
         ps = []
         for po in s1:
             if po[1] == o:
                 ps.append(po)
         return ps
 
+    #  通过原始实体名，找到对应的所有属性值
+    def find_p_by_pos(self, s, o):
+        s1 = self.find_e_pos(s)
+        if s1 == "":
+            return []
+        ps = []
+        for po in s1:
+            if po[1] == o:
+                ps.append(po[0])
+                break
+        return ps
 
+    def record_p_pos(self):
+        a1 = '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out-1.txt'
+        start = 0
+        d1 = dict()
+        # e_length = 0  # 长度
+        line_num = 0
+        with open(a1, 'r', encoding='utf-8') as f1:
+            for l1 in f1.read().split('$'):
+                e1 = l1.split('\t')[0]
+                print(e1)
+                if e1 in d1:
+                    # e_length += len(l1)
+                    line_num += 1
+                    t1 = d1[e1]
+                    d1[e1] = (t1[0], line_num)
+                else:
+                    # 开始记录下一个
+                    line_num = 1
+                    # e_length = len(l1)
+                    d1[e1] = (start + 1, line_num)
+                start += 1
+        with codecs.open('../data/nlpcc2016/result/kb_s_pos.txt', 'w', 'utf-8') as o1:
+            for k, v in d1.items():
+                o1.write("%s\t%s\t%s\n" % (k, v[0], v[1]))
+        print(31231321)
+        # 试着读取出来
 
+        self.s_pos_dict = d1
+
+    def init_p_pos(self):
+        a1 = '../data/nlpcc2016/result/kb_s_pos.txt'
+        d1 = dict()
+        with open(a1, 'r', encoding='utf-8') as f1:
+            for l1 in f1:
+                e1 = l1.split('\t')[0]
+                start = l1.split('\t')[1]
+                line_num = l1.split('\t')[2]
+                d1[e1] = (start, line_num)
+        self.s_pos_dict = d1
+        ct.print_t("init_p_pos")
+
+    def re_writer_kb(self):
+        a1 = '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out-1.txt'
+        a111 = ct.file_read_all_lines_strip(a1)
+        with open(a1 + '.1.txt', 'w', encoding='utf-8') as f_o1:
+            with codecs.open(a1, 'r', encoding='utf-8') as f_in1:
+                for l1 in f_in1.readlines():
+                    f_o1.write(l1.replace('\n', "").replace('\r', "") + '$')
+        return a1
+
+    def find_e_pos(self, str1):
+        a1 = '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt'
+        v1 = self.s_pos_dict.get(str1, "")
+        if v1 == "":
+            return ""
+
+        print(v1[0])
+        print(v1[1])
+
+        start = 0
+        n_l = 0
+        l_list = []
+        with open(a1, mode='r', encoding='utf-8') as f1:
+            for l in f1:
+                start += 1
+                if start < int(v1[0]):
+                    continue
+                n_l += 1
+                if n_l > int(v1[1]):
+                    break
+                l_list.append(l)
+        # 把list转为spo字典
+        # s = ct.clean_str_rn(l_list[0]).split('\t')[0]
+        # d1 = dict()
+        s1 = set()
+        for l in l_list:
+            p = ct.clean_str_rn(l).split('\t')[1]
+            o = ct.clean_str_rn(l).split('\t')[2]
+            s1.add((p, o))
+        # d1[s] = s1
+        return s1
+
+    # 重新输出实体-长度，并排序,
+    @staticmethod
+    def statistics_subject_extract(f_in="../data/nlpcc2016/extract_entitys.txt"
+                                   ,
+                                   f_out="../data/nlpcc2016/extract_entitys_statistics.txt"):
+
+        d_dict = dict()
+        with codecs.open(f_out, mode="w", encoding="utf-8") as out:
+            with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
+                for line in read_file:
+                    ls = line.split('\t')
+                    for l1 in ls:
+                        if l1 in d_dict:
+                            d_dict[l1] += 1
+                        else:
+                            d_dict[l1] = 1
+            tp = ct.sort_dict(d_dict, True)
+            for t in tp:
+                out.write("%s\t%s\n" % (t[0], t[1]))
+
+        print(5435436)
 
 
 def method_name():
@@ -650,27 +769,79 @@ def n_gram_math_all():
                 ct.just_log("../data/nlpcc2016/extract_entitys.txt", "NULL")
             print(ss)
 
-def find_r_all():
-    bkh = baike_helper()
-    # bkh.init_ner()
-    a.init_spo()
-    f_in = "../data/nlpcc2016/extract_entitys.txt"
-    index = 0
-    # 还差一个所有的o
-    with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
-        for line in read_file:
+
+# def find_r_all():
+#     bkh = baike_helper()
+#     # bkh.init_ner()
+#     bkh.init_spo()
+#     f_in = "../data/nlpcc2016/extract_entitys.txt"
+#     index = 0
+#     # 还差一个所有的o
+#     with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
+#         for line in read_file:
+#             index += 1
+#             print(index)
+#             e_list = line.replace("\r", "").replace("\n", "").split("\t")
+#
+#             # for e in e_list:
+#
+#             # ss = bkh.ner(s)
+#             # if len(ss) > 0:
+#             #     ct.just_log("../data/nlpcc2016/extract_entitys.txt", '\t'.join(ss))
+#             # else:
+#             #     ct.just_log("../data/nlpcc2016/extract_entitys.txt", "NULL")
+#             print(1)
+
+
+def find_all_ps_2_6_3():
+    bh = baike_helper()
+    ct.print_t(1)
+    bh.init_p_pos()
+    ct.print_t(2)
+    # bh.init_ner()
+    bh.init_find_entity()
+    ct.print_t(3)
+    f_q_in = '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt'
+    f_cand_q_in = '../data/nlpcc2016/extract_entitys.txt'
+    cand_s = ct.file_read_all_lines_strip(f_cand_q_in)
+    ct.print_t(4)
+    index = -1
+    with codecs.open(f_q_in, 'r', 'utf-8') as rf:
+        for l in rf:
             index += 1
-            print(index)
-            e_list  = line.replace("\r", "").replace("\n", "").split("\t")
+            ct.print_t(index)
+            o = ct.clean_str_rn(l.split('\t')[1])
+            ss = str(cand_s[index]).split('\t')  # N-GRAM 实体名
+            s_set = set()  # 候选实体集合
+            ps = []
+            es = []
+            find_r = False
+            for s1 in ss:
+                s1_result = bh.find_entity(s1)
 
-            for e in e_list:
+                for s11 in s1_result:
+                    #         s_set.add(s11)
+                    # # 找出所有可能的实体
+                    # for s2 in s_set:
+                    if s11 == '机械设计基础(2010年高等教育出版社出版作者杨可桢)':
+                        print(532424)
+                    ps1 = bh.find_p_by_pos(s11, o)
+                    if len(ps1) > 0:
+                        ct.print_t("%s\t%s" % (s11, o))
+                        es.append(s11)
+                        ps.extend(ps1)
+                        # 查找就停止
+                        find_r = True
+                        break
+                if find_r:
+                    break
+            # 输出所有可能的关系
+            if len(ps) == 0:
+                ps = ['NULL']
+            ct.print_t(ps)
+            # ct.just_log('../data/nlpcc2016/result/ps.txt', '\t'.join(ps))
+            ct.just_log('../data/nlpcc2016/result/ps.txt', "%s\t%s\t%s"%(es[0],ps[0],o))
 
-            # ss = bkh.ner(s)
-            # if len(ss) > 0:
-            #     ct.just_log("../data/nlpcc2016/extract_entitys.txt", '\t'.join(ss))
-            # else:
-            #     ct.just_log("../data/nlpcc2016/extract_entitys.txt", "NULL")
-            print(ss)
 
 if __name__ == '__main__':
     # baike_helper.e_r_combine()
@@ -693,16 +864,35 @@ if __name__ == '__main__':
     # 2.5.5 n-gram匹配
     # n_gram_math_all()
 
-    # 2.5.6 通过实体找到原始实体
+    # 2.6.1 通过实体找到原始实体
     # a = baike_helper()
     # a.init_find_entity()
-    # b = a.find_entity('石头记')
+    # b = a.find_entity('红楼梦')
     # print(b)
 
-    # 2.6
-    a = baike_helper()
-    a.init_spo()
-    b = a.find_p('于明诠', '书法家')
-    print(b)
+    # 2.6.2
+    # a = baike_helper()
+    # ct.print_t("init_p_pos")
+    # a.init_p_pos()
+    # print("init_p_pos")
+    # ct.print_t("begin")
+    # b = a.find_p_by_pos('机械设计基础(2010年高等教育出版社出版作者杨可桢)', '杨可桢，程光蕴，李仲生')
+    # print(b)
+    # ct.print_t("end")
+
+
+    # 2.6.3 通过关系确定o
+    # 读取问题、候选实体，通过2.6.1找到原始实体，通过2.6.2找到对应的关系，输出所以可能的关系
+
+    find_all_ps_2_6_3()
+
+    # 2.7 统计
+    # baike_helper.statistics_subject_extract()
+
+
+
+
+    # a = baike_helper()
+    # a.record_p_pos()
 
     print("finsih ")

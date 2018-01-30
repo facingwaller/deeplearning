@@ -760,7 +760,7 @@ class ct:
     @staticmethod
     def print_t(msg=""):
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        ct.print(timestamp+":"+msg, "time")
+        ct.print(timestamp+":"+str(msg), "time")
     # -------------------文件读取
     @staticmethod
     def file_read_all_lines(file_name):
