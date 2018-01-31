@@ -17,7 +17,7 @@ import re
 from lib.read_utils import TextConverter
 from gensim import models
 from lib.converter.langconv import *
-from lib.config import  config
+from lib.config import config
 
 
 class baike_helper:
@@ -595,7 +595,7 @@ class baike_helper:
                 origin_entitys_no_repeat.append(e)
         return origin_entitys_no_repeat
 
-    def init_spo(self,f_in = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt"):
+    def init_spo(self, f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt"):
         self.kbqa = dict()
 
         index = 0
@@ -783,12 +783,10 @@ class baike_helper:
         #         except Exception as e1:
         #             print(e1)
 
-
     @staticmethod
-    def load_vocab_cc( ):
+    def load_vocab_cc():
         tc = TextConverter(filename='../data/nlpcc2016/demo1/nlpcc2016.vocab')
         print(tc.vocab_size)
-
 
     @staticmethod
     def prodeuce_embedding_vec_file(filename):
@@ -817,8 +815,8 @@ class baike_helper:
             msg = "%s %s" % (word, str(m_v))
             # ct.print(msg)
             ct.just_log(f1 + "wiki.vector2", msg)
-        # msg = "%s %s" % ('end', str(v_base))
-        # ct.just_log(f1 + "wiki.vector2", msg)
+            # msg = "%s %s" % ('end', str(v_base))
+            # ct.just_log(f1 + "wiki.vector2", msg)
 
     # 读取实体所有的实体    返回所有的关系集合
     def read_entity_and_get_all_neg_relations_cc(self, entity_id, ps_to_except):
@@ -828,7 +826,7 @@ class baike_helper:
             raise Exception('entity cant find')
         r1 = []
         for s1 in e_s:
-             if s1[0] not in ps_to_except:
+            if s1[0] not in ps_to_except:
                 r1.append(s1[0])
         return r1
 
@@ -843,17 +841,14 @@ class baike_helper:
         f2 = '../data/nlpcc2016/demo1/r3.txt'
         f3 = '../data/nlpcc2016/demo1/qa_rdf.txt'
 
-
         l1s = ct.file_read_all_lines_strip(f1)
         l2s = ct.file_read_all_lines_strip(f2)
 
-        with open(f3 ,mode='w', encoding='utf-8') as f33:
+        with open(f3, mode='w', encoding='utf-8') as f33:
             for index in range(len(l2s)):
                 l1 = l1s[index]
                 l2 = l2s[index]
-                f33.write(l1+'\t'+str(l2).replace('NULL','$')+"\n")
-
-
+                f33.write(l1 + '\t' + str(l2).replace('NULL', '$') + "\n")
 
 
 def method_name():
@@ -917,6 +912,7 @@ def find_all_ps_2_6_3():
     cand_s = ct.file_read_all_lines_strip(f_cand_q_in)
     ct.print_t(4)
     index = -1
+    filter_words = ['请问', '什么时候', '什么', '是谁', '有谁知道', '谁知道', '谁能告诉我', '还有什么', '什么？', ]
     with open(f_q_in, mode='r', encoding='utf-8') as rf:
         for l in rf.readlines():
             index += 1
@@ -924,8 +920,6 @@ def find_all_ps_2_6_3():
                 continue
             ct.print_t(index)
             ct.print_t(l)
-            # if index < 5000:
-            #     continue
             o = ct.clean_str_rn(l.split('\t')[1])
             ss = str(cand_s[index]).split('\t')  # N-GRAM 实体名
             s_set = set()  # 候选实体集合
@@ -933,33 +927,51 @@ def find_all_ps_2_6_3():
             es = []
             find_r = False
             for s1 in ss:
-                s1_result = bh.find_entity(s1)
-                for s11 in s1_result:
-                    #         s_set.add(s11)
-                    # # 找出所有可能的实体
-                    # for s2 in s_set:
-                    # if s11 == '机械设计基础(2010年高等教育出版社出版作者杨可桢)':
-                    #     print(532424)
-                    # 不加载
-                    # ps1 = bh.find_p_by_pos(s11, o)
-                    # 全加载
-                    ps1 = bh.find_p(s11, o)
-                    if len(ps1) > 0:
-                        ct.print_t("%s\t%s" % (s11, o))
-                        es.append(s11)
-                        ps.extend(ps1)
-                        # 查找就停止
-                        find_r = True
-                        break
-                if find_r:
+                if len(s1) == 1 or s1 in filter_words:
+                    print(s1)
+                    continue
+                ps1 = bh.find_p(s1, o)
+                if len(ps1) > 0:
+                    ct.print_t("%s\t%s" % (s11, o))
+                    es.append(s11)
+                    ps.extend(ps1)
+                    # 查找就停止
+                    find_r = True
                     break
+            if find_r == False:
+                for s1 in ss:
+                    # 先遍历一遍 非1个单字的N-GRAM
+
+                    s1_result = bh.find_entity(s1)
+                    for s11 in s1_result:  # 之前查过的不再查了
+                        if s11 in ss:
+                            continue
+                        # s_set.add(s11)
+                        # # 找出所有可能的实体
+                        # for s2 in s_set:
+                        # if s11 == '机械设计基础(2010年高等教育出版社出版作者杨可桢)':
+                        #     print(532424)
+                        # 不加载
+                        # ps1 = bh.find_p_by_pos(s11, o)
+                        # 全加载
+                        ps1 = bh.find_p(s11, o)
+                        if len(ps1) > 0:
+                            ct.print_t("%s\t%s" % (s11, o))
+                            es.append(s11)
+                            ps.extend(ps1)
+                            # 查找就停止
+                            find_r = True
+                            break
+                    if find_r:
+                        break
+
             # 输出所有可能的关系
             if len(ps) == 0:
                 ps = ['NULL']
                 ct.just_log('../data/nlpcc2016/result/ps.txt', "%s\t%s\t%s\t%d" % ('NULL', 'NULL', o, index))
             else:
-                # ct.just_log('../data/nlpcc2016/result/ps.txt', '\t'.join(ps))
-                ct.just_log('../data/nlpcc2016/result/ps.txt', "%s\t%s\t%s\t%d" % (es[0], ps[0][0], o, index))
+                ct.just_log('../data/nlpcc2016/result/ps.txt',
+                            "%s\t%s\t%s\t%d\t%d" % (es[0], ps[0][0], o, index, len(ps[0])))
             ct.print_t(ps)
 
 
@@ -1004,7 +1016,7 @@ if __name__ == '__main__':
     # 2.6.3 通过关系确定o
     # 读取问题、候选实体，通过2.6.1找到原始实体，通过2.6.2找到对应的关系，输出所以可能的关系
 
-    # find_all_ps_2_6_3()
+    find_all_ps_2_6_3()
 
     # 2.7 统计
     # baike_helper.statistics_subject_extract()
@@ -1020,7 +1032,7 @@ if __name__ == '__main__':
     # word2vecbin_file = '../data/nlpcc2016/demo1/wiki_texts_seg_by_space.txt.bin'
     # baike_helper.prodeuce_embedding_vec_file(word2vecbin_file)
 
-    #baike_helper.rebulild_qa_rdf()
+    # baike_helper.rebulild_qa_rdf()
 
     # baike_helper.load_vocab_cc()
 

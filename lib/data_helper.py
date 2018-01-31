@@ -827,13 +827,12 @@ class DataClass:
         ct.log3(msg)
         ct.just_log2("info", msg)
 
-        global_index = index + len(self.train_question_list_index)+1
+        global_index = index + len(self.train_question_list_index) + 1
         # 这个index应该要偏移出训练集
         # if self.converter.
         # arr_to_text_by_space(x[index]).replace(' ','').replace('<unk>','')\
         #         == self.question_list[global_index]:
         #     # 部分语句中有空格的会不相等，
-
 
         name = self.entity1_list[global_index]
         # todo: index should not in
@@ -1157,20 +1156,17 @@ class DataClass:
         self.bh = baike_helper()
         self.bh.init_spo(f_in=config.par('cc_kb_path_full'))
         for e in self.entity1_list:
-            ct.just_log(config.par('cc_path')+'e1.txt',e)
-            s1 = self.bh.kbqa.get(e,"")
+            ct.just_log(config.par('cc_path') + 'e1.txt', e)
+            s1 = self.bh.kbqa.get(e, "")
             if s1 == "":
                 continue
             for po in s1:
-                msg = "%s\t%s\t%s"%(e,po[0],po[1])
+                msg = "%s\t%s\t%s" % (e, po[0], po[1])
                 ct.just_log(config.par('cc_path') + 'kb_rdf_only_e.txt', msg)
-
-        # 重写
-
+                # 重写
 
 
-# =======================================================================clear data
-
+# ======================================================================= clear data
 
 
 def test_batch_iter():
@@ -1227,10 +1223,10 @@ def test_random_choose_indexs_debug():
         d.batch_iter_wq_test_one_debug(d.test_question_list_index, d.test_relation_list_index, "test", 1)
         break
 
+
 def test_log_e():
     dh = DataClass("cc")
     dh.log_all_entitys_and_filter_kb()
-
 
 
 def test_build():
