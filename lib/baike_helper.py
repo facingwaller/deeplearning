@@ -932,12 +932,13 @@ def find_all_ps_2_6_3():
                     continue
                 ps1 = bh.find_p(s1, o)
                 if len(ps1) > 0:
-                    ct.print_t("%s\t%s" % (s11, o))
-                    es.append(s11)
+                    ct.print_t("%s\t%s" % (s1, o))
+                    es.append(s1)
                     ps.extend(ps1)
                     # 查找就停止
                     find_r = True
                     break
+            find_r = True
             if find_r == False:
                 for s1 in ss:
                     # 先遍历一遍 非1个单字的N-GRAM
