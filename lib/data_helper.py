@@ -141,19 +141,22 @@ class DataClass:
 
             # if self.mode == "cc":
             # 加载所有的
-            need_load_kb = False
+            need_load_kb = True
             if need_load_kb:
                 self.bh = baike_helper()
                 self.bh.init_spo(f_in=config.par('cc_kb_path_full'))
                 #  加载知识库
             # 加载已经
             # self.converter = TextConverter()
-            self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'),type="zh-cn")
-            self.load_all_q_r_tuple(config.get_static_q_num_debug(),config.get_static_num_debug(), is_record=True)
+            self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'), type="zh-cn")
+            self.load_all_q_r_tuple(config.get_static_q_num_debug(), config.get_static_num_debug(), is_record=True)
             self.get_max_length()
             self.q_r_2_arrary_and_padding()
             # 按比例分割训练和测试集
             self.division_data()
+            self.build_embedding_weight(config.wiki_vector_path(mode))
+            #
+            ct.print("load embedding ok!")
 
             return
         else:
@@ -175,7 +178,7 @@ class DataClass:
         # self.build_all_q_r_tuple(config.get_static_q_num_debug(),
         #                          config.get_static_num_debug(), is_record=False)
         self.load_all_q_r_tuple(config.get_static_q_num_debug(),
-                                 config.get_static_num_debug(), is_record=False)
+                                config.get_static_num_debug(), is_record=False)
         # todo :change load q_r tuple
 
         # ct.print("build_all_q_r_tuple 生成所有的q和neg r的组合")
@@ -214,7 +217,7 @@ class DataClass:
             max_document_length1 = max([len(x) for x in self.question_list])  # 获取单行的最大的长度
             max_document_length2 = max([len(x) for x in self.relation_list])  # 获取单行的最大的长度
         else:
-        # 将问题/关系转换成index的系列表示
+            # 将问题/关系转换成index的系列表示
             max_document_length1 = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
             max_document_length2 = max([len(x.split(" ")) for x in self.relation_list])  # 获取单行的最大的长度
         # gth = []
@@ -226,7 +229,7 @@ class DataClass:
         # mean_of_quesitons = np.mean([len(x.split(" ")) for x in self.question_list])
         # ct.print(mean_of_quesitons)
         self.max_document_length = max(max_document_length1, max_document_length2)
-        ct.print(self.max_document_length,"debug")
+        ct.print(self.max_document_length, "debug")
 
     def build_vocab(self):
         # 建造词汇表
@@ -303,7 +306,7 @@ class DataClass:
                     idx += 1
                     line_seg = line.split('\t')
                     if len(line_seg) < 5 or line.__contains__('$'):  # todo:rewrite input file,重写输入文件
-                        ct.print("bad:"+line,"debug")
+                        ct.print("bad:" + line, "bad")
                         continue
                     entity1 = line_seg[2]
                     relation1 = line_seg[3]
@@ -824,9 +827,17 @@ class DataClass:
         ct.log3(msg)
         ct.just_log2("info", msg)
 
-        name = self.entity1_list[index]
+        global_index = index + len(self.train_question_list_index)+1
+        # 这个index应该要偏移出训练集
+        # if self.converter.
+        # arr_to_text_by_space(x[index]).replace(' ','').replace('<unk>','')\
+        #         == self.question_list[global_index]:
+        #     # 部分语句中有空格的会不相等，
 
-        ps_to_except1 = self.relation_list[index]  # 应该从另一个关系集合获取
+
+        name = self.entity1_list[global_index]
+        # todo: index should not in
+        ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
         ps_to_except1 = [ps_to_except1]
         padding_num = self.converter.vocab_size - 1
         # r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
@@ -835,6 +846,8 @@ class DataClass:
         if self.mode == "sq":
             rs = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name,
                                                              ps_to_except=ps_to_except1, not_allow_repeat=True)
+        if self.mode == "cc":
+            rs = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
 
         # rs = list(set(rs))
         # 加入正确的
@@ -973,7 +986,7 @@ class DataClass:
         # 组合所有的问题和错误关系放进一个tuple中
         # self.question_list
         # self.relation_path_clear_str_all 正确关系
-        ct.print_t("questions_len_train=%s,error_relation_num=%s"%(questions_len_train, error_relation_num))
+        ct.print_t("questions_len_train=%s,error_relation_num=%s" % (questions_len_train, error_relation_num))
         self.q_neg_r_tuple = []
         self.q_pos_r_tuple = []
         # questions_len_train = len(self.question_list)
@@ -1013,7 +1026,7 @@ class DataClass:
                                     , "%s\t%s" % (question, neg_r))
                     if self.mode == "cc":
                         ct.just_log("%s/q_neg_r_tuple_cc.txt" % config.par('cc_path')
-                                    , "%s\t%s\t%s" % (index,question, neg_r))
+                                    , "%s\t%s\t%s" % (index, question, neg_r))
         ct.print_t("build_all_q_r_tuple q_neg_r_tuple")
 
         # for index in range(questions_len_train):
@@ -1140,6 +1153,21 @@ class DataClass:
             text = self.converter.arr_to_text_by_space(_)
             ct.just_log2("debug", text)
 
+    def log_all_entitys_and_filter_kb(self):
+        self.bh = baike_helper()
+        self.bh.init_spo(f_in=config.par('cc_kb_path_full'))
+        for e in self.entity1_list:
+            ct.just_log(config.par('cc_path')+'e1.txt',e)
+            s1 = self.bh.kbqa.get(e,"")
+            if s1 == "":
+                continue
+            for po in s1:
+                msg = "%s\t%s\t%s"%(e,po[0],po[1])
+                ct.just_log(config.par('cc_path') + 'kb_rdf_only_e.txt', msg)
+
+        # 重写
+
+
 
 # =======================================================================clear data
 
@@ -1189,13 +1217,20 @@ def test_batch_iter():
 
 
 def test_random_choose_indexs_debug():
-    d = DataClass("wq")
+    d = DataClass("cc")
     for i in range(20):
         my_generator = d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
-                              batch_size=10)
+                                             batch_size=10)
         for gen in my_generator:
             print(gen)
-        d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index, "test", 1)
+            break
+        d.batch_iter_wq_test_one_debug(d.test_question_list_index, d.test_relation_list_index, "test", 1)
+        break
+
+def test_log_e():
+    dh = DataClass("cc")
+    dh.log_all_entitys_and_filter_kb()
+
 
 
 def test_build():
@@ -1231,15 +1266,26 @@ def test_cc():
     # dh.batch_iter_wq_debug()
 
     my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
-                           batch_size=10)
+                                          batch_size=10)
     for gen in my_generator:
-         print(gen)
-         break
+        # print(gen)
+        print(1)
+        break
+
 
 if __name__ == "__main__":
     # test_random_choose_indexs_debug()
+    test_random_choose_indexs_debug()
+    # test_cc()
+
+    # 测试生成
+
     # test_random_choose_indexs_debug()
-    test_cc()
+
+    # 记录所有的实体
+    # test_log_e()
+
+
     # a = read_rdf_from_gzip_or_alias(path=r"F:\3_Server\freebase-data\topic-json", file_name="1")
     # ct.print(a)
     # clear_relation()

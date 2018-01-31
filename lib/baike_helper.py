@@ -617,7 +617,7 @@ class baike_helper:
                     s1 = set()
                     s1.add(t1)
                     self.kbqa[s] = s1
-        print(321312)
+        print("init_spo ok")
         # self.kbqa = d_dict
 
         # 通过属性值
@@ -800,11 +800,13 @@ class baike_helper:
         ct.print(v_base)
         for word in converter.vocab:
             try:
-                w1 = word
-                word = Converter('zh-hans').convert(word)
-                if word != w1:
-                    # print(w1)
-                    ct.just_log(f1 + "wiki.vector3", w1)
+                # if word == ' ':
+                #     word = '结'
+                # w1 = word
+                # word = Converter('zh-hans').convert(word)
+                # if word != w1:
+                #     # print(w1)
+                #     ct.just_log(f1 + "wiki.vector3", w1)
                 v = model[word]
             except Exception as e1:
                 msg1 = "%s : %s " % (word, e1)
@@ -815,8 +817,8 @@ class baike_helper:
             msg = "%s %s" % (word, str(m_v))
             # ct.print(msg)
             ct.just_log(f1 + "wiki.vector2", msg)
-        msg = "%s %s" % ('end', str(v_base))
-        ct.just_log(f1 + "wiki.vector2", msg)
+        # msg = "%s %s" % ('end', str(v_base))
+        # ct.just_log(f1 + "wiki.vector2", msg)
 
     # 读取实体所有的实体    返回所有的关系集合
     def read_entity_and_get_all_neg_relations_cc(self, entity_id, ps_to_except):
@@ -1020,5 +1022,8 @@ if __name__ == '__main__':
 
     #baike_helper.rebulild_qa_rdf()
 
-    baike_helper.load_vocab_cc()
+    # baike_helper.load_vocab_cc()
+
+    # 重写指定的实体
+
     print("finsih ")
