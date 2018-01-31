@@ -1,0 +1,3 @@
+    f_in = ''
+    with open(f_in, mode='r', encoding='utf-8') as rf:
+        for l in rf.readlines():

@@ -13,6 +13,7 @@ import datetime
 import lib.my_log as mylog
 from lib.config import config
 from lib.ct import ct, log_path
+from lib.baike_helper import baike_helper
 
 
 # from gensim import models
@@ -79,6 +80,9 @@ class DataClass:
         for sentence in sentence_list:
             one_sentence = []
             # q = str(q).replace("\n\r", " ")
+            # if self.mode=='cc':
+            #     q_words_list = [x for x in sentence]
+            # else:
             q_words_list = sentence.split(" ")
             for word in q_words_list:
                 one_sentence.append(word)
@@ -129,45 +133,55 @@ class DataClass:
         elif mode == "cc":
             self.init_cc_questions(config.par('cc_q_path'))
             ct.print("init_simple_questions finish.")
-            self.init_fb(config.par('sq_fb_path'))
-            ct.print("init_fb finish.")
+            # self.init_fb (config.par('cc_kb_path'))
+            # ct.print("init_fb finish.")
+            # 建造词汇表
+            # self.build_vocab_cc()
+            #
+
+            # if self.mode == "cc":
+            # 加载所有的
+            need_load_kb = False
+            if need_load_kb:
+                self.bh = baike_helper()
+                self.bh.init_spo(f_in=config.par('cc_kb_path_full'))
+                #  加载知识库
+            # 加载已经
+            # self.converter = TextConverter()
+            self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'),type="zh-cn")
+            self.load_all_q_r_tuple(config.get_static_q_num_debug(),config.get_static_num_debug(), is_record=True)
+            self.get_max_length()
+            self.q_r_2_arrary_and_padding()
+            # 按比例分割训练和测试集
+            self.division_data()
+
+            return
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
             self.init_fb("../data/freebase/fb_1000/")
 
-        # 将问题和关系的字符串变成以空格隔开的一个单词的list
+        # 建造词汇表
+        self.build_vocab()
+        # 获取最大长度
+        self.get_max_length()
+        # 问题和关系都转换成array形式，并padding问题
+        self.q_r_2_arrary_and_padding()
+        # 按比例分割训练和测试集
+        self.division_data()
 
-        # total_list = self.question_list + self.relation_list
-        q_words = self.get_split_list(self.question_list)
-        q_words.extend(self.get_split_list(self.relations))  # freebase里面的关系
-        # 应该再加上问题里面的关系集合
-        # q_words = [str(x).replace(".","") for x in q_words ]
-        self.converter = read_utils.TextConverter(q_words)
+        self.build_embedding_weight(config.wiki_vector_path(mode))
+        ct.print("load embedding ok!")
 
-        # self.converter.save_to_file_raw(
-        #     log_path + "/vocab_" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
-        # ct.print("save_to_file_raw ok!")
-        # self.converter.save_to_file("model/converter.pkl")
-        # ct.print(self.converter)
+        # self.build_all_q_r_tuple(config.get_static_q_num_debug(),
+        #                          config.get_static_num_debug(), is_record=False)
+        self.load_all_q_r_tuple(config.get_static_q_num_debug(),
+                                 config.get_static_num_debug(), is_record=False)
+        # todo :change load q_r tuple
 
-        # 将问题/关系转换成index的系列表示
-        max_document_length1 = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
-        max_document_length2 = max([len(x.split(" ")) for x in self.relation_list])  # 获取单行的最大的长度
+        # ct.print("build_all_q_r_tuple 生成所有的q和neg r的组合")
 
-        # gth = []
-        # for x in self.relation_path_clear_str_all:
-        #     for x1 in x:
-        #         gth.append(len(x1.split(" ")))
-        # max_document_length3 = max(gth)  # 获取单行的最大的长度
-        # 计算出平均的长度
-        # mean_of_quesitons = np.mean([len(x.split(" ")) for x in self.question_list])
-        # ct.print(mean_of_quesitons)
-
-        self.max_document_length = max(max_document_length1, max_document_length2)
-        # ct.print("max =%d ; %d,%d" % (self.max_document_length, max_document_length1, max_document_length2))
-        # max(max_document_length1, max_document_length2, max_document_length3)
-        # 预处理问题和关系使得他们的长度的固定的？LSTM应该不需要固定长度？
-        #
+    def q_r_2_arrary_and_padding(self):
+        # 把问题和关系变成array形式
         self.question_list_split = self.get_split_list_per_line(self.question_list)
         self.relation_list_split = self.get_split_list_per_line(self.relation_list)
         for q_l_s in self.question_list_split:
@@ -186,7 +200,8 @@ class DataClass:
             # for s in self.relation_list_index:
             #     s = ct.padding_line(s,self.max_document_length,padding_num)
             # 截断
-        # 按比例分割训练和测试集
+
+    def division_data(self):
         rate = 0.8
         self.train_question_list_index, self.test_question_list_index = \
             self.cap_nums(self.question_list_index, rate)
@@ -194,16 +209,54 @@ class DataClass:
             self.cap_nums(self.relation_list_index, rate)
         ct.print("init finish!")
 
-        self.build_embedding_weight(config.wiki_vector_path(mode))
-        ct.print("load embedding ok!")
+    def get_max_length(self):
+        if self.mode == "cc":
+            max_document_length1 = max([len(x) for x in self.question_list])  # 获取单行的最大的长度
+            max_document_length2 = max([len(x) for x in self.relation_list])  # 获取单行的最大的长度
+        else:
+        # 将问题/关系转换成index的系列表示
+            max_document_length1 = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
+            max_document_length2 = max([len(x.split(" ")) for x in self.relation_list])  # 获取单行的最大的长度
+        # gth = []
+        # for x in self.relation_path_clear_str_all:
+        #     for x1 in x:
+        #         gth.append(len(x1.split(" ")))
+        # max_document_length3 = max(gth)  # 获取单行的最大的长度
+        # 计算出平均的长度
+        # mean_of_quesitons = np.mean([len(x.split(" ")) for x in self.question_list])
+        # ct.print(mean_of_quesitons)
+        self.max_document_length = max(max_document_length1, max_document_length2)
+        ct.print(self.max_document_length,"debug")
 
-        # self.build_all_q_r_tuple(config.get_static_q_num_debug(),
-        #                          config.get_static_num_debug(), is_record=False)
-        # self.load_all_q_r_tuple(config.get_static_q_num_debug(),
-        #                         config.get_static_num_debug(), is_record=False)
-        # todo :change load q_r tuple
+    def build_vocab(self):
+        # 建造词汇表
+        # 将问题和关系的字符串变成以空格隔开的一个单词的list
+        # total_list = self.question_list + self.relation_list
+        q_words = self.get_split_list(self.question_list)
+        q_words.extend(self.get_split_list(self.relations))  # freebase里面的关系
+        # 应该再加上问题里面的关系集合
+        # q_words = [str(x).replace(".","") for x in q_words ]
+        self.converter = read_utils.TextConverter(q_words)
+        # self.converter.save_to_file_raw(
+        #     log_path + "/vocab_" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
+        # ct.print("save_to_file_raw ok!")
+        # self.converter.save_to_file("model/converter.pkl")
+        # ct.print(self.converter)
 
-        # ct.print("build_all_q_r_tuple 生成所有的q和neg r的组合")
+    def build_vocab_cc(self):
+        # 建造词汇表
+        # 将问题和关系的字符串变成以空格隔开的一个单词的list
+        # total_list = self.question_list + self.relation_list
+        q_words = self.get_split_list(self.question_list)
+        q_words.extend(self.get_split_list(self.relations))  # freebase里面的关系
+        # 应该再加上问题里面的关系集合
+        # q_words = [str(x).replace(".","") for x in q_words ]
+        self.converter = read_utils.TextConverter(q_words)
+        # self.converter.save_to_file_raw(
+        #     log_path + "/vocab_" + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")) + str(".txt"))
+        # ct.print("save_to_file_raw ok!")
+        # self.converter.save_to_file("model/converter.pkl")
+        # ct.print(self.converter)
 
     # ---------------------simple questions
 
@@ -238,28 +291,29 @@ class DataClass:
                 logging.error("error ", e)
         ct.print("entity1_list:%d " % len(self.entity1_list))
 
-    # -----------------cc
+    # -----------------cc 将问答集合，
     def init_cc_questions(self, file_name):
-        # line_list = []
         idx = 0
-        # www.freebase.com/m/04whkz5	www.freebase.com/book/written_work/subjects
-        # www.freebase.com/m/01cj3p
-        # what is the book e about
+        # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
+        # 机械设计基础         作者          杨可桢，程光蕴，李仲生
+        # 问题0 答案1 实体s-2 关系p-3 属性值o-4
         with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
             try:
                 for line in read_file.readlines():
                     idx += 1
                     line_seg = line.split('\t')
-                    # www.freebase.com/m/04whkz5
-                    entity1 = line_seg[0].split('/')[2]
-                    relation1 = ct.clear_relation(line_seg[1])
-
-                    entity2 = line_seg[2].split('/')[2]
-                    question = ct.clear_question(line_seg[3])
+                    if len(line_seg) < 5 or line.__contains__('$'):  # todo:rewrite input file,重写输入文件
+                        ct.print("bad:"+line,"debug")
+                        continue
+                    entity1 = line_seg[2]
+                    relation1 = line_seg[3]
+                    entity2 = line_seg[4]
+                    # todo: if char can't convert ,filter them,如果需要转换不了，到时候在这里直接过滤
+                    question = line_seg[0]
 
                     self.entity1_list.append(entity1)
                     self.relation_list.append(relation1)
-                    # self.entity1_list.append(entity2)
+                    self.entity2_list.append(entity2)
                     self.question_list.append(question)
                     self.relation_path_clear_str_all.append([relation1])
                     # self.rdf_list.append([entity1, relation1, entity2])
@@ -269,6 +323,7 @@ class DataClass:
                 ct.print("index = ", idx)
                 logging.error("error ", e)
         ct.print("entity1_list:%d " % len(self.entity1_list))
+
     # brazil	/m/015fr@@1~/m/03385m^/location/country/currency_used@@1~text
     # Brazilian real	what type of money does brazil have?
     def init_web_questions(self, fname=r'../data/web_questions/rdf.txt'):
@@ -479,14 +534,16 @@ class DataClass:
         x_new = []
         y_new = []
         z_new = []
-
-        shuffle_indices = np.random.permutation(np.arange(len(self.q_neg_r_tuple)))  # 打乱样本下标
-        for list_index in range(len(self.q_neg_r_tuple)):
+        # 生成 0- len(question_list_index) 的随机数字
+        total = len(question_list_index)
+        shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
+        for list_index in range(total):
             # 获取q_neg_r_tuple里面打乱的下标的对应的 q_r 对
             q_neg_r = self.q_neg_r_tuple[shuffle_indices[list_index]]
             index = q_neg_r[0]  # 对应类里面的index
             name = q_neg_r[1]  # 问题
             r_neg = q_neg_r[2]  # 关系
+            print(index)
             x_new.append(x[index])  # 添加问题
             y_new.append(y[index])  # 添加正确的关系
             ct.print(x[index], "debug_epoches")
@@ -916,16 +973,15 @@ class DataClass:
         # 组合所有的问题和错误关系放进一个tuple中
         # self.question_list
         # self.relation_path_clear_str_all 正确关系
-
+        ct.print_t("questions_len_train=%s,error_relation_num=%s"%(questions_len_train, error_relation_num))
         self.q_neg_r_tuple = []
         self.q_pos_r_tuple = []
         # questions_len_train = len(self.question_list)
-
+        # counter = ct.generate_counter()
         questions_len_train = min(questions_len_train, len(self.entity1_list))
-
         for index in range(questions_len_train):
-            if index == 19 :
-                print(11113213123)
+            if index % 1000 == 0:
+                ct.print_t(index / 1000)
             name = self.entity1_list[index]
             question = self.question_list[index]
             ps_to_except1 = self.relation_path_clear_str_all[index]
@@ -933,11 +989,14 @@ class DataClass:
                 r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
             elif self.mode == "sq":
                 r_all_neg = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name, ps_to_except=ps_to_except1)
+            elif self.mode == "cc":
+                # todo: add answer to filter more
+                r_all_neg = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
             else:
                 raise Exception("mode error")
 
-            error_relation_num = min(len(r_all_neg), error_relation_num)
-            r_all_neg = r_all_neg[0:error_relation_num]
+            tmp_error_relation_num = min(len(r_all_neg), error_relation_num)
+            r_all_neg = r_all_neg[0:tmp_error_relation_num]
             if len(r_all_neg) == 0:
                 # print("index = %d  , 0 ",index)
                 ct.just_log("%s/q_neg_r_tuple_0_error_r.txt" % config.par('sq_fb_path')
@@ -952,7 +1011,10 @@ class DataClass:
                     if self.mode == "sq":
                         ct.just_log("%s/q_neg_r_tuple1.txt" % config.par('sq_fb_path')
                                     , "%s\t%s" % (question, neg_r))
-        ct.print("build_all_q_r_tuple q_neg_r_tuple")
+                    if self.mode == "cc":
+                        ct.just_log("%s/q_neg_r_tuple_cc.txt" % config.par('cc_path')
+                                    , "%s\t%s\t%s" % (index,question, neg_r))
+        ct.print_t("build_all_q_r_tuple q_neg_r_tuple")
 
         # for index in range(questions_len_train):
         #     # name = self.entity1_list[index]
@@ -978,6 +1040,8 @@ class DataClass:
             fname = "../data/web_questions/q_neg_r_tuple.txt"
         if self.mode == "sq":
             fname = "%s/q_neg_r_tuple.txt" % config.par('sq_fb_rdf_path')
+        if self.mode == "cc":
+            fname = "%s/q_neg_r_tuple.txt" % config.par('cc_path')
         # 加载fname
         # 处理
         # 得到self.q_neg_r_tuple
@@ -987,9 +1051,9 @@ class DataClass:
         index = -1
         self.q_neg_r_tuple = []
         for l in text_lines:
-            index += 1
-            question = str(l).split("\t")[0]
-            neg_r = str(l).split("\t")[1].replace("\n", "")
+            index = int(str(l).split("\t")[0])
+            question = str(l).split("\t")[1]
+            neg_r = str(l).split("\t")[2].replace("\n", "")
             q_r_tuple = (index, question, neg_r)
             self.q_neg_r_tuple.append(q_r_tuple)
 
@@ -1070,7 +1134,6 @@ class DataClass:
             f1_writer.write(l + "\n")
         f1_writer.close()
 
-
     def log_error_r(self, train, type):
         ct.just_log2("debug", "%s------" % type)
         for _ in train:
@@ -1128,8 +1191,10 @@ def test_batch_iter():
 def test_random_choose_indexs_debug():
     d = DataClass("wq")
     for i in range(20):
-        d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
+        my_generator = d.batch_iter_wq_debug(d.train_question_list_index, d.train_relation_list_index,
                               batch_size=10)
+        for gen in my_generator:
+            print(gen)
         d.batch_iter_wq_test_one_debug(d.train_question_list_index, d.train_relation_list_index, "test", 1)
 
 
@@ -1159,9 +1224,22 @@ def test_sq():
     print(0000000000)
 
 
+def test_cc():
+    dh = DataClass("cc")
+    # dh.build_all_q_r_tuple(config.get_static_q_num_debug(),
+    #                       config.get_static_num_debug(), is_record=True)
+    # dh.batch_iter_wq_debug()
+
+    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
+                           batch_size=10)
+    for gen in my_generator:
+         print(gen)
+         break
+
 if __name__ == "__main__":
     # test_random_choose_indexs_debug()
-    test_sq()
+    # test_random_choose_indexs_debug()
+    test_cc()
     # a = read_rdf_from_gzip_or_alias(path=r"F:\3_Server\freebase-data\topic-json", file_name="1")
     # ct.print(a)
     # clear_relation()

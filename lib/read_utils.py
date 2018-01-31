@@ -1,27 +1,13 @@
 import numpy as np
-import copy
-import time
-import tensorflow as tf
 import pickle
 
 
-def batch_generator(arr, n_seqs, n_steps):
-    arr = copy.copy(arr)
-    batch_size = n_seqs * n_steps
-    n_batches = int(len(arr) / batch_size)
-    arr = arr[:batch_size * n_batches]
-    arr = arr.reshape((n_seqs, -1))
-    while True:
-        np.random.shuffle(arr)
-        for n in range(0, arr.shape[1], n_steps):
-            x = arr[:, n:n + n_steps]
-            y = np.zeros_like(x)
-            y[:, :-1], y[:, -1] = x[:, 1:], x[:, 0]
-            yield x, y
-
-
 class TextConverter(object):
-    def __init__(self, text=None, max_vocab=50000, filename=None):
+    _type = ""
+
+    def __init__(self, text=None, max_vocab=50000, filename=None, type=""):
+        self._type = type
+
         if filename is not None:
             with open(filename, 'rb') as f:
                 self.vocab = pickle.load(f)
@@ -74,8 +60,13 @@ class TextConverter(object):
     # text必须是字符串的list
     def text_to_arr_list(self, text):
         #
+        if self._type == "zh-cn":
+            # new_text = []
+            # for w in text:
+            #     new_text.append(w)
+            text = [x for x in text[0]]
         if type(text) == str:
-            text = str(text).strip() # 去掉头尾空格
+            text = str(text).strip()  # 去掉头尾空格
             text = str(text).split(" ")
         if type(text) != list:
             print("bad type")

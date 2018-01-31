@@ -14,6 +14,10 @@ import codecs
 from lib.ct import ct, log_path
 # import jieba
 import re
+from lib.read_utils import TextConverter
+from gensim import models
+from lib.converter.langconv import *
+from lib.config import  config
 
 
 class baike_helper:
@@ -176,7 +180,7 @@ class baike_helper:
     def get_ngrams(input, n):
         output = {}  # 构造字典
         for i in range(len(input) - n + 1):
-            ngramTemp = " ".join(input[i:i + n])  # .encode('utf-8')
+            ngramTemp = "".join(input[i:i + n])  # .encode('utf-8')
             if ngramTemp not in output:  # 词频统计
                 output[ngramTemp] = 0  # 典型的字典操作
             output[ngramTemp] += 1
@@ -263,7 +267,7 @@ class baike_helper:
                 if v == "":
                     continue
                 # print(v)
-                entity = str(entity).replace(" ", "")
+                entity = str(entity)
                 if entity in v:
                     cand_entitys.append(entity)
                     find = True
@@ -591,9 +595,9 @@ class baike_helper:
                 origin_entitys_no_repeat.append(e)
         return origin_entitys_no_repeat
 
-    def init_spo(self):
+    def init_spo(self,f_in = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt"):
         self.kbqa = dict()
-        f_in = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt"
+
         index = 0
         with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
             for line in read_file:
@@ -615,7 +619,7 @@ class baike_helper:
                     self.kbqa[s] = s1
         print(321312)
         # self.kbqa = d_dict
-        
+
         # 通过属性值
 
     #  通过原始实体名，找到对应的所有属性值
@@ -725,8 +729,7 @@ class baike_helper:
 
     # 重新输出实体-长度，并排序,
     @staticmethod
-    def statistics_subject_extract(f_in="../data/nlpcc2016/extract_entitys.txt"
-                                   ,
+    def statistics_subject_extract(f_in="../data/nlpcc2016/extract_entitys.txt",
                                    f_out="../data/nlpcc2016/extract_entitys_statistics.txt"):
 
         d_dict = dict()
@@ -744,6 +747,111 @@ class baike_helper:
                 out.write("%s\t%s\n" % (t[0], t[1]))
 
         print(5435436)
+
+    @staticmethod
+    def build_vocab_cc():
+        counter = ct.generate_counter()
+        word_set = set()
+        fs = ['../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
+              '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt']
+        fs1 = ['../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb_clear.txt.alais_relations_1.txt.out_e_r_combine-1.txt',
+               '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb_clear.txt.alais_relations_1.txt.out_e_r_combine-1.txt']
+        fs2 = []
+        for f_in in fs2:
+            print(f_in)
+            # continue
+
+            with open(f_in, mode='r', encoding='utf-8') as rf:
+                for l in rf.readlines():
+                    now = counter()
+                    if now % 10000 == 0:
+                        ct.print_t(now / 10000)
+                    for w in l:
+                        word_set.add(w)
+        # tc = TextConverter(word_set, max_vocab=999999999999)
+        tc = TextConverter(word_set, filename='../data/nlpcc2016/demo1/nlpcc2016.vocab')
+        print(tc.vocab_size)
+        # for w in tc.vocab:
+        #     ct.print_t(w)
+        tc.save_to_file_raw('../data/nlpcc2016/demo1/nlpcc2016.vocab_raw.txt')
+
+        # @staticmethod
+        # def convert_vocab_cc():
+        #     tc = TextConverter(filename='../data/nlpcc2016/demo1/nlpcc2016.vocab')
+        #     for w in tc.vocab:
+        #         try:
+        #         except Exception as e1:
+        #             print(e1)
+
+
+    @staticmethod
+    def load_vocab_cc( ):
+        tc = TextConverter(filename='../data/nlpcc2016/demo1/nlpcc2016.vocab')
+        print(tc.vocab_size)
+
+
+    @staticmethod
+    def prodeuce_embedding_vec_file(filename):
+        f1 = '../data/nlpcc2016/demo1/'
+        converter = TextConverter(filename='../data/nlpcc2016/demo1/nlpcc2016.vocab')
+        model = models.Word2Vec.load(filename)
+        # 遍历每个单词，查出word2vec然后输出
+        v_base = model['结']
+        ct.print(v_base)
+        for word in converter.vocab:
+            try:
+                w1 = word
+                word = Converter('zh-hans').convert(word)
+                if word != w1:
+                    # print(w1)
+                    ct.just_log(f1 + "wiki.vector3", w1)
+                v = model[word]
+            except Exception as e1:
+                msg1 = "%s : %s " % (word, e1)
+                ct.print(msg1)
+                ct.just_log(f1 + "wiki.vector2.log", msg1)
+                v = model['结']
+            m_v = ' '.join([str(x) for x in list(v)])
+            msg = "%s %s" % (word, str(m_v))
+            # ct.print(msg)
+            ct.just_log(f1 + "wiki.vector2", msg)
+        msg = "%s %s" % ('end', str(v_base))
+        ct.just_log(f1 + "wiki.vector2", msg)
+
+    # 读取实体所有的实体    返回所有的关系集合
+    def read_entity_and_get_all_neg_relations_cc(self, entity_id, ps_to_except):
+        e_s = self.kbqa.get(entity_id, "")
+        if e_s == "":
+            print(entity_id)
+            raise Exception('entity cant find')
+        r1 = []
+        for s1 in e_s:
+             if s1[0] not in ps_to_except:
+                r1.append(s1[0])
+        return r1
+
+    # 输入识别结果，输出匹配R2格式
+    # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
+    # 机械设计基础         作者          杨可桢，程光蕴，李仲生
+    # 问题0 答案1 实体s-2 关系p-3 属性值o-4
+    @staticmethod
+    def rebulild_qa_rdf():
+
+        f1 = '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt'
+        f2 = '../data/nlpcc2016/demo1/r3.txt'
+        f3 = '../data/nlpcc2016/demo1/qa_rdf.txt'
+
+
+        l1s = ct.file_read_all_lines_strip(f1)
+        l2s = ct.file_read_all_lines_strip(f2)
+
+        with open(f3 ,mode='w', encoding='utf-8') as f33:
+            for index in range(len(l2s)):
+                l1 = l1s[index]
+                l2 = l2s[index]
+                f33.write(l1+'\t'+str(l2).replace('NULL','$')+"\n")
+
+
 
 
 def method_name():
@@ -807,9 +915,11 @@ def find_all_ps_2_6_3():
     cand_s = ct.file_read_all_lines_strip(f_cand_q_in)
     ct.print_t(4)
     index = -1
-    with open(f_q_in,mode='r',encoding='utf-8') as rf:
+    with open(f_q_in, mode='r', encoding='utf-8') as rf:
         for l in rf.readlines():
             index += 1
+            if index < config.get_find_index():
+                continue
             ct.print_t(index)
             ct.print_t(l)
             # if index < 5000:
@@ -844,9 +954,10 @@ def find_all_ps_2_6_3():
             # 输出所有可能的关系
             if len(ps) == 0:
                 ps = ['NULL']
+                ct.just_log('../data/nlpcc2016/result/ps.txt', "%s\t%s\t%s\t%d" % ('NULL', 'NULL', o, index))
             else:
                 # ct.just_log('../data/nlpcc2016/result/ps.txt', '\t'.join(ps))
-                ct.just_log('../data/nlpcc2016/result/ps.txt', "%s\t%s\t%s\t%d" % (es[0], ps[0], o,index))
+                ct.just_log('../data/nlpcc2016/result/ps.txt', "%s\t%s\t%s\t%d" % (es[0], ps[0][0], o, index))
             ct.print_t(ps)
 
 
@@ -891,7 +1002,7 @@ if __name__ == '__main__':
     # 2.6.3 通过关系确定o
     # 读取问题、候选实体，通过2.6.1找到原始实体，通过2.6.2找到对应的关系，输出所以可能的关系
 
-    find_all_ps_2_6_3()
+    # find_all_ps_2_6_3()
 
     # 2.7 统计
     # baike_helper.statistics_subject_extract()
@@ -902,4 +1013,12 @@ if __name__ == '__main__':
     # a = baike_helper()
     # a.record_p_pos()
 
+    # 3.1
+    # baike_helper.build_vocab_cc()
+    # word2vecbin_file = '../data/nlpcc2016/demo1/wiki_texts_seg_by_space.txt.bin'
+    # baike_helper.prodeuce_embedding_vec_file(word2vecbin_file)
+
+    #baike_helper.rebulild_qa_rdf()
+
+    baike_helper.load_vocab_cc()
     print("finsih ")

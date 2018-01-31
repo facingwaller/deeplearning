@@ -759,8 +759,7 @@ class ct:
 
     @staticmethod
     def print_t(msg=""):
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        ct.print(timestamp+":"+str(msg), "time")
+        ct.print(str(msg), "time")
     # -------------------文件读取
     @staticmethod
     def file_read_all_lines(file_name):
@@ -797,6 +796,15 @@ class ct:
          if str(str1).__contains__(str2):
              return True
         return False
+
+    # 闭包计数器
+    @staticmethod
+    def generate_counter():
+        cnt = [0]
+        def add_one():
+            cnt[0] = cnt[0] + 1
+            return cnt[0]
+        return add_one
 
 
 log_path = ct.log_path_static()
