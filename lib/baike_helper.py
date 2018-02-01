@@ -953,7 +953,7 @@ def find_all_ps_2_6_3():
                     # 查找就停止
                     find_r = True
                     break
-            # find_r = True # 第二批再做关联复杂查询
+ 
             if find_r == False:
                 for s1 in ss:
                     s1_result = bh.find_entity(s1)
