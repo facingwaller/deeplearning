@@ -22,6 +22,8 @@ import os
 import gzip
 import gc
 
+from multiprocessing import Pool, Manager
+MAX_POOL_NUM = 30
 
 class baike_helper:
     # def __init__(self):
@@ -247,39 +249,58 @@ class baike_helper:
         self.n_gram_dict = n_gram_dict
         ct.print_t("init_ner ok")
 
+    def ner_one(self,i ):
+        # for i in range(new_line_len):
+        index = self.new_line_len - int(i)
+        # print(index)
+        all_entitys = baike_helper.get_ngrams(self.new_line, index)
+        for entity in all_entitys:
+            v = self.n_gram_dict.get(str(index), "")
+            if v == "":
+                continue
+            # print(v)
+            entity = str(entity)
+            if entity in v:
+                self.cand_entitys.append(entity)
+        print(123)
     # 建造实体的词汇库
     # ner
     # 1 加载词汇表
     # 2 剔除不在词汇表中的字
     # 3 做N-GRAM 匹配
     # 3.1 加载N-GRAM的字典
-
     def ner(self, line):
         new_line = line
         # ct.print_t("3.2 匹配")
-        cand_entitys = []
+        self.cand_entitys = []
         new_line_len = len(new_line)
         find = False
+        self.new_line = new_line
+        self.new_line_len = new_line_len
+        pool = Pool(MAX_POOL_NUM)
+        pool.map(self.ner_one, range(0, new_line_len))
+        pool.close()
+        pool.join()
 
-        for i in range(new_line_len):
-            index = new_line_len - int(i)
-            # print(index)
-            all_entitys = baike_helper.get_ngrams(new_line, index)
-            for entity in all_entitys:
-                v = self.n_gram_dict.get(str(index), "")
-                if v == "":
-                    continue
-                # print(v)
-                entity = str(entity)
-                if entity in v:
-                    cand_entitys.append(entity)
-                    find = True
-                    # break  # 暂时先只找第一个试试看
-                    # if find:
-                    #     break
+        # for i in range(new_line_len):
+        #     index = new_line_len - int(i)
+        #     # print(index)
+        #     all_entitys = baike_helper.get_ngrams(new_line, index)
+        #     for entity in all_entitys:
+        #         v = self.n_gram_dict.get(str(index), "")
+        #         if v == "":
+        #             continue
+        #         # print(v)
+        #         entity = str(entity)
+        #         if entity in v:
+        #             self.cand_entitys.append(entity)
+        #             find = True
+        #             # break  # 暂时先只找第一个试试看
+        #             # if find:
+        #             #     break
 
         # print(654354353)
-        return cand_entitys
+        return self.cand_entitys
 
     @staticmethod
     def ner_all_stences():
