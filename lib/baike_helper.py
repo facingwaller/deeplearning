@@ -902,13 +902,24 @@ def n_gram_math_all():
 def find_all_ps_2_6_3():
     bh = baike_helper()
     ct.print_t(1)
-    bh.init_spo()
+    is_debug = False
+    if is_debug:
+        bh.init_spo('../data/nlpcc2016/demo2/kb.txt')
+        f_q_in = '../data/nlpcc2016/demo2/r2.txt'
+        f_cand_q_in = '../data/nlpcc2016/demo2/extract_entitys.txt'
+    else:
+        bh.init_spo(f_in=config.par('cc_kb_path_full'))
+        f_q_in = '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt'
+        f_cand_q_in = '../data/nlpcc2016/extract_entitys.txt'
+
     ct.print_t(2)
     # bh.init_ner()
     bh.init_find_entity()
     ct.print_t(3)
-    f_q_in = '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt'
-    f_cand_q_in = '../data/nlpcc2016/extract_entitys.txt'
+
+
+
+
     cand_s = ct.file_read_all_lines_strip(f_cand_q_in)
     ct.print_t(4)
     index = -1
@@ -920,28 +931,31 @@ def find_all_ps_2_6_3():
                 continue
             ct.print_t(index)
             ct.print_t(l)
-            o = ct.clean_str_rn(l.split('\t')[1])
+            o = ct.clean_str_rn(l.split('\t')[1])  # 实体
             ss = str(cand_s[index]).split('\t')  # N-GRAM 实体名
             s_set = set()  # 候选实体集合
-            ps = []
-            es = []
+            ps = []  # 可能的 属性集合 list<tuple(p,o)>
+            es = []  # 实体集合 list<entity>
+            ps_find = ''
+            es_find = ''
+
             find_r = False
             for s1 in ss:
                 if len(s1) == 1 or s1 in filter_words:
                     print(s1)
                     continue
-                ps1 = bh.find_p(s1, o)
+                ps1 = bh.find_p(s1, o)  # ps1 = tuple(p,o)
                 if len(ps1) > 0:
-                    ct.print_t("%s\t%s" % (s11, o))
-                    es.append(s11)
+                    ct.print_t("%s\t%s" % (s1, o))
+                    es.append(s1)
                     ps.extend(ps1)
+
                     # 查找就停止
                     find_r = True
                     break
+            # find_r = True # 第二批再做关联复杂查询
             if find_r == False:
                 for s1 in ss:
-                    # 先遍历一遍 非1个单字的N-GRAM
-
                     s1_result = bh.find_entity(s1)
                     for s11 in s1_result:  # 之前查过的不再查了
                         if s11 in ss:
@@ -971,7 +985,7 @@ def find_all_ps_2_6_3():
                 ct.just_log('../data/nlpcc2016/result/ps.txt', "%s\t%s\t%s\t%d" % ('NULL', 'NULL', o, index))
             else:
                 ct.just_log('../data/nlpcc2016/result/ps.txt',
-                            "%s\t%s\t%s\t%d\t%d" % (es[0], ps[0][0], o, index, len(ps[0])))
+                            "%s\t%s\t%s\t%d\t%d" % (es[0], ps[0][0], o, index, len(ps)))
             ct.print_t(ps)
 
 
