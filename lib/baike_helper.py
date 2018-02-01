@@ -850,6 +850,11 @@ class baike_helper:
                 l2 = l2s[index]
                 f33.write(l1 + '\t' + str(l2).replace('NULL', '$') + "\n")
 
+    def get_total(self, word):
+        v1 = dict(self.d1).get(word, 0)
+        v1 = v1 * 100 - len(word)  # 相同个数看文字长度
+        return v1
+
 
 def method_name():
     bk = baike_helper()
@@ -863,17 +868,44 @@ def n_gram_math_all():
     bkh.init_ner()
     f_in = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt"
     index = 0
+    result = []
     with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
         for line in read_file:
             index += 1
+            # if index > 10:
+            #     break
             print(index)
             s = line.replace("\r", "").replace("\n", "").split("\t")[0]
             ss = bkh.ner(s)
             if len(ss) > 0:
-                ct.just_log("../data/nlpcc2016/extract_entitys.txt", '\t'.join(ss))
+                # ct.just_log("../data/nlpcc2016/extract_entitys2.txt", '\t'.join(ss))
+                result.append(ss)
             else:
-                ct.just_log("../data/nlpcc2016/extract_entitys.txt", "NULL")
+                ss = ['NULL']
+                result.append(ss)
+                # ct.just_log("../data/nlpcc2016/extract_entitys2.txt", "NULL")
             print(ss)
+    # 将统计出现的次数，按出现次数少的排在前面
+    d1 = dict()
+    for words_list in result:
+        for word in words_list:
+            if word in d1:
+                d1[word] += 1
+            else:
+                d1[word] = 1
+    # result = [x= sorted(x,key=get_total(x))  for x  in  result]
+    bkh.d1 = d1
+    for index in range(len(result)):
+        tmp = result[index]
+        tmp = sorted(tmp, key=bkh.get_total)
+        result[index] = tmp
+    with open('../data/nlpcc2016/demo1/extract_entitys2.txt', mode='w', encoding='utf-8') as o1:
+        for words_list in result:
+            # print("------")
+            # print(x)
+            o1.write("%s\n" % '\t'.join(words_list))
+            # for x1 in x :
+            #     print("%s  %s"%(x1,bkh.get_total(x1)))
 
 
 # def find_r_all():
@@ -917,9 +949,6 @@ def find_all_ps_2_6_3():
     bh.init_find_entity()
     ct.print_t(3)
 
-
-
-
     cand_s = ct.file_read_all_lines_strip(f_cand_q_in)
     ct.print_t(4)
     index = -1
@@ -953,7 +982,7 @@ def find_all_ps_2_6_3():
                     # 查找就停止
                     find_r = True
                     break
- 
+
             if find_r == False:
                 for s1 in ss:
                     s1_result = bh.find_entity(s1)
@@ -1008,7 +1037,7 @@ if __name__ == '__main__':
     # baike_helper.r_combine()
 
     # 2.5.5 n-gram匹配
-    # n_gram_math_all()
+    n_gram_math_all()
 
     # 2.6.1 通过实体找到原始实体
     # a = baike_helper()
@@ -1030,7 +1059,7 @@ if __name__ == '__main__':
     # 2.6.3 通过关系确定o
     # 读取问题、候选实体，通过2.6.1找到原始实体，通过2.6.2找到对应的关系，输出所以可能的关系
 
-    find_all_ps_2_6_3()
+    # find_all_ps_2_6_3()
 
     # 2.7 统计
     # baike_helper.statistics_subject_extract()
