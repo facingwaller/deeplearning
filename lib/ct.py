@@ -7,6 +7,7 @@ import re
 import os
 import datetime
 import time
+import pickle
 
 
 class classObject:
@@ -268,7 +269,7 @@ class ct:
     def read_all_text_from_gzip(path):
         lines = []
         try:
-            with gzip.open(filename=path , mode="rt", encoding="utf-8") as g:
+            with gzip.open(filename=path, mode="rt", encoding="utf-8") as g:
                 for g1 in g:
                     # gs.append(str(g1))
                     # g2 = "".join(gs)
@@ -474,9 +475,9 @@ class ct:
     # to do : read_entity_and_get_all_neg_relations_sq
     # 获取所有neg的关系
     @staticmethod
-    def read_entity_and_get_all_neg_relations_sq(entity_id, ps_to_except,not_allow_repeat=True):
+    def read_entity_and_get_all_neg_relations_sq(entity_id, ps_to_except, not_allow_repeat=True):
         path = config.par('sq_fb_rdf_path')  # config.get_sq_topic_path()
-        path = path +"/m."+ entity_id+".gz"
+        path = path + "/m." + entity_id + ".gz"
         text_lines = ct.read_all_text_from_gzip(path)
         r_list = []
         e2_list = []
@@ -487,7 +488,7 @@ class ct:
                 r_list.append(r1)
                 e2_list.append(e2)
         if not_allow_repeat:
-            r_list=list(set(r_list))
+            r_list = list(set(r_list))
         return r_list
 
     @staticmethod
@@ -495,6 +496,7 @@ class ct:
         r_list = ct.read_entity_and_get_all_neg_relations_sq("m.0_6bnq_", ["type.object.name"])
         for r in r_list:
             print(r)
+
     # 读取实体的所有关系
     @staticmethod
     def read_entity_and_get_all_relations(entity_id="10th_of_august"):
@@ -588,14 +590,14 @@ class ct:
     @staticmethod
     def clean_str_rn(string):
         return str(string).strip().strip('\n').strip('\r')
+
     @staticmethod
     def clean_str_rel(string):
-        return str(string).strip().strip('\n').strip('\r').replace(' ','') \
-                .replace(" ", "").replace("•", "").replace("-", "") \
-                .replace("【", "").replace("】", "") \
-                .replace("[", "").replace("]", "").replace('，','') \
-                .replace("”",'').replace('）','').replace('（','').replace('／','')
-
+        return str(string).strip().strip('\n').strip('\r').replace(' ', '') \
+            .replace(" ", "").replace("•", "").replace("-", "") \
+            .replace("【", "").replace("】", "") \
+            .replace("[", "").replace("]", "").replace('，', '') \
+            .replace("”", '').replace('）', '').replace('（', '').replace('／', '')
 
     @staticmethod
     def check_len(list, len):
@@ -751,15 +753,17 @@ class ct:
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         ms = config.get_print_type()
         if m in ms:
-            print("%s : %s"%(timestamp,msg))
+            print("%s : %s" % (timestamp, msg))
+
     @staticmethod
     def print_t():
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        ct.print(timestamp,"time")
+        ct.print(timestamp, "time")
 
     @staticmethod
     def print_t(msg=""):
         ct.print(str(msg), "time")
+
     # -------------------文件读取
     @staticmethod
     def file_read_all_lines(file_name):
@@ -769,6 +773,7 @@ class ct:
                 lines.append(line)
                 # .replace("\n", "").replace("/", " ").replace("_", " ").strip()
         return lines
+
     @staticmethod
     def file_read_all_lines_strip(file_name):
         lines = []
@@ -779,32 +784,46 @@ class ct:
         return lines
 
     @staticmethod
-    def sort_dict(r_d,reverse=True):
-        r_d_sort2 = sorted(r_d.items(), key=lambda d: d[1],reverse=reverse)
+    def sort_dict(r_d, reverse=True):
+        r_d_sort2 = sorted(r_d.items(), key=lambda d: d[1], reverse=reverse)
         return r_d_sort2
 
     @staticmethod
-    def end_with(str1,str_list):
+    def end_with(str1, str_list):
         for str2 in str_list:
-         if str(str1).endswith(str2):
-             return True
+            if str(str1).endswith(str2):
+                return True
         return False
 
     @staticmethod
-    def contains_with(str1,str_list):
+    def contains_with(str1, str_list):
         for str2 in str_list:
-         if str(str1).__contains__(str2):
-             return True
+            if str(str1).__contains__(str2):
+                return True
         return False
 
     # 闭包计数器
     @staticmethod
     def generate_counter():
         cnt = [0]
+
         def add_one():
             cnt[0] = cnt[0] + 1
             return cnt[0]
+
         return add_one
+
+    #
+    @staticmethod
+    def pickle_save(filename, obj):
+        with open(filename, 'wb') as f:
+            pickle.dump(obj, f)
+
+    @staticmethod
+    def pickle_load(filename):
+        with open(filename, 'rb') as f:
+            obj = pickle.load(f)
+        return obj
 
 
 log_path = ct.log_path_static()

@@ -5,8 +5,10 @@ import numpy as np
 a = "m/0n1vy1h"
 print(a[2:])
 
+r1 = ['1','222','3']
+r1.sort(key=lambda x:len(x),reverse=True)
 
-
+print(r1)
 
 y = [[1, 11],
      [2, 3],

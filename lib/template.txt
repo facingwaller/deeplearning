@@ -1,3 +1,16 @@
     f_in = ''
     with open(f_in, mode='r', encoding='utf-8') as rf:
         for l in rf.readlines():
+
+
+ 2. 加载和保存一个模型
+
+
+     def save_to_file(self, filename,obj):
+        with open(filename, 'wb') as f:
+            pickle.dump(obj, f)
+
+        if filename is not None:
+            with open(filename, 'rb') as f:
+                obj = pickle.load(f)
+        return obj

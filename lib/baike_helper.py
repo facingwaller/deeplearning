@@ -15,9 +15,12 @@ from lib.ct import ct, log_path
 # import jieba
 import re
 from lib.read_utils import TextConverter
-from gensim import models
+# from gensim import models
 from lib.converter.langconv import *
 from lib.config import config
+import os
+import gzip
+import gc
 
 
 class baike_helper:
@@ -203,14 +206,14 @@ class baike_helper:
 
         print(5435436)
 
-    def init_ner(self):
+    def init_ner(self, f_in2="../data/nlpcc2016/result/e12.txt.statistics.txt"):
         # f_in = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb_clean1_s.txt"
-        f_in2 = "../data/nlpcc2016/result/e123.txt.statistics.txt"
+
         d_dict = dict()
         d_set = set()
         begin = False
         end = False
-        ct.print_t()
+        #   ct.print_t()
         # s1
         # with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
         #     for l in read_file:
@@ -338,11 +341,10 @@ class baike_helper:
     @staticmethod
     def entity_re_extract():
         f_in = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb_clean1_s.txt.statistics_len_and_sort.txt"
-        f_out = f_in + ".alias_dict1.txt"
-        d_dict = dict()
+        f_out = "../data/nlpcc2016/result/e_by_m2.txt"
+
         p1 = '(\([^\((]*\))'
         p2 = '《[^《]*》'
-
         with codecs.open(f_out, mode="w", encoding="utf-8") as out:
             with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
                 for line in read_file:
@@ -353,19 +355,27 @@ class baike_helper:
                     if len(r1) > 0 or len(r2) > 0:
                         list1 = list()
                         list1.append(l)
-                        out.write("%s\t" % str(l))
+                        # out.write("%s\t" % str(l))
+                        # 第一版本
+                        # for r in r1:
+                        #     list1.append(r)
+                        #     out.write("%s\t" % str(r).strip('《').strip('》')
+                        #               .strip('(').strip(')'))
+                        # for r in r2:
+                        #     list1.append(r)
+                        #     out.write("%s\t" % str(r).strip('《').strip('》')
+                        #               .strip('(').strip(')'))
+                        #
+                        # 第二版本
+                        #  张龙(古典名著《三侠五义》中包公的四大侍卫之一)	古典名著《三侠五义》中包公的四大侍卫之一	三侠五义
+                        r1.extend(r2)
                         for r in r1:
-                            list1.append(r)
-                            out.write("%s\t" % str(r).strip('《').strip('》')
-                                      .strip('(').strip(')'))
-                        for r in r2:
-                            list1.append(r)
-                            out.write("%s\t" % str(r).strip('《').strip('》')
-                                      .strip('(').strip(')'))
-                            # for l1 in list1:
-                            #     out.write("%s\t" % str(l1).strip('《').strip('》')
-                            #               .strip('(').strip(')'))
-                            # print(str(l1))
+                            len(r)
+                        r1.sort(key=lambda x: len(x), reverse=True)
+                        max_one = r1[0]  # 取出最长的 古典名著《三侠五义》中包公的四大侍卫之一
+                        l1 = l.replace(max_one, '')  # 张龙 张龙(古典名著《三侠五义》中包公的四大侍卫之一)
+                        out.write("%s\t" % str(l1))
+                        out.write("%s\t" % str(l))
                         out.write("\n")
                         #
 
@@ -496,32 +506,14 @@ class baike_helper:
                 out.write('\n')
 
     @staticmethod
-    def combine_all_entitys():
-        print(1111111111)
-        # 读取1
-        list1 = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e_by_m1.txt')
-        print(222222)
-        # 读取2
-        list2 = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e_by_m2.txt')
-        print(333333333)
-        # 读取3
-        list3 = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e_by_m3.txt')
-        # 合并输出
-        print(0)
+    def combine_all_entitys(files, out):
         s1 = set()
-        for l in list1:
-            for l1 in str(l).split('\t'):
-                s1.add(l1)
-        print(1)
-        for l in list2:
-            for l1 in str(l).split('\t'):
-                s1.add(l1)
-        print(2)
-        for l in list3:
-            # for l1 in str(l).split('\t'):
-            s1.add(l)
-        print(3)
-        with codecs.open('../data/nlpcc2016/result/e123.txt', mode="w", encoding="utf-8") as out:
+        for f in files:
+            list1 = ct.file_read_all_lines_strip(f)
+            for l in list1:
+                for l1 in str(l).split('\t'):
+                    s1.add(l1)
+        with codecs.open(out, mode="w", encoding="utf-8") as out:
             for w in s1:
                 out.write(w + '\n')
 
@@ -545,14 +537,14 @@ class baike_helper:
                 out.write("%s\t%s\n" % (item[0], item[1]))
 
     def init_find_entity(self):
-        self.list1 = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e_by_m1.txt')
-        print('e_by_m1')
+        self.list1 = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e12.txt')
+        print('e_by_m1_2')
         # 读取2
-        self.list2 = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e_by_m2.txt')
-        print('e_by_m2')
-        # 读取3
-        self.list3 = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e_by_m3.txt')
-        print('e_by_m3')
+        # self.list2 = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e_by_m2.txt')
+        # print('e_by_m2')
+        # # 读取3
+        # self.list3 = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e_by_m3.txt')
+        # print('e_by_m3')
 
     # 1 通过别名找到对应的原始实体
     def find_entity(self, dst):
@@ -567,57 +559,106 @@ class baike_helper:
             for l1 in str(l).split('\t'):
                 if l1 == dst:
                     find = True
+                    break  # 只可能匹配一个
             if find:
                 origin_entitys.append(str(l).split('\t')[0])
-                find = False
-        print('1/3 %s' % (str(origin_entitys)))
+                # break # 这里可能会匹配多个
 
-        find = False
-        for l in self.list2:
-            for l1 in str(l).split('\t'):
-                if l1 == dst:
-                    find = True
-            if find:
-                origin_entitys.append(str(l).split('\t')[0])
-                find = False
-        print('2/3 %s' % (str(origin_entitys)))
-        find = False
-        for l in self.list3:
-            if l == dst:
-                find = True
-            if find:
-                origin_entitys.append(l)
-                find = False
-        print('3/3 %s' % (str(origin_entitys)))  # 按长度排序
-        origin_entitys_no_repeat = []
-        for e in origin_entitys:
-            if e not in origin_entitys_no_repeat:
-                origin_entitys_no_repeat.append(e)
-        return origin_entitys_no_repeat
+        # print('1/3 %s' % (str(origin_entitys)))
 
-    def init_spo(self, f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt"):
+        # origin_entitys_no_repeat = []
+        # for e in origin_entitys:
+        #     if e not in origin_entitys_no_repeat:
+        #         origin_entitys_no_repeat.append(e)
+        # assert (len(origin_entitys)!=1)
+        ct.print_t("total:%s" % len(origin_entitys))
+
+        return origin_entitys
+
+    # # 1 通过别名找到对应的原始实体
+    # def find_entity(self, dst):
+    #     """
+    #     通过别名找到对应的原始实体
+    #     :param dst:
+    #     :return:
+    #     """
+    #     origin_entitys = []
+    #     find = False
+    #     for l in self.list1:
+    #         for l1 in str(l).split('\t'):
+    #             if l1 == dst:
+    #                 find = True
+    #         if find:
+    #             origin_entitys.append(str(l).split('\t')[0])
+    #             find = False
+    #     print('1/3 %s' % (str(origin_entitys)))
+    #
+    #     find = False
+    #     for l in self.list2:
+    #         for l1 in str(l).split('\t'):
+    #             if l1 == dst:
+    #                 find = True
+    #         if find:
+    #             origin_entitys.append(str(l).split('\t')[0])
+    #             find = False
+    #     print('2/3 %s' % (str(origin_entitys)))
+    #     find = False
+    #     for l in self.list3:
+    #         if l == dst:
+    #             find = True
+    #         if find:
+    #             origin_entitys.append(l)
+    #             find = False
+    #     print('3/3 %s' % (str(origin_entitys)))  # 按长度排序
+    #     origin_entitys_no_repeat = []
+    #     for e in origin_entitys:
+    #         if e not in origin_entitys_no_repeat:
+    #             origin_entitys_no_repeat.append(e)
+    #     return origin_entitys_no_repeat
+
+
+    # gzip完整装载需要6分钟,内存不会直接爆炸
+    def init_spo(self, f_in="../data/nlpcc2016/demo1/kb.gz"):
+        exist = os.path.exists(config.par('baike_dict_path'))
+        # if exist:
+        #     print('加载已经存在的字典')
+        #     self.kbqa = ct.pickle_load(config.par('baike_dict_path'))
+        #     return
+        ct.print_t('init_spo')
         self.kbqa = dict()
 
         index = 0
-        with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
-            for line in read_file:
+        # with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
+        with gzip.open(f_in, 'rb') as f_out:
+            for line in f_out:
+                line = line.decode('utf-8')
                 index += 1
-                if index % 10000 == 0:
-                    print(index / 10000)
+                if index % 100000 == 0:
+                    ct.print_t("%d / 428" % (index / 100000))
+                    # if (index / 100000)%10 == 0 :
+                    #     print('collect')
+                    #     gc.collect()
+
                 ls = str(line).strip('\n').strip('\r').split('\t')
                 s = ls[0]
                 p = ct.clean_str_rel(ls[1])
                 o1 = ls[2]
                 t1 = (p, o1)
+                # del line
                 if s in self.kbqa:
+                    # try:
                     s1 = self.kbqa[s]
                     s1.add(t1)
                     self.kbqa[s] = s1
                 else:
+                    # except Exception as e1 :
                     s1 = set()
                     s1.add(t1)
                     self.kbqa[s] = s1
-        print("init_spo ok")
+
+        # ct.pickle_save(config.par('baike_dict_path'), self.kbqa)
+        ct.print_t("init_spo ok")
+        # ct.pickle_save(config.par('baike_dict_path'), self.kbqa)
         # self.kbqa = d_dict
 
         # 通过属性值
@@ -790,6 +831,7 @@ class baike_helper:
 
     @staticmethod
     def prodeuce_embedding_vec_file(filename):
+        from gensim import models
         f1 = '../data/nlpcc2016/demo1/'
         converter = TextConverter(filename='../data/nlpcc2016/demo1/nlpcc2016.vocab')
         model = models.Word2Vec.load(filename)
@@ -855,6 +897,69 @@ class baike_helper:
         v1 = v1 * 100 - len(word)  # 相同个数看文字长度
         return v1
 
+    # 看看m1_2 中是否有重复的
+    def test_m1_m2(self):
+        m1s = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e_12.txt')
+        xs = []
+        for x in m1s:
+            xs.extend(str(x).split('\t'))
+
+        print(len(xs))
+        print(len(set(xs)))
+
+    # 合并m1和m2文件
+    def combine_m1_m2(self, f1='../data/nlpcc2016/result/e_by_m1.txt', f2
+    ='../data/nlpcc2016/result/e_by_m2.txt', f3='../data/nlpcc2016/result/e_12.txt'):
+        # 读取出来
+        m1s = ct.file_read_all_lines_strip(f1)
+        m2s = ct.file_read_all_lines_strip(f2)
+        # 将2中的每个实体逐个遍历1，如果存在则添加进1
+        # m1 白鳞环锈伞	白鳞环伞	pholiota destruens (brond) gill.	杨环锈伞
+        # m2 mt(肉盾)	肉盾
+        d1 = dict()
+        # 装载
+        for m1_line in m1s:
+            m1_es = str(m1_line).split('\t')
+            if len(m1_es) == 1:  # 过滤没有别名的
+                # print(m1_line)
+                continue
+            # m1_es_1=m1_es[1:]
+            #    for x in m1_es:
+            d1[m1_es[0]] = set([x for x in m1_es[1:]])
+        # 检查
+        for m2_line in m2s:
+            m2_es = str(m2_line).split('\t')
+            exist = False
+            key = ''
+            for m2_e in m2_es:
+                if m2_e in d1:
+                    exist = True
+                    key = m2_e
+                    break
+            if exist:  # 如果m2e 存在于m1中 则整个添加到 1 中
+                s1 = d1[key]
+                for m2_e in m2_es:
+                    s1.add(m2_e)
+                d1[key] = s1
+        # 输出整个字典
+        # d2 = ct.sort_dict(d1)
+        with open(f3, mode='w', encoding='utf-8') as o1:
+            for k, v in d1.items():
+                msg = "%s\t%s\n" % (k, '\t'.join(v))
+                o1.write(msg)
+                # ct.just_log('../data/nlpcc2016/result/e_12.txt',msg)
+
+    def gzip_file(self):
+        cgc = ct.generate_counter()
+        with gzip.open('../data/nlpcc2016/demo1/kb1.gz', 'wb') as f_out:
+            with open('../data/nlpcc2016/demo1/kb1.txt', 'r', encoding='utf-8') as f_in:
+                for l in f_in:
+                    i = cgc()
+                    if i % 10000 == 0:
+                        print(i / 10000)
+                    f_out.write(l.encode('utf-8'))
+        print('ok')
+
 
 def method_name():
     bk = baike_helper()
@@ -863,10 +968,11 @@ def method_name():
     bk.convert_text_to_seg(f_in, f_out, type="questions")
 
 
-def n_gram_math_all():
+def n_gram_math_all(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt",
+                    f_out='../data/nlpcc2016/result/extract_entitys2.txt'):
     bkh = baike_helper()
-    bkh.init_ner()
-    f_in = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt"
+    bkh.init_ner(f_in2="../data/nlpcc2016/result/combine_e12.txt.statistics.txt")
+
     index = 0
     result = []
     with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
@@ -899,7 +1005,7 @@ def n_gram_math_all():
         tmp = result[index]
         tmp = sorted(tmp, key=bkh.get_total)
         result[index] = tmp
-    with open('../data/nlpcc2016/demo1/extract_entitys2.txt', mode='w', encoding='utf-8') as o1:
+    with open(f_out, mode='w', encoding='utf-8') as o1:
         for words_list in result:
             # print("------")
             # print(x)
@@ -1026,18 +1132,46 @@ if __name__ == '__main__':
     # s ="《机械设计基础》这本书的作者是谁"
     # method_name2()
 
-    #
-    # baike_helper.combine_all_entitys()
-    # 2.5.4 按长度重写
-    # f_in ='../data/nlpcc2016/result/e123.txt'
-    # f_out= f_in+".statistics.txt"
-    # baike_helper.statistics_subject_len(f_in,f_out)
-
+    # bkh = baike_helper()
     # 2.5.1 r_combine
     # baike_helper.r_combine()
 
+    # 2.5.2
+    # 重新抽取m2
+    # baike_helper.entity_re_extract()
+    # fs = ['../data/nlpcc2016/result/e_by_m1.txt', '../data/nlpcc2016/result/e_by_m2.txt']
+    # out = '../data/nlpcc2016/result/combine_e12.txt'
+    # baike_helper.combine_all_entitys(fs, out)
+    # f_in = '../data/nlpcc2016/result/combine_e12.txt'
+    # f_out = f_in + ".statistics.txt"
+    # baike_helper.statistics_subject_len(f_in, f_out)
+
+    # 2.5.3
+    # 合并m1和m2文件
+    # bkh.combine_m1_m2()
+
+
+
+    # 2.5.4 按长度重写
+    # f_in = '../data/nlpcc2016/result/e_12.txt'
+    # f_out = f_in + ".statistics.txt"
+    # baike_helper.statistics_subject_len(f_in, f_out)
+
+
+
     # 2.5.5 n-gram匹配
     n_gram_math_all()
+
+    # 测试
+    # ct.print_t("start")
+    # bkh = baike_helper()
+    # # bkh.combine_m1_m2()
+    # bkh.test_m1_m2()
+    # bkh.gzip_file()
+    # bkh.init_ner()
+    # bkh.init_spo(f_in='../data/nlpcc2016/demo1/kb.gz')
+    # print(bkh.kbqa['高等数学'])
+
 
     # 2.6.1 通过实体找到原始实体
     # a = baike_helper()
@@ -1079,6 +1213,8 @@ if __name__ == '__main__':
 
     # baike_helper.load_vocab_cc()
 
-    # 重写指定的实体
 
-    print("finsih ")
+
+
+
+    ct.print_t("finsih ")
