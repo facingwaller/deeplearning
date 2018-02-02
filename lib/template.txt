@@ -2,6 +2,12 @@
     with open(f_in, mode='r', encoding='utf-8') as rf:
         for l in rf.readlines():
 
+-
+        with open(f2, mode='w', encoding='utf-8') as o1:
+            for item in new_ls:
+                o1.write(item + '\n')
+
+
 
  2. 加载和保存一个模型
 

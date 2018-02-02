@@ -175,10 +175,11 @@ class DataClass:
         self.build_embedding_weight(config.wiki_vector_path(mode))
         ct.print("load embedding ok!")
 
-        # self.build_all_q_r_tuple(config.get_static_q_num_debug(),
-        #                          config.get_static_num_debug(), is_record=False)
-        self.load_all_q_r_tuple(config.get_static_q_num_debug(),
-                                config.get_static_num_debug(), is_record=False)
+        self.build_all_q_r_tuple(config.get_static_q_num_debug(),
+                                  config.get_static_num_debug(), is_record=False)
+
+        # self.load_all_q_r_tuple(config.get_static_q_num_debug(),
+        #                         config.get_static_num_debug(), is_record=False)
         # todo :change load q_r tuple
 
         # ct.print("build_all_q_r_tuple 生成所有的q和neg r的组合")

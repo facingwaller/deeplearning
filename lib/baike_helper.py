@@ -16,14 +16,16 @@ from lib.ct import ct, log_path
 import re
 from lib.read_utils import TextConverter
 # from gensim import models
-from lib.converter.langconv import *
+# from lib.converter.langconv import *
 from lib.config import config
 import os
 import gzip
 import gc
 
 from multiprocessing import Pool, Manager
+
 MAX_POOL_NUM = 5
+
 
 class baike_helper:
     # def __init__(self):
@@ -249,7 +251,7 @@ class baike_helper:
         self.n_gram_dict = n_gram_dict
         ct.print_t("init_ner ok")
 
-    def ner_one(self,i ):
+    def ner_one(self, i):
         # for i in range(new_line_len):
         index = self.new_line_len - int(i)
         print(index)
@@ -265,6 +267,7 @@ class baike_helper:
                 self.cand_entitys.append(entity)
         print(self.cand_entitys)
         # print(123)
+
     # 建造实体的词汇库
     # ner
     # 1 加载词汇表
@@ -279,8 +282,8 @@ class baike_helper:
         find = False
         self.new_line = new_line
         self.new_line_len = new_line_len
-        allow_more_thread = True
-        ct.print_t('11111111  %d'%new_line_len)
+        allow_more_thread = False
+        ct.print_t('11111111  %d' % new_line_len)
         if allow_more_thread:
             pool = Pool(MAX_POOL_NUM)
             pool.map(self.ner_one, range(0, new_line_len))
@@ -987,6 +990,90 @@ class baike_helper:
         print('ok')
 
 
+class baike_test:
+    def try_idf(self):
+        print(11111132)
+
+    # 合并识别结果和未识别,一次性
+    @staticmethod
+    def one_combine_all():
+        # 《高等数学》是哪个出版社出版的？	武汉大学出版社
+        f1 = '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt'
+        f2 = f1 + '.rdf.txt'
+        q_s = ct.file_read_all_lines_strip(f1)
+        r2_s = ct.file_read_all_lines_strip('../data/nlpcc2016/ner_t1/r2.txt')
+        # r2_s_no = ct.file_read_all_lines_strip('../data/nlpcc2016/ner_t1/r2_no.txt')
+        new_ls = []
+        index1 = 0
+        index2 = 0
+        for i in range(len(q_s)):
+            if str(q_s[i]).split('\t')[0] == str(r2_s[index1]).split('\t')[0]:
+
+                new_ls.append(r2_s[index1])
+                index1 += 1
+            else:
+                new_ls.append(q_s[i] + '\t' + 'NULL')
+        with open(f2, mode='w', encoding='utf-8') as o1:
+            for item in new_ls:
+                o1.write(item + '\n')
+
+    # 试试检测一下前1，前2，前3命中的概率
+    @staticmethod
+    def try_test_acc_of_m1():
+        f1 = '../data/nlpcc2016/ner_t1/q.rdf.txt'  # 输入文件
+        # 《机械设计基础》	机械设计基础	设计基础	机械设计	机械	基础	这本书	作者	本书	设计	谁？	是谁
+        f2 = f1 + '.failed.txt'  # 输出文件
+        f3= '../data/nlpcc2016/ner_t1/extract_entitys2.txt'  # 抽取的结果
+        # 《高等数学》是哪个出版社出版的？	武汉大学出版社	高等数学(微积分)	 出版社	 武汉大学出版社
+
+        #
+        acc1 = 0.0
+        f3s = ct.file_read_all_lines_strip(f3)
+        f1s = ct.file_read_all_lines_strip(f1)
+        # 取第一个与正确答案做比较成功+1错误不加
+        acc_index = [1, 2, 3]
+        total = len(f1s)
+        acc = dict()
+        record = []
+        for l_i in acc_index:
+            acc[str(l_i)]=0
+
+        skip = 0
+        for i in range(len(f1s)):
+
+            if len(str(f1s[i]).split('\t')) < 3:
+                skip += 1
+                print(f1s[i])
+                continue
+            if str(f1s[i]).__contains__('NULL'):
+                skip += 1
+                print(f1s[i])
+                continue
+
+            for l_i in acc_index:
+                list1 = str(f3s[i]).split('\t')[0:l_i]
+                if str(f1s[i]).split('\t')[2] in list1:
+                    acc[str(l_i)] += 1
+            list1 = str(f3s[i]).split('\t')[0:3]
+            if str(f1s[i]).split('\t')[2] not in list1:
+                # 记录下来 分析一下
+                record.append("%s\t%s"%(f1s[i],f3s[i]))
+
+        print("skip:%d"%skip)
+
+        for k,v in acc.items():
+            print("%s %f"%(k,v/(total-skip)))
+
+        with open(f2, mode='w', encoding='utf-8') as o1:
+            for item in record:
+                o1.write(item + '\n')
+
+
+
+
+
+
+
 def method_name():
     bk = baike_helper()
     f_in = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt"
@@ -1066,6 +1153,8 @@ def n_gram_math_all(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.test
 def find_all_ps_2_6_3():
     bh = baike_helper()
     ct.print_t(1)
+    bh.init_find_entity()
+    ct.print_t(2)
     is_debug = False
     if is_debug:
         bh.init_spo('../data/nlpcc2016/demo2/kb.txt')
@@ -1076,9 +1165,8 @@ def find_all_ps_2_6_3():
         f_q_in = '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt'
         f_cand_q_in = '../data/nlpcc2016/extract_entitys.txt'
 
-    ct.print_t(2)
     # bh.init_ner()
-    bh.init_find_entity()
+
     ct.print_t(3)
 
     cand_s = ct.file_read_all_lines_strip(f_cand_q_in)
@@ -1151,6 +1239,11 @@ def find_all_ps_2_6_3():
 
 
 if __name__ == '__main__':
+    # baike-test流程 3.0
+    # baike_test.one_combine_all()
+    # 3.1
+    baike_test.try_test_acc_of_m1()
+
     # baike_helper.e_r_combine()
     # method_name()
     # baike_helper.statistics_subject_len()
@@ -1186,7 +1279,7 @@ if __name__ == '__main__':
 
 
     # 2.5.5 n-gram匹配
-    n_gram_math_all()
+    # n_gram_math_all()
 
     # 测试
     # ct.print_t("start")
