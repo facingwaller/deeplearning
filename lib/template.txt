@@ -1,3 +1,4 @@
+文件读写
     f_in = ''
     with open(f_in, mode='r', encoding='utf-8') as rf:
         for l in rf.readlines():
@@ -20,3 +21,10 @@
             with open(filename, 'rb') as f:
                 obj = pickle.load(f)
         return obj
+
+
+  3. 排序
+      for index in range(len(result)):
+        tmp = result[index]
+        tmp = sorted(tmp, key=bkh.get_total)
+        result[index] = tmp

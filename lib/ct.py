@@ -600,6 +600,39 @@ class ct:
             .replace("”", '').replace('）', '').replace('（', '').replace('／', '')
 
     @staticmethod
+    def clean_str_zh2en(string):
+        return str(ct.strQ2B(string)) \
+            .replace("（", "(").replace("）", ")") \
+            .replace("【", "[").replace("】", "]") \
+
+    @staticmethod
+    def  str_start_with (line,words):
+        for w in words:
+            if str(line).startswith(w):
+                return  True
+        return False
+
+    @staticmethod
+    def be_contains(list1_new_word,list1_new):
+        for w in list1_new:
+            if str(w).__contains__(list1_new_word) and w!=list1_new_word:
+                return True
+        return False
+    @staticmethod
+    def strQ2B(ustring):
+        """全角转半角"""
+        rstring = ""
+        for uchar in ustring:
+            inside_code = ord(uchar)
+            if inside_code == 12288:  # 全角空格直接转换
+                inside_code = 32
+            elif (inside_code >= 65281 and inside_code <= 65374):  # 全角字符（除空格）根据关系转化
+                inside_code -= 65248
+
+            rstring += chr(inside_code)
+        return rstring
+
+    @staticmethod
     def check_len(list, len):
         try:
             for l1 in list:
@@ -824,6 +857,33 @@ class ct:
         with open(filename, 'rb') as f:
             obj = pickle.load(f)
         return obj
+
+    @staticmethod
+    def list_no_repeat_cx(list1,d_f4s_line):
+        list1_new = []
+        for _ in list1:
+            if _ not in list1_new and _ != '':
+                # 增加词性过滤
+
+                need_add = d_f4s_line.get(_, True)
+                if need_add:
+                    list1_new.append(_)
+                else:
+                    print("filter:%s"%_)
+                    ct.just_log('../data/nlpcc2016/ner_t1/filter_log.txt',_)
+
+        return list1_new
+    @staticmethod
+    def list_no_repeat(list1):
+        list1_new = []
+        for _ in list1:
+            if _ not in list1_new and _ != '':
+                # 增加词性过滤
+                list1_new.append(_)
+            # else:
+                # print("filter:%s"%_)
+                # ct.just_log('../data/nlpcc2016/ner_t1/filter_log.txt',_)
+        return list1_new
 
 
 log_path = ct.log_path_static()
