@@ -300,7 +300,7 @@ class baike_helper:
         self.new_line = new_line
         self.new_line_len = new_line_len
         allow_more_thread = False
-        ct.print_t('11111111  %d' % new_line_len)
+        # ct.print_t('11111111  %d' % new_line_len)
         if allow_more_thread:
             pool = Pool(MAX_POOL_NUM)
             pool.map(self.ner_one, range(0, new_line_len))
@@ -323,7 +323,7 @@ class baike_helper:
                         # break  # 暂时先只找第一个试试看
                         # if find:
                         #     break
-        ct.print_t('2222222')
+        # ct.print_t('2222222')
         # print(654354353)
         return self.cand_entitys
 
@@ -1562,7 +1562,13 @@ def n_gram_math_all(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.test
             # if index > 10:
             #     break
             print(index)
-            s = line.replace("\r", "").replace("\n", "").split("\t")[0]
+            s2 = line.replace("\r", "").replace("\n", "").split("\t")[0]
+            s = line.replace("\r", "").replace("\n", "").replace(' ', '').split("\t")[0]
+            if s == s2:
+                ss = ['#THE_SAME#']
+                result.append(ss)
+                continue
+
             ss = bkh.ner(s)
             if len(ss) > 0:
                 # ct.just_log("../data/nlpcc2016/extract_entitys2.txt", '\t'.join(ss))
@@ -1573,19 +1579,20 @@ def n_gram_math_all(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.test
                 # ct.just_log("../data/nlpcc2016/extract_entitys2.txt", "NULL")
             print(ss)
     # 将统计出现的次数，按出现次数少的排在前面
-    d1 = dict()
-    for words_list in result:
-        for word in words_list:
-            if word in d1:
-                d1[word] += 1
-            else:
-                d1[word] = 1
-    # result = [x= sorted(x,key=get_total(x))  for x  in  result]
-    bkh.d1 = d1
-    for index in range(len(result)):
-        tmp = result[index]
-        tmp = sorted(tmp, key=bkh.get_total)
-        result[index] = tmp
+    # d1 = dict()
+    # for words_list in result:
+    #     for word in words_list:
+    #         if word in d1:
+    #             d1[word] += 1
+    #         else:
+    #             d1[word] = 1
+    # # result = [x= sorted(x,key=get_total(x))  for x  in  result]
+    # bkh.d1 = d1
+    # for index in range(len(result)):
+    #     tmp = result[index]
+    #     tmp = sorted(tmp, key=bkh.get_total)
+    #     result[index] = tmp
+
     with open(f_out, mode='w', encoding='utf-8') as o1:
         for words_list in result:
             # print("------")
