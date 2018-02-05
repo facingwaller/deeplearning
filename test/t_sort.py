@@ -14,5 +14,5 @@ x.sort(key=custom_key)
 x1 = ['a','bb','ccc']
 def get_total(word):
     return len(word)
-x1.sort(key=get_total,reverse=False)
+x1.sort(key=get_total)
 print(x1)
