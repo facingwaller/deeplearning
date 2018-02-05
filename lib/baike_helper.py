@@ -591,7 +591,7 @@ class baike_helper:
                     break  # 只可能匹配一个
             if find:
                 origin_entitys.append(str(l).split('\t')[0])
-                # break # 这里可能会匹配多个
+                break # 这里可能会匹配多个
 
         # print('1/3 %s' % (str(origin_entitys)))
 
@@ -1242,7 +1242,7 @@ if __name__ == '__main__':
     # baike-test流程 3.0
     # baike_test.one_combine_all()
     # 3.1
-    baike_test.try_test_acc_of_m1()
+    # baike_test.try_test_acc_of_m1()
 
     # baike_helper.e_r_combine()
     # method_name()
@@ -1312,7 +1312,7 @@ if __name__ == '__main__':
     # 2.6.3 通过关系确定o
     # 读取问题、候选实体，通过2.6.1找到原始实体，通过2.6.2找到对应的关系，输出所以可能的关系
 
-    # find_all_ps_2_6_3()
+    find_all_ps_2_6_3()
 
     # 2.7 统计
     # baike_helper.statistics_subject_extract()
