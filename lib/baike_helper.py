@@ -1487,6 +1487,35 @@ class baike_test:
                     msg = "%s\n" % (l2s[i])
                 o1.write(msg)
 
+    # file_tj
+    @staticmethod
+    def file_tj(f1='../data/nlpcc2016/ner_t1/extract_entitys_all.txt', # 原始
+                f_out='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt' ):
+        result = ct.file_read_all_lines_strip(f1)
+        # l2s = ct.file_read_all_lines_strip(f2)
+
+        # 将统计出现的次数，按出现次数少的排在前面
+        d1 = dict()
+        for words_list in result:
+            for word in words_list:
+                if word in d1:
+                    d1[word] += 1
+                else:
+                    d1[word] = 1
+        # result = [x= sorted(x,key=get_total(x))  for x  in  result]
+        bkh.d1 = d1
+        for index in range(len(result)):
+            tmp = result[index]
+            tmp = sorted(tmp, key=bkh.get_total)
+            result[index] = tmp
+
+        with open(f_out, mode='w', encoding='utf-8') as o1:
+            for words_list in result:
+                # print("------")
+                # print(x)
+                o1.write("%s\n" % '\t'.join(words_list))
+                # for x1 in x :
+                #     print("%s  %s"%(x1,bkh.get_total(x1)))
 
     # 统计前3的词性
     @staticmethod
@@ -1864,6 +1893,8 @@ if __name__ == '__main__':
     # 重写生成一些N-GRAM 5.6.2
     # 5.6.3 合并space的
     bkt.file_combine_space()
+    # 5.6.4 统计完重写输出
+    bkt.file_tj()
 
     # N元分词全部
     if False:
