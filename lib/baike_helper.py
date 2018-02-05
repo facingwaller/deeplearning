@@ -23,6 +23,7 @@ import gzip
 import gc
 
 from multiprocessing import Pool, Manager
+import math
 
 MAX_POOL_NUM = 5
 
@@ -410,7 +411,68 @@ class baike_helper:
 
         print(3421423)
 
-    # 合并 关系对应的实体，将实体别名 和 实体的关系合并起来 并且去重复
+    @staticmethod
+    # 如果抽取后是空的则不抽取
+    def entity_re_extract_one(l):
+        p1 = '(\([^\((]*\))'
+        p2 = '《[^《]*》'
+        r1 = re.findall(p1, l)
+        r2 = re.findall(p2, l)
+        l1 = l
+
+        if len(r1) > 0 or len(r2) > 0:
+            list1 = list()
+            list1.append(l)
+            # 第二版本
+            #  张龙(古典名著《三侠五义》中包公的四大侍卫之一) 古典名著《三侠五义》中包公的四大侍卫之一    三侠五义
+            r1.extend(r2)
+            for r in r1:
+                len(r)
+            r1.sort(key=lambda x: len(x), reverse=True)
+            max_one = r1[0]  # 取出最长的 古典名著《三侠五义》中包公的四大侍卫之一
+            l1 = l.replace(max_one, '')  # 张龙 张龙(古典名著《三侠五义》中包公的四大侍卫之一)
+            if l1 == '':  # 如果替换后是空的就不替换
+                l1 = l
+        return l1
+
+        # 合并 关系对应的实体，将实体别名 和 实体的关系合并起来 并且去重复
+
+    @staticmethod
+    # 如果抽取后是空的则不抽取
+    # 去掉最后抽取得到的《》或者()
+    def entity_re_extract_one_repeat(l):
+        p1 = '(\([^\((]*\))'
+        p2 = '《[^《]*》'
+        r1 = re.findall(p1, l)
+        r2 = re.findall(p2, l)
+        l1 = l
+
+        if len(r1) > 0 or len(r2) > 0:
+            list1 = list()
+            list1.append(l)
+            # 第二版本
+            #  张龙(古典名著《三侠五义》中包公的四大侍卫之一) 古典名著《三侠五义》中包公的四大侍卫之一    三侠五义
+            r1.extend(r2)
+            # for r in r1:
+            #     len(r)
+            r1.sort(key=lambda x: len(x), reverse=True)
+            # 《因为我爱你》(推理小说) 取出括号外面的作为括号里面的别名
+            max_one = r1[0]  # 取出最长的 古典名著《三侠五义》中包公的四大侍卫之一
+            for r1_1 in r1:
+                if r1_1.__contains__('('):
+                    max_one = r1_1
+                    break
+            # print("max_one:"+max_one)
+
+            l1 = l.replace(max_one, '')  # 张龙 张龙(古典名著《三侠五义》中包公的四大侍卫之一)
+            if l1 == '':  # 如果替换后是空的就不替换
+                l1 = l[1:len(l) - 1]
+            if len(re.findall(p1, l1)) or len(re.findall(p2, l1)) > 0:
+                l1 = baike_helper.entity_re_extract_one_repeat(l1)
+        return l1
+
+        # 合并 关系对应的实体，将实体别名 和 实体的关系合并起来 并且去重复
+
     # 名字 别名1 别名2 ...
     @staticmethod
     def r_combine():
@@ -591,7 +653,39 @@ class baike_helper:
                     break  # 只可能匹配一个
             if find:
                 origin_entitys.append(str(l).split('\t')[0])
-                break # 这里可能会匹配多个
+                # break # 这里可能会匹配多个
+
+        # print('1/3 %s' % (str(origin_entitys)))
+
+        # origin_entitys_no_repeat = []
+        # for e in origin_entitys:
+        #     if e not in origin_entitys_no_repeat:
+        #         origin_entitys_no_repeat.append(e)
+        # assert (len(origin_entitys)!=1)
+        ct.print_t("total:%s" % len(origin_entitys))
+
+        return origin_entitys
+
+    # 1 通过别名找到对应的整行实体
+    def find_entity_all(self, dst):
+        """
+        通过别名找到对应的原始实体
+        :param dst:
+        :return:
+        """
+        origin_entitys = []
+        find = False
+        for l in self.list1:
+            for l1 in str(l).split('\t'):
+                if l1 == dst:
+                    find = True
+                    break  # 只可能匹配一个
+
+            if find:
+                # break
+                origin_entitys.extend(str(l).split('\t'))
+                # break # 这里可能会匹配多个
+            find = False
 
         # print('1/3 %s' % (str(origin_entitys)))
 
@@ -921,9 +1015,14 @@ class baike_helper:
                 l2 = l2s[index]
                 f33.write(l1 + '\t' + str(l2).replace('NULL', '$') + "\n")
 
+    # 排序算法
     def get_total(self, word):
         v1 = dict(self.d1).get(word, 0)
         v1 = v1 * 100 - len(word)  # 相同个数看文字长度
+        return v1
+
+    def get_qiwang(self, word):
+        v1 = dict(self.d_f6s).get(word, 0)
         return v1
 
     # 看看m1_2 中是否有重复的
@@ -991,15 +1090,133 @@ class baike_helper:
 
 
 class baike_test:
-    def try_idf(self):
+    @staticmethod
+    def try_idf(f1='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',
+                f2='../data/nlpcc2016/ner_t1/extract_entitys_all.txt.statistics.txt',
+                f3='../data/nlpcc2016/ner_t1/q.rdf.txt'):
+        # idf = log(n / docs(W, D))
+        # 即文档总数n与词w所出现文件数docs(W, D)比值的对数
+        f1s = ct.file_read_all_lines_strip(f1)
+        # 读取是正确的实体
+        f3s = ct.file_read_all_lines_strip(f3)
+
+        d1 = dict()
+        # 统计
+        for words_list in f1s:
+            for word in str(words_list).split('\t'):
+                if word in d1:
+                    d1[word] += 1
+                else:
+                    d1[word] = 1
+        print(321)
+        d3 = dict()
+        # 统计
+        for words_list in f3s:
+            if len(str(words_list).split('\t')) < 3:
+                continue
+            word = str(words_list).split('\t')[2]
+            if word in d3:
+                d3[word] += 1
+            else:
+                d3[word] = 1
+
+        # 排序
+        total = len(f1s)
+        print(total)
+        list1 = ct.sort_dict(d1)
+        with open(f2, mode='w', encoding='utf-8') as out:
+            out.write("%s\t%s\t%s\t%s\t%s\t%s\n" % ('实体', '出现次数', '出现次数/总数', 'IDF', '命中次数', '期望'))
+            for t in list1:
+                out.write("%s\t%s\t%f\t%f\t%s\t%f\n" % (
+                    t[0], t[1], t[1] / total, math.log(t[1] / total), d3.get(t[0], 0),
+                    (d3.get(t[0], 0) * 10000 / t[1])))
         print(11111132)
+
+    # 使用jieba分词，对每一个候选词做词性标注，1 0标识
+    @staticmethod
+    def try_jieba(f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
+                  f2='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',
+                  f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt.identify.txt',
+                  f4='../data/nlpcc2016/ner_t1/extract_entitys_all.txt.jieba.txt'
+                  ):
+
+        import jieba.posseg as pseg
+        # import jieba
+        # jieba.set_dictionary('../data/jieba_dict/dict.txt.big')
+        #
+        # # load stopwords set
+        # stopwordset = set()
+        # with open('../data/jieba_dict/stopwords.txt', 'r', encoding='utf-8') as sw:
+        #     for line in sw:
+        #         stopwordset.add(line.strip('\n'))
+
+        word_set = set()
+        f1s = ct.file_read_all_lines_strip(f1)
+        f1s = [str(x).split('\t')[0] for x in f1s]
+        f2s = ct.file_read_all_lines_strip(f2)
+
+        # 做好词性标注后使用三个下划线分割 ___
+        f3s = []
+        f4s = []
+        i = -1
+        for sentence in f1s:
+            i += 1
+            # print(w.word,w.flag)
+            pseg_words = pseg.cut(sentence=sentence)
+            pseg_words_list = []
+            for t1 in pseg_words:
+                pseg_words_list.append((t1.word, t1.flag))
+            pseg_words = pseg_words_list
+
+            f3s.append(pseg_words)  # 等会输出
+            f2s_line = str(f2s[i]).split('\t')
+            f2s_line_new = []
+            for f2s_line_word in f2s_line:
+                find = False
+                find_pseg_w = ''
+                for pseg_w in pseg_words:
+                    if pseg_w[0] == f2s_line_word:
+                        find = True
+                        find_pseg_w = pseg_w
+                        break
+                if find:
+                    # t1 = (find_pseg_w.word, find_pseg_w.flag)
+                    f2s_line_new.append(find_pseg_w)
+                else:
+                    t1 = (f2s_line_word, 'NULL')
+                    f2s_line_new.append(t1)
+            f4s.append(f2s_line_new)
+        # 输出词性标注文件
+        i = -1
+        with open(f3, mode='w', encoding='utf-8') as o1:
+            for f2s_line_new in f3s:
+                i += 1
+                o1.write(f1s[i] + '\t')
+                msg = ''
+                for t1 in f2s_line_new:
+                    msg += "%s___%s\t" % (t1[0], t1[1])
+                o1.write(msg + '\n')
+        print(33213)
+        i = -1
+        with open(f4, mode='w', encoding='utf-8') as o1:
+            for f2s_line_new in f4s:
+                i += 1
+                o1.write(f1s[i] + '\t')
+                msg = ''
+                for t1 in f2s_line_new:
+                    msg += "%s___%s\t" % (t1[0], t1[1])
+                o1.write(msg + '\n')
+
+
+
+                # 标注已经分词的文本并做输出
 
     # 合并识别结果和未识别,一次性
     @staticmethod
     def one_combine_all():
         # 《高等数学》是哪个出版社出版的？	武汉大学出版社
         f1 = '../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt'
-        f2 = f1 + '.rdf.txt'
+        f2 = '../data/nlpcc2016/ner_t1/q.rdf.txt'
         q_s = ct.file_read_all_lines_strip(f1)
         r2_s = ct.file_read_all_lines_strip('../data/nlpcc2016/ner_t1/r2.txt')
         # r2_s_no = ct.file_read_all_lines_strip('../data/nlpcc2016/ner_t1/r2_no.txt')
@@ -1018,60 +1235,242 @@ class baike_test:
                 o1.write(item + '\n')
 
     # 试试检测一下前1，前2，前3命中的概率
-    @staticmethod
-    def try_test_acc_of_m1():
-        f1 = '../data/nlpcc2016/ner_t1/q.rdf.txt'  # 输入文件
+    # 增加别名词典匹配
+    # @staticmethod
+    def try_test_acc_of_m1(self, f1='../data/nlpcc2016/ner_t1/q.rdf.txt',
+                           f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed4.txt',
+                           f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',
+                           f4='../data/nlpcc2016/ner_t1/extract_entitys_all.txt.jieba.txt',
+                           f5='../data/nlpcc2016/ner_t1/q.rdf.filter.txt',
+                           f6='../data/nlpcc2016/ner_t1/extract_entitys_all.txt.statistics.txt',
+                           reweiter=False,
+                           use_cx=False,
+                           use_expect=False,
+                           acc_index=[1, 2, 3]):
+        # f1   # 输入文件
         # 《机械设计基础》	机械设计基础	设计基础	机械设计	机械	基础	这本书	作者	本书	设计	谁？	是谁
-        f2 = f1 + '.failed.txt'  # 输出文件
-        f3= '../data/nlpcc2016/ner_t1/extract_entitys2.txt'  # 抽取的结果
+        # f2 = f1 + '.failed.txt'  # 输出文件
+        # f3= '../data/nlpcc2016/ner_t1/extract_entitys2.txt'  # 抽取的结果
+        bkh = baike_helper()
+        bkh.init_find_entity()
         # 《高等数学》是哪个出版社出版的？	武汉大学出版社	高等数学(微积分)	 出版社	 武汉大学出版社
 
         #
         acc1 = 0.0
         f3s = ct.file_read_all_lines_strip(f3)
         f1s = ct.file_read_all_lines_strip(f1)
+        f4s = ct.file_read_all_lines_strip(f4)  # 结巴 标注好的分词
+        f6s = ct.file_read_all_lines_strip(f6)  # 期望.IDF文件
+        f5s = []
+        # 载入期望 5.9
+        f6s = f6s[1:]
+        d_f6s = dict()
+        for f6s_line in f6s:
+            key = str(f6s_line).split('\t')[0]
+            v = float((f6s_line).split('\t')[5])
+            d_f6s[key] = v
+        bkh.d_f6s = d_f6s
+        ##
+        ct.print_t('start')
         # 取第一个与正确答案做比较成功+1错误不加
-        acc_index = [1, 2, 3]
+        # acc_index = [ 3]
         total = len(f1s)
+        total2 = 0
         acc = dict()
         record = []
         for l_i in acc_index:
-            acc[str(l_i)]=0
+            acc[str(l_i)] = 0
 
         skip = 0
+        cgc = ct.generate_counter()
         for i in range(len(f1s)):
-
+            index = cgc()
+            if index % 10 == 0:
+                print(index / 10)
             if len(str(f1s[i]).split('\t')) < 3:
                 skip += 1
-                print(f1s[i])
+                # print(f1s[i])
                 continue
             if str(f1s[i]).__contains__('NULL'):
                 skip += 1
-                print(f1s[i])
+                # print(f1s[i])
                 continue
 
+            total2 += 1
+
+            f1s_i_e = str(f1s[i]).split('\t')[2]
+            f1s_i_e = ct.clean_str_zh2en(f1s_i_e)  # 符号转换
+            # ct.print_t('答案改写前:%s' % f1s_i_e)
+            f1s_i_e = f1s_i_e.lower()
+            f1s_i_e = baike_helper.entity_re_extract_one_repeat(f1s_i_e)  # 小写
+            # if (f1s_i_e.__contains__('《') and f1s_i_e.__contains__('》')) or \
+            #         (f1s_i_e.__contains__('(') and f1s_i_e.__contains__(')')):
+            #     f1s_i_e = baike_helper.entity_re_extract_one(f1s_i_e).lower()  # 小写
+            # if (f1s_i_e.__contains__('《') and f1s_i_e.__contains__('》')) or \
+            #         (f1s_i_e.__contains__('(') and f1s_i_e.__contains__(')')):
+            #     f1s_i_e = baike_helper.entity_re_extract_one(f1s_i_e).lower()  # 小写
+            # f1s_i_e2 = ct.clean_str_zh2en(f1s_i_e2) # 符号转换
+            f1s_i_e2 = f1s_i_e
+            # ct.print_t('答案改写后:%s' % f1s_i_e)
+            # if f1s_i_e == 'tcl':
+            #     print(555555)
+
+            filter_flags = ['ul', 'tg', 'an', 'vq', 'e', 'c', 'ag', 'u', 'mq', 'df', 'vd', 'ug', 'f']
+
             for l_i in acc_index:
-                list1 = str(f3s[i]).split('\t')[0:l_i]
-                if str(f1s[i]).split('\t')[2] in list1:
+                start_list = str(f3s[i]).split('\t')
+                if use_cx:
+                    # 增加词性
+                    f4s_line = str(f4s[i]).split('\t')
+                    d_f4s_line = dict()
+                    for f3s_line_word in f4s_line:
+                        # print(f3s_line_word)
+                        if len(f3s_line_word.split('___')) < 2:
+                            continue
+                        word_1 = f3s_line_word.split('___')[0]
+                        word_proterty = f3s_line_word.split('___')[1]
+                        # s f v a x u
+                        if word_proterty in filter_flags:
+                            d_f4s_line[word_1] = False
+                        else:
+                            d_f4s_line[word_1] = True
+                            #
+
+                # ct.print_t('候选去除前:%s' % start_list)
+                list1 = [x.lower() for x in start_list]  # 小写
+                # 去掉候选的书名号和括号
+                list1 = [baike_helper.entity_re_extract_one_repeat(ct.clean_str_zh2en(x)) for x in list1]
+                # 去重
+                # list1_new = []
+                # for _ in list1:
+                #     if _ not in list1_new and _ != '':
+                #         # 增加词性过滤
+                #         need_add = d_f4s_line.get(_, True)
+                #         if need_add:
+                #             list1_new.append(_)
+                if use_cx:
+                    list1_new = ct.list_no_repeat_cx(list1, d_f4s_line)
+                else:
+                    list1_new = ct.list_no_repeat(list1)
+                # 5.8.3 去掉词语包含试试 有一首歌叫	有一首歌	一首歌
+                # 不好使
+                # list1_new_2 = []
+                # for list1_new_word in list1_new:
+                #     if not ct.be_contains(list1_new_word,list1_new):
+                #         list1_new_2.append(list1_new_word)
+                # list1_new = list1_new_2
+
+                start_list = list1_new
+                if use_expect:
+                    min1 = min(len(start_list), 15)  # 最多排序6个
+                    start_list = start_list[0:min1]
+                    # 通过期望 重写排序 候选 5.9
+                    start_list = sorted(start_list, key=bkh.get_qiwang, reverse=True)
+
+                # ct.print_t('候选去除后:%s' % start_list)
+                list1 = start_list[0:l_i]
+                # list1 = [ct.clean_str_zh2en(x.lower()) for x in list1] # 小写
+
+
+                # 重写这里 将list1中的别名词一起扩进来
+                # ct.print_t('扩展前:%s'%list1)
+                # ori_list = []
+                # for list1_1 in list1:
+                #     ori_list.extend( bkh.find_entity_all(list1_1))# 找出来
+                # list1.extend( ori_list)
+                # list1 = list(set(list1))
+                # #
+                # ct.print_t('扩展后:%s' % list1)
+
+                exist = f1s_i_e in list1 or f1s_i_e2 in list1
+                if exist:
                     acc[str(l_i)] += 1
-            list1 = str(f3s[i]).split('\t')[0:3]
-            if str(f1s[i]).split('\t')[2] not in list1:
-                # 记录下来 分析一下
-                record.append("%s\t%s"%(f1s[i],f3s[i]))
+                elif l_i == 3 and not exist:
+                    if str(f1s[i]).split('\t')[0] in ['有一本叫《毛泽东》的书是怎样装订的'
+                        , '《兄弟》属于哪种小说', '《i》是什么音乐风格的？',
+                                                      '《因为我爱你》是怎样装帧的'
+                                                      ]:
+                        print(1200000)
+                elif l_i == 999:
+                    record.append("%s\t%s" % (f1s[i], f3s[i]))
+                    # list1 = str(f3s[i]).split('\t')[0:3]
+                    # exist = f1s_i_e in list1 or f1s_i_e2 in list1
+                    #     # 记录下来 分析一下
+                    # if not exist:
+                    #     record.append("%s\t%s" % (f1s[i], f3s[i]))
 
-        print("skip:%d"%skip)
+        print("skip:%d total:%d  toatal2:%d " % (skip, total, total2))
 
-        for k,v in acc.items():
-            print("%s %f"%(k,v/(total-skip)))
-
+        for k, v in acc.items():
+            print("前%s,total:%d   acc: %f,total - skip=%d  " % (k, v, v / (total - skip), total - skip))
+        print(len(record))
         with open(f2, mode='w', encoding='utf-8') as o1:
             for item in record:
                 o1.write(item + '\n')
 
+    # 一次性 合并
+    @staticmethod
+    def file_combine(f1='../data/nlpcc2016/ner_t1/extract_entitys2.txt',
+                     f2='../data/nlpcc2016/ner_t1/extract_entitys2_1gram.txt',
+                     f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt'):
+        l1s = ct.file_read_all_lines_strip(f1)
+        l2s = ct.file_read_all_lines_strip(f2)
 
+        with open(f3, mode='w', encoding='utf-8') as o1:
+            for i in range(len(l1s)):
+                msg = "%s\t%s\n" % (l1s[i], l2s[i])
+                o1.write(msg)
 
+    # 统计前3的词性
+    @staticmethod
+    def try_sta_jieba(f1='../data/nlpcc2016/ner_t1/extract_entitys_all.txt.jieba.txt',
+                      f2='../data/nlpcc2016/ner_t1/extract_entitys_all.txt.jieba.txt.tj_3.txt',
+                      f3='../data/nlpcc2016/ner_t1/q.rdf.txt',
+                      only_right=False):
+        f1s = ct.file_read_all_lines_strip(f1)
+        f3s = ct.file_read_all_lines_strip(f3)
+        d1 = dict()
+        i = -1
+        for f1s_line in f1s:
+            i += 1
+            f1s_line = str(f1s_line).split('\t')[1:5]
 
+            if len(str(f3s[i]).split('\t')) < 3:
+                print(f3s[i])
+                continue
 
+            right1 = str(f3s[i]).split('\t')[2]  # 先不做处理
+            right2 = baike_helper.entity_re_extract_one_repeat(right1.lower())  # 小写
+
+            ct.print_t("diff:%s \t %s" % (right1, right2))
+            if right1 == '王娟(全国劳动模范)':
+                print(32131)
+            for w in f1s_line:
+                cx = w.split('___')[1]
+                if only_right:
+                    # if right1.lower() != w.split('___')[0].lower():
+                    # 不在2个候选答案里面
+                    cand_e1 = w.split('___')[0].lower()
+                    cand_e2 = \
+                        baike_helper.entity_re_extract_one_repeat(ct.clean_str_zh2en(cand_e1))
+                    ct.print_t("diff2:%s \t %s" % (cand_e1, cand_e2))
+                    if cand_e1 == '王娟':
+                        print(543543)
+                    if cand_e2 not in [right1, right2]:
+                        continue
+
+                if cx in d1:
+                    d1[cx] += 1
+                else:
+                    d1[cx] = 1
+
+        list1 = ct.sort_dict(d1)
+        with open(f2, mode='w', encoding='utf-8') as o1:
+            for l in list1:
+                # msg = "%s\t%s" % (l[0], l[1])
+                msg = "%s\t" % (l[0])
+                o1.write(msg + '\n')
+        return d1
 
 
 def method_name():
@@ -1082,9 +1481,10 @@ def method_name():
 
 
 def n_gram_math_all(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt",
-                    f_out='../data/nlpcc2016/result/extract_entitys2.txt'):
+                    f_out='../data/nlpcc2016/result/extract_entitys2.txt',
+                    f3="../data/nlpcc2016/result/combine_e12.txt.statistics.txt"):
     bkh = baike_helper()
-    bkh.init_ner(f_in2="../data/nlpcc2016/result/combine_e12.txt.statistics.txt")
+    bkh.init_ner(f_in2=f3)
 
     index = 0
     result = []
@@ -1238,11 +1638,40 @@ def find_all_ps_2_6_3():
             ct.print_t(ps)
 
 
+def extract_not_use_cx():
+    global a
+    d1 = baike_test.try_sta_jieba(only_right=True)
+    d2 = baike_test.try_sta_jieba(only_right=False)
+    aa = []
+    for k1, v1 in d2.items():
+        if k1 not in d1:
+            aa.append(k1)
+    msg = ''
+    for a in aa:
+        msg += '\'%s\',' % a
+    print(msg)
+
+
 if __name__ == '__main__':
     # baike-test流程 3.0
     # baike_test.one_combine_all()
     # 3.1
-    # baike_test.try_test_acc_of_m1()
+
+    # a = '《兄弟》(小说)'
+    a = '《因为我爱你》(推理小说)'
+    b = baike_helper.entity_re_extract_one_repeat(a)
+
+    # print(b)
+    # c = baike_helper.entity_re_extract_one(b)
+    # print(c)
+
+    if True:
+        bkt = baike_test()
+        bkt.try_test_acc_of_m1(
+            f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',
+            #
+            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed-5.txt',
+            use_cx=False, use_expect=False, acc_index=[999])
 
     # baike_helper.e_r_combine()
     # method_name()
@@ -1312,7 +1741,7 @@ if __name__ == '__main__':
     # 2.6.3 通过关系确定o
     # 读取问题、候选实体，通过2.6.1找到原始实体，通过2.6.2找到对应的关系，输出所以可能的关系
 
-    find_all_ps_2_6_3()
+    # find_all_ps_2_6_3()
 
     # 2.7 统计
     # baike_helper.statistics_subject_extract()
@@ -1333,7 +1762,18 @@ if __name__ == '__main__':
     # baike_helper.load_vocab_cc()
 
 
+    # 合并 5.6.1
+    # bkt.file_combine()
+    # 重写生成一些N-GRAM 5.6.2
+    n_gram_math_all(f_in="../data/nlpcc2016/ner_t1/q.rdf.txt.failed-n-gram.txt",
+                        f_out='../data/nlpcc2016/ner_t1/extract_entitys-n-gram.txt',
+                        f3="../data/nlpcc2016/ner_t1/combine_e12.txt.statistics.txt")
 
-
+    # 5.9
+    # baike_test.try_idf()
+    # 5.8
+    # baike_test.try_jieba()
+    # 5.8.2
+    # extract_not_use_cx()
 
     ct.print_t("finsih ")
