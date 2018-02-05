@@ -1470,6 +1470,24 @@ class baike_test:
                 msg = "%s\t%s\n" % (l1s[i], l2s[i])
                 o1.write(msg)
 
+    # 1
+    # 一次性 替换带空格的分词进不带的
+    @staticmethod
+    def file_combine_space(f1='../data/nlpcc2016/ner_t1/extract_entitys_v3.txt', # 原始
+                     f2='../data/nlpcc2016/ner_t1/extract_entitys_v3-1.txt',  # 新
+                     f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt'):
+        l1s = ct.file_read_all_lines_strip(f1)
+        l2s = ct.file_read_all_lines_strip(f2)
+
+        with open(f3, mode='w', encoding='utf-8') as o1:
+            for i in range(len(l1s)):
+                if str(l2s[i]).__contains__('#THE_SAME#'):
+                    msg = "%s\n" % (l1s[i])
+                else:
+                    msg = "%s\n" % (l2s[i])
+                o1.write(msg)
+
+
     # 统计前3的词性
     @staticmethod
     def try_sta_jieba(f1='../data/nlpcc2016/ner_t1/extract_entitys_all.txt.jieba.txt',
@@ -1733,12 +1751,11 @@ if __name__ == '__main__':
     # c = baike_helper.entity_re_extract_one(b)
     # print(c)
 
-
-    if False:
+    if True:
         bkt.try_test_acc_of_m1(
-            f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',
-            #
-            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed-5.txt',
+            f3='../data/nlpcc2016/ner_t1/extract_entitys_v3.txt',
+            # extract_entitys_v3                extract_entitys_all
+            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed_v3-1.txt',
             use_cx=False, use_expect=False, acc_index=[999])
 
     # baike_helper.e_r_combine()
@@ -1838,6 +1855,9 @@ if __name__ == '__main__':
     # 合并 5.6.1
     # bkt.file_combine()
     # 重写生成一些N-GRAM 5.6.2
+    # 5.6.3 合并space的
+    bkt.file_combine_space()
+
     # N元分词全部
     if False:
         n_gram_math_all(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt",
