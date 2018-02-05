@@ -592,6 +592,11 @@ class ct:
         return str(string).strip().strip('\n').strip('\r')
 
     @staticmethod
+    def clean_str_entity(string):
+        return str(string).strip().strip('\n').strip('\r').replace(' ', '').upper()
+
+
+    @staticmethod
     def clean_str_rel(string):
         return str(string).strip().strip('\n').strip('\r').replace(' ', '') \
             .replace(" ", "").replace("•", "").replace("-", "") \

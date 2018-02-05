@@ -28,3 +28,38 @@
         tmp = result[index]
         tmp = sorted(tmp, key=bkh.get_total)
         result[index] = tmp
+
+
+
+
+
+
+    # def __init__(self):
+    #     # jieba.set_dictionary('../data/jieba_dict/dict.txt.big')
+    #     # self.stopwordset = set()
+    #     # with open('../data/jieba_dict/stopwords.txt', 'r', encoding='utf-8') as sw:
+    #     #     for line in sw:
+    #     #         self.stopwordset.add(line.strip('\n'))
+    #     print(1)
+
+    #
+    # 输入文本，输出分词后的文本
+    # type = rdf | questions
+    # def convert_text_to_seg(self, file_in, file_out, type="rdf"):
+    #     with open(file_out, 'w', encoding='utf-8') as f_out:
+    #         with open(file_in, 'r', encoding='utf-8') as f_in:
+    #             for line in f_in:
+    #                 if type == "rdf":
+    #                     # 增加操作
+    #                     print(124444)
+    #                 if type == "questions":
+    #                     line = line.split('\t')[0]
+    #                 line = line.strip('\n')
+    #                 words = jieba.cut(line, cut_all=False)
+    #
+    #                 words_out = []
+    #                 for word in words:
+    #                     if word not in self.stopwordset:
+    #                         words_out.append(word)
+    #                 f_out.write(' '.join(words_out) + '\n')
+    #     print(321321)

@@ -96,7 +96,8 @@ class DataClass:
         lines = [str(x).replace("\n", "").replace("\r", "") for x in lines]
         return lines
 
-    def __init__(self, mode="debug"):
+    # run | init
+    def __init__(self, mode="debug", run_type="run"):
         """
         mode = debug(1行数据调试);test(测试模式);small();
 
@@ -131,6 +132,12 @@ class DataClass:
             self.init_fb(config.par('sq_fb_path'))
             ct.print("init_fb finish.")
         elif mode == "cc":
+
+            need_load_kb = True
+            if need_load_kb:
+                self.bh = baike_helper()
+                self.bh.init_spo(f_in=config.par('cc_kb_path_full'))
+
             self.init_cc_questions(config.par('cc_q_path'))
             ct.print("init_simple_questions finish.")
             # self.init_fb (config.par('cc_kb_path'))
@@ -141,14 +148,13 @@ class DataClass:
 
             # if self.mode == "cc":
             # 加载所有的
-            need_load_kb = True
-            if need_load_kb:
-                self.bh = baike_helper()
-                self.bh.init_spo(f_in=config.par('cc_kb_path_full'))
-                #  加载知识库
+
+            #  加载知识库
             # 加载已经
             # self.converter = TextConverter()
             self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'), type="zh-cn")
+            if run_type == 'init':  # 初始化
+                return
             self.load_all_q_r_tuple(config.get_static_q_num_debug(), config.get_static_num_debug(), is_record=True)
             self.get_max_length()
             self.q_r_2_arrary_and_padding()
@@ -176,7 +182,7 @@ class DataClass:
         ct.print("load embedding ok!")
 
         self.build_all_q_r_tuple(config.get_static_q_num_debug(),
-                                  config.get_static_num_debug(), is_record=False)
+                                 config.get_static_num_debug(), is_record=False)
 
         # self.load_all_q_r_tuple(config.get_static_q_num_debug(),
         #                         config.get_static_num_debug(), is_record=False)
@@ -230,7 +236,7 @@ class DataClass:
         # mean_of_quesitons = np.mean([len(x.split(" ")) for x in self.question_list])
         # ct.print(mean_of_quesitons)
         self.max_document_length = max(max_document_length1, max_document_length2)
-        ct.print(self.max_document_length, "debug")
+        ct.print("q:%s r:%s"%(max_document_length1,max_document_length2), "debug")
 
     def build_vocab(self):
         # 建造词汇表
@@ -309,6 +315,7 @@ class DataClass:
                     if len(line_seg) < 5 or line.__contains__('$'):  # todo:rewrite input file,重写输入文件
                         ct.print("bad:" + line, "bad")
                         continue
+                    answer = line_seg[1]
                     entity1 = line_seg[2]
                     relation1 = line_seg[3]
                     entity2 = line_seg[4]
@@ -319,11 +326,22 @@ class DataClass:
                     self.relation_list.append(relation1)
                     self.entity2_list.append(entity2)
                     self.question_list.append(question)
-                    self.relation_path_clear_str_all.append([relation1])
+                    # todo:111
+                    # 针对CC的排除关系 ，需要遍历找出其他的属性
+                    rs1 = [relation1]
+                    vs = self.bh.kbqa.get(entity1, '')
+                    if vs != '':
+                        for k, v in vs:
+                            if v == answer:
+
+                                rs1.append(k)
+
+                    self.relation_path_clear_str_all.append(rs1)
                     # self.rdf_list.append([entity1, relation1, entity2])
                     # check it
                     # line_list.append(line)
             except Exception as e:
+                print(e)
                 ct.print("index = ", idx)
                 logging.error("error ", e)
         ct.print("entity1_list:%d " % len(self.entity1_list))
@@ -998,6 +1016,7 @@ class DataClass:
             name = self.entity1_list[index]
             question = self.question_list[index]
             ps_to_except1 = self.relation_path_clear_str_all[index]
+            # 待排除的属性可能需要加多
             if self.mode == "wq":
                 r_all_neg = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
             elif self.mode == "sq":
@@ -1011,7 +1030,7 @@ class DataClass:
             tmp_error_relation_num = min(len(r_all_neg), error_relation_num)
             r_all_neg = r_all_neg[0:tmp_error_relation_num]
             if len(r_all_neg) == 0:
-                # print("index = %d  , 0 ",index)
+                print("index = %d 0:%s ", index, question)
                 ct.just_log("%s/q_neg_r_tuple_0_error_r.txt" % config.par('sq_fb_path')
                             , "%s\t%s" % (name, index))
             # print(len(r_all_neg))
@@ -1256,10 +1275,10 @@ def test_sq():
     print(0000000000)
 
 
+# 初始化
 def test_cc():
     dh = DataClass("cc")
-    # dh.build_all_q_r_tuple(config.get_static_q_num_debug(),
-    #                       config.get_static_num_debug(), is_record=True)
+
     # dh.batch_iter_wq_debug()
 
     my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
@@ -1270,10 +1289,20 @@ def test_cc():
         break
 
 
+def init_cc():
+    dh = DataClass(mode="cc", run_type='init')
+    # 只需要构建一次
+    dh.build_all_q_r_tuple(config.get_static_q_num_debug(),
+                           config.get_static_num_debug(), is_record=True)
+
+
 if __name__ == "__main__":
+    # CC 部分的测试-和构建代码
+    # init_cc()
+
     # test_random_choose_indexs_debug()
-    test_random_choose_indexs_debug()
-    # test_cc()
+    # test_random_choose_indexs_debug()
+    test_cc()
 
     # 测试生成
 
