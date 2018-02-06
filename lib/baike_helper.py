@@ -1048,8 +1048,13 @@ class baike_helper:
 
     # 排序算法
     def get_total(self, word):
-        v1 = dict(self.d1).get(word, 0)
-        v1 = v1 * 100 - len(word)  # 相同个数看文字长度
+        gt1 = dict(bkh.d2_get_total).get(word, -1)
+        if gt1 == -1:
+            v1 = dict(self.d1).get(word, 0)
+            v1 = v1 * 100 - len(word)  # 相同个数看文字长度
+            bkh.d2_get_total[word]=v1
+        else:
+            v1 = gt1
         return v1
 
     def get_qiwang(self, word):
@@ -1432,12 +1437,14 @@ class baike_test:
                 elif l_i == 3 and not exist:
                     if str(f1s[i]).split('\t')[0] in ['有一本叫《毛泽东》的书是怎样装订的'
                         , '《兄弟》属于哪种小说', '《i》是什么音乐风格的？',
-                                                      '《因为我爱你》是怎样装帧的'
+                                                      '《因为我爱你》是怎样装帧的',
+                                                    '你知道创亿bx-3的适用机型是什么系列吗？'
                                                       ]:
                         print(1200000)
                 elif l_i == 999:
                     if str(f1s[i]).split('\t')[0] in [
-                        '请问荣耀xl是什么时候曝光的？'
+                        '请问荣耀xl是什么时候曝光的？',
+                                                    '你知道创亿bx-3的适用机型是什么系列吗？'
                     ]:
                         print(333333333333)
 
@@ -1473,9 +1480,9 @@ class baike_test:
     # 1
     # 一次性 替换带空格的分词进不带的
     @staticmethod
-    def file_combine_space(f1='../data/nlpcc2016/ner_t1/extract_entitys_v3.txt', # 原始
-                     f2='../data/nlpcc2016/ner_t1/extract_entitys_v3-1.txt',  # 新
-                     f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt'):
+    def file_combine_space(f1='../data/nlpcc2016/ner_t1/extract_entitys_v3.txt',  # 原始
+                           f2='../data/nlpcc2016/ner_t1/extract_entitys_v3-1.txt',  # 新
+                           f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt'):
         l1s = ct.file_read_all_lines_strip(f1)
         l2s = ct.file_read_all_lines_strip(f2)
 
@@ -1489,25 +1496,30 @@ class baike_test:
 
     # file_tj
     @staticmethod
-    def file_tj(f1='../data/nlpcc2016/ner_t1/extract_entitys_all.txt', # 原始
-                f_out='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt' ):
+    def file_tj(f1='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',  # 原始
+                f_out='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt'):
         result = ct.file_read_all_lines_strip(f1)
         # l2s = ct.file_read_all_lines_strip(f2)
 
         # 将统计出现的次数，按出现次数少的排在前面
         d1 = dict()
         for words_list in result:
-            for word in words_list:
+            for word in str(words_list).split('\t'):
                 if word in d1:
                     d1[word] += 1
                 else:
                     d1[word] = 1
         # result = [x= sorted(x,key=get_total(x))  for x  in  result]
         bkh.d1 = d1
+        bkh.d2_get_total = dict()
+
         for index in range(len(result)):
-            tmp = result[index]
+            if index % 100 == 0:
+                print("%d /  %d" % (index / 100, len(result) / 100))
+            tmp = str(result[index]).split('\t')
             tmp = sorted(tmp, key=bkh.get_total)
             result[index] = tmp
+            print(tmp)
 
         with open(f_out, mode='w', encoding='utf-8') as o1:
             for words_list in result:
@@ -1579,7 +1591,8 @@ def seg_m():
 
 def n_gram_math_all(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt",
                     f_out='../data/nlpcc2016/result/extract_entitys2.txt',
-                    f3="../data/nlpcc2016/result/combine_e12.txt.statistics.txt"):
+                    f3="../data/nlpcc2016/result/combine_e12.txt.statistics.txt",
+                    skip_no_space=False):
     bkh = baike_helper()
     bkh.init_ner(f_in2=f3)
 
@@ -1591,12 +1604,13 @@ def n_gram_math_all(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.test
             # if index > 10:
             #     break
             print(index)
-            s2 = line.replace("\r", "").replace("\n", "").split("\t")[0]
             s = line.replace("\r", "").replace("\n", "").replace(' ', '').split("\t")[0]
-            if s == s2:
-                ss = ['#THE_SAME#']
-                result.append(ss)
-                continue
+            if skip_no_space:
+                s2 = line.replace("\r", "").replace("\n", "").split("\t")[0]
+                if s == s2:
+                    ss = ['#THE_SAME#']
+                    result.append(ss)
+                    continue
 
             ss = bkh.ner(s)
             if len(ss) > 0:
@@ -1787,11 +1801,13 @@ if __name__ == '__main__':
     # c = baike_helper.entity_re_extract_one(b)
     # print(c)
 
-    if True:
+    if False:
+        # extract_entitys_all_tj.txt
         bkt.try_test_acc_of_m1(
-            f3='../data/nlpcc2016/ner_t1/extract_entitys_v3.txt',
+            f1='../data/nlpcc2016/ner_t1/q.rdf.txt',
+            f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',
             # extract_entitys_v3                extract_entitys_all
-            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed_v3-1.txt',
+            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed_1.txt',
             use_cx=False, use_expect=False, acc_index=[999])
 
     # baike_helper.e_r_combine()
@@ -1866,14 +1882,10 @@ if __name__ == '__main__':
 
     # 2.6.3 通过关系确定o
     # 读取问题、候选实体，通过2.6.1找到原始实体，通过2.6.2找到对应的关系，输出所以可能的关系
-
     # find_all_ps_2_6_3()
 
     # 2.7 统计
     # baike_helper.statistics_subject_extract()
-
-
-
 
     # a = baike_helper()
     # a.record_p_pos()
@@ -1892,9 +1904,16 @@ if __name__ == '__main__':
     # bkt.file_combine()
     # 重写生成一些N-GRAM 5.6.2
     # 5.6.3 合并space的
-    bkt.file_combine_space()
+    # bkt.file_combine_space(f1='../data/nlpcc2016/ner_t1/extract_entitys_v3.txt', # 原始
+    #                  f2='../data/nlpcc2016/n_gram/extract_entitys_v3.txt',  # 新
+    #                  f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt')
     # 5.6.4 统计完重写输出
-    bkt.file_tj()
+    # bkt.file_tj(f1='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',  # 原始
+    #             f_out='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt')
+
+    # 区分训练集和测试集
+
+
 
     # N元分词全部
     if False:
@@ -1902,10 +1921,12 @@ if __name__ == '__main__':
                         f_out='../data/nlpcc2016/n_gram/extract_entitys_v3.txt',
                         f3="../data/nlpcc2016/n_gram/e_12.txt.tj_sort.txt")
     # 测试不能匹配的
-    if False:
-        n_gram_math_all(f_in="../data/nlpcc2016/ner_t1/q.rdf.txt.failed-n-gram.txt",
-                        f_out='../data/nlpcc2016/ner_t1/extract_entitys-n-gram.txt',
-                        f3="../data/nlpcc2016/n_gram/e_12.txt.tj_sort.txt")
+    if True:
+        n_gram_math_all(f_in="../data/nlpcc2016/ner_t1/n-gram-test/q.rdf.txt.failed_1_999.txt",
+                        f_out='../data/nlpcc2016/ner_t1/n-gram-test/extract_entitys-n-gram.txt',
+                        f3="../data/nlpcc2016/n_gram/e_12.txt.tj_sort.txt",skip_no_space=False)
+    # 测试单行
+
 
     # 5.9
     # baike_test.try_idf()
