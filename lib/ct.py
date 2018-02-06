@@ -685,6 +685,14 @@ class ct:
     def just_log2(file_name, msg):
         time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
         file_name = log_path + "/" + file_name + time_str + ".txt"
+        f1_writer = codecs.open(file_name+'_bak.txt', mode="a", encoding="utf-8")
+        f1_writer.write(msg + "\n")
+        f1_writer.close()
+
+    @staticmethod
+    def just_log4(file_name, msg):
+        time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
+        file_name = log_path + "/" + file_name + time_str + ".txt"
         f1_writer = codecs.open(file_name, mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
@@ -780,18 +788,12 @@ class ct:
     # 自定义打印什么级别的
     @staticmethod
     def print(msg="", m="none"):
-        #
-        # ms = ["train", "test"
-        #     , "debug"
-        #     # , "none"
-        #     , "show_shape"
-        #       # , "data"
-        #       # , "debug_epoches"
-        #       ]
+
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         ms = config.get_print_type()
         if m in ms:
             print("%s : %s" % (timestamp, msg))
+        ct.just_log4(m, "%s : %s" % (timestamp, msg))
 
     @staticmethod
     def print_t():

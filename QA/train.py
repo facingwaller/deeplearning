@@ -85,7 +85,7 @@ def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_
             os._exit(0)
     else:
         dh.loss_ok = 0
-    #ct.prin(1)
+    # ct.prin(1)
     if (trainstep + 1) % FLAGS.check == 0:
         checkpoint(sess)
 
@@ -96,7 +96,7 @@ def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_
 # test_q,问题
 # test_r,关系
 # labels,标签,
-def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh,model):
+def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model):
     start_time = time.time()
     feed_dict = {
         lstm.test_input_q: test_q,
@@ -104,11 +104,11 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     }
     for _ in test_q:
         v_s_1 = dh.converter.arr_to_text_by_space(_)
-        valid_msg = model+" test_q 1:" + v_s_1
+        valid_msg = model + " test_q 1:" + v_s_1
         ct.just_log2("valid_step", valid_msg)
     for _ in test_r:
         v_s_1 = dh.converter.arr_to_text_by_space(_)
-        valid_msg = model+" test_r 1:" + v_s_1
+        valid_msg = model + " test_r 1:" + v_s_1
         ct.just_log2("valid_step", valid_msg)
 
     error_test_q = []
@@ -218,12 +218,12 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
     error_test_neg_r_list = []
     for i in range(batchsize):
         index = id_list[i]
-        ct.print("valid_batch_debug: %d ,%d" % (i, index))
+        ct.print(" valid_batch_debug:%s %d ,%d" % (model,i, index))
         test_q, test_r, labels = \
             dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index)
 
         ok, error_test_q, error_test_pos_r, error_test_neg_r = valid_step(sess, lstm, step, train_op, test_q, test_r,
-                                                                          labels, merged, writer, dh,model)
+                                                                          labels, merged, writer, dh, model)
         error_test_q_list.extend(error_test_q)
         error_test_pos_r_list.extend(error_test_pos_r)
         error_test_neg_r_list.extend(error_test_neg_r)
@@ -250,7 +250,11 @@ def checkpoint(sess):
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
-    saver.save(sess, os.path.join(out_dir, "model.ckpt"), 1)
+    save_path = saver.save(sess, os.path.join(out_dir, "model.ckpt"), 1)
+    # load_path = saver.restore(sess, save_path)
+    # 保存完加载一次试试看
+    msg1 = "save_path:%s" % save_path
+    ct.just_log2('model', msg1)
 
 
 # 主流程

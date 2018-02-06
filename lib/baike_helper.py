@@ -1052,7 +1052,7 @@ class baike_helper:
         if gt1 == -1:
             v1 = dict(self.d1).get(word, 0)
             v1 = v1 * 100 - len(word)  # 相同个数看文字长度
-            bkh.d2_get_total[word]=v1
+            bkh.d2_get_total[word] = v1
         else:
             v1 = gt1
         return v1
@@ -1295,7 +1295,10 @@ class baike_test:
                            reweiter=False,
                            use_cx=False,
                            use_expect=False,
-                           acc_index=[1, 2, 3]):
+                           acc_index=[1, 2, 3],
+                           get_math_subject=False,
+                           f7='../data/nlpcc2016/ner_t1/q.rdf.txt.math_s.txt'
+                           ):
         # f1   # 输入文件
         # 《机械设计基础》	机械设计基础	设计基础	机械设计	机械	基础	这本书	作者	本书	设计	谁？	是谁
         # f2 = f1 + '.failed.txt'  # 输出文件
@@ -1311,6 +1314,8 @@ class baike_test:
         f4s = ct.file_read_all_lines_strip(f4)  # 结巴 标注好的分词
         f6s = ct.file_read_all_lines_strip(f6)  # 期望.IDF文件
         f5s = []
+        f7s = []
+
         # 载入期望 5.9
         f6s = f6s[1:]
         d_f6s = dict()
@@ -1330,6 +1335,8 @@ class baike_test:
         for l_i in acc_index:
             acc[str(l_i)] = 0
 
+        total_f1s_i_e1 = 0  # 统计下 是命中实体1还是实体2
+        total_f1s_i_e2 = 0
         skip = 0
         cgc = ct.generate_counter()
         for i in range(len(f1s)):
@@ -1347,7 +1354,8 @@ class baike_test:
 
             total2 += 1
 
-            f1s_i_e = str(f1s[i]).split('\t')[2]
+            f1s_i_e = str(f1s[i]).split('\t')[2]  # 答案中的实体
+            f1s_i_e1 = f1s_i_e
             f1s_i_e = ct.clean_str_zh2en(f1s_i_e)  # 符号转换
             # ct.print_t('答案改写前:%s' % f1s_i_e)
             f1s_i_e = f1s_i_e.lower().replace(' ', '')
@@ -1387,6 +1395,7 @@ class baike_test:
 
                 # ct.print_t('候选去除前:%s' % start_list)
                 list1 = [x.lower().replace(' ', '') for x in start_list]  # 小写
+
                 # 去掉候选的书名号和括号
                 list1 = [baike_helper.entity_re_extract_one_repeat(ct.clean_str_zh2en(x)) for x in list1]
                 # 去重
@@ -1415,11 +1424,10 @@ class baike_test:
                     start_list = start_list[0:min1]
                     # 通过期望 重写排序 候选 5.9
                     start_list = sorted(start_list, key=bkh.get_qiwang, reverse=True)
-
                 # ct.print_t('候选去除后:%s' % start_list)
+
                 list1 = start_list[0:l_i]
                 # list1 = [ct.clean_str_zh2en(x.lower()) for x in list1] # 小写
-
 
                 # 重写这里 将list1中的别名词一起扩进来
                 # ct.print_t('扩展前:%s'%list1)
@@ -1431,23 +1439,43 @@ class baike_test:
                 # #
                 # ct.print_t('扩展后:%s' % list1)
 
-                exist = f1s_i_e in list1 or f1s_i_e2 in list1
+                exist = f1s_i_e2 in list1
                 if exist:
                     acc[str(l_i)] += 1
+                    # F6.1.1 找到对应的index
+                    if get_math_subject:
+                        list1_index = -1
+                        list1_find = False
+                        # 重新处理一次list1
+                        f3s_i_list = str(f3s[i]).split('\t')
+                        #
+                        for list1_item in f3s_i_list:
+                            list1_index +=1
+                            list1_item_bak = list1_item
+                            list1_item = baike_helper.entity_re_extract_one_repeat(ct.clean_str_zh2en(list1_item.lower().replace(' ','')))
+                            if list1_item == f1s_i_e2:
+                                list1_find =True
+                                break
+                        if list1_find:
+                            f7s.append(list1_item_bak)
+                        else:
+                            f7s.append('NULL')
                 elif l_i == 3 and not exist:
                     if str(f1s[i]).split('\t')[0] in ['有一本叫《毛泽东》的书是怎样装订的'
                         , '《兄弟》属于哪种小说', '《i》是什么音乐风格的？',
                                                       '《因为我爱你》是怎样装帧的',
-                                                    '你知道创亿bx-3的适用机型是什么系列吗？'
+                                                      '你知道创亿bx-3的适用机型是什么系列吗？'
                                                       ]:
                         print(1200000)
+
                 elif l_i == 999:
                     if str(f1s[i]).split('\t')[0] in [
                         '请问荣耀xl是什么时候曝光的？',
-                                                    '你知道创亿bx-3的适用机型是什么系列吗？'
+                        '你知道创亿bx-3的适用机型是什么系列吗？'
                     ]:
                         print(333333333333)
 
+                if not exist:
                     record.append("%s\t%s" % (f1s[i], f3s[i]))
                     # list1 = str(f3s[i]).split('\t')[0:3]
                     # exist = f1s_i_e in list1 or f1s_i_e2 in list1
@@ -1455,14 +1483,21 @@ class baike_test:
                     # if not exist:
                     #     record.append("%s\t%s" % (f1s[i], f3s[i]))
 
-        print("skip:%d total:%d  toatal2:%d " % (skip, total, total2))
+        print("skip:%d total:%d  toatal2:%d ;total_f1s_i_e1 %d; total_f1s_i_e2 %d ;" % (
+        skip, total, total2, total_f1s_i_e1, total_f1s_i_e2))
 
         for k, v in acc.items():
             print("前%s,get:%d   acc: %f,total - skip=%d  " % (k, v, v / (total - skip), total - skip))
         print(len(record))
+        # 记录出错的
         with open(f2, mode='w', encoding='utf-8') as o1:
             for item in record:
                 o1.write(item + '\n')
+        if get_math_subject:
+            with open(f7, mode='w', encoding='utf-8') as o1:
+                for item in f7s:
+                    o1.write(item + '\n')
+
 
     # 一次性 合并
     @staticmethod
@@ -1801,14 +1836,16 @@ if __name__ == '__main__':
     # c = baike_helper.entity_re_extract_one(b)
     # print(c)
 
-    if False:
+    if True:
         # extract_entitys_all_tj.txt
         bkt.try_test_acc_of_m1(
             f1='../data/nlpcc2016/ner_t1/q.rdf.txt',
             f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',
             # extract_entitys_v3                extract_entitys_all
             f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed_1.txt',
-            use_cx=False, use_expect=False, acc_index=[999])
+            use_cx=False, use_expect=False, acc_index=[999],
+            get_math_subject=True,
+            f7='../data/nlpcc2016/ner_t1/q.rdf.txt.math_s.txt')
 
     # baike_helper.e_r_combine()
     # method_name()
@@ -1921,10 +1958,10 @@ if __name__ == '__main__':
                         f_out='../data/nlpcc2016/n_gram/extract_entitys_v3.txt',
                         f3="../data/nlpcc2016/n_gram/e_12.txt.tj_sort.txt")
     # 测试不能匹配的
-    if True:
+    if False:
         n_gram_math_all(f_in="../data/nlpcc2016/ner_t1/n-gram-test/q.rdf.txt.failed_1_999.txt",
                         f_out='../data/nlpcc2016/ner_t1/n-gram-test/extract_entitys-n-gram.txt',
-                        f3="../data/nlpcc2016/n_gram/e_12.txt.tj_sort.txt",skip_no_space=False)
+                        f3="../data/nlpcc2016/n_gram/e_12.txt.tj_sort.txt", skip_no_space=False)
     # 测试单行
 
 
