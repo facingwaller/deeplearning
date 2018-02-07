@@ -2053,7 +2053,7 @@ if __name__ == '__main__':
     # extract_not_use_cx()
 
     # 6.1.1.2
-    bkh.rewrite_rdf()
+    # bkh.rewrite_rdf()
 
 
     ct.print_t("finsih ")

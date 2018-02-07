@@ -43,7 +43,7 @@ class TextConverter(object):
             return len(self.vocab)
 
     def int_to_word(self, index):
-        if index == len(self.vocab):
+        if index >= len(self.vocab):
             return '<unk>'
         elif index < len(self.vocab):
             return self.int_to_word_table[index]

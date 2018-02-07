@@ -360,7 +360,7 @@ class DataClass:
                         continue
                     answer = line_seg[1]
                     entity1 = line_seg[2]
-                    relation1 = line_seg[3]
+                    relation1 = ct.clean_str_rel(line_seg[3].lower()) # 清洗关系
                     entity2 = line_seg[4]
                     entity_ner = line_seg[5].replace('\n','').replace('\r','')
                     # todo: if char can't convert ,filter them,如果需要转换不了，到时候在这里直接过滤
@@ -1387,8 +1387,8 @@ def test_cc():
             dh.batch_iter_wq_test_one_debug(question_list_index,
                                             relation_list_index,
                                             model, index)
-        if i == 2:
-            break
+        # if i == 2:
+        #     break
 
 
 def init_cc():
