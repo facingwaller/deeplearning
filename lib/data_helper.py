@@ -108,6 +108,7 @@ class DataClass:
         self.relation_list = []
         self.entity2_list = []
         self.question_list = []
+        self.entity_ner_list = []
 
         self.rdf_list = []
         self.mode = mode
@@ -205,12 +206,12 @@ class DataClass:
     def division_data(self, rate=0.8):
         ct.print("division_data start!", 'debug')
         # 在此对问题做一下设置，总问题数
-        # assert (len(self.question_list_index) == len(self.relation_list_index))
-        # max_q = config.get_total_questions()
-        # max_q = min(max_q, len(self.question_list_index))
-        # self.question_list_index = self.question_list_index[0:max_q]
-        # self.relation_list_index = self.relation_list_index[0:max_q]
-        # ct.print("division top %d for train and test "%max_q,'debug')
+        assert (len(self.question_list_index) == len(self.relation_list_index))
+        max_q = config.get_total_questions()
+        max_q = min(max_q, len(self.question_list_index))
+        self.question_list_index = self.question_list_index[0:max_q]
+        self.relation_list_index = self.relation_list_index[0:max_q]
+        ct.print("division top %d for train and test " % max_q, 'debug')
 
         self.train_question_list_index, self.test_question_list_index = \
             self.cap_nums(self.question_list_index, rate)
@@ -223,13 +224,43 @@ class DataClass:
         self.q_neg_r_tuple_train = []  # train
         self.q_neg_r_tuple_test = []  # test
 
+        self.padding = 0  # 训练集和测试集合之间问题index的偏移量
+        train_q_l = len(self.train_question_list_index)
+        test_q_l = len(self.test_question_list_index)
         for qr_tuple in self.q_neg_r_tuple:
-            if qr_tuple[0] < len(self.train_question_list_index):
-                self.q_neg_r_tuple_train.append(qr_tuple)
-            else:
+            if qr_tuple[0] < train_q_l:
+                self.q_neg_r_tuple_train.append(qr_tuple)  # 问题是 (0- train_q_l)
+            elif qr_tuple[0] < train_q_l + test_q_l:
+                if self.padding == 0:
+                    self.padding = qr_tuple[0]
+                # 测试问题是 [train_q_l,train_q_l + test_q_l]
                 self.q_neg_r_tuple_test.append(qr_tuple)
 
-        ct.print("division_data finish!",'debug')
+        ct.print(
+            "division_data finish! train:%d test:%d" %
+            (len(self.q_neg_r_tuple_train), len(self.q_neg_r_tuple_test)),
+            'debug')
+
+        # 记录问题集合和测试集合 输出问句
+        r_train = set()
+        r_test = set()
+        ct.print('train', 'train_test_q')
+        for l in range(len(self.train_question_list_index)):
+            ct.print("\t%s\t%s\t%s"%(self.entity1_list[l],self.relation_list[l],self.question_list[l]),'train_test_q')
+            r_train.add(self.relation_list[l])
+        ct.print('test', 'train_test_q')
+        for l in range(len(self.test_question_list_index)):
+            global_index = l +self.padding
+            ct.print("\t%s\t%s\t%s" % (self.entity1_list[global_index], self.relation_list[global_index],
+                                           self.question_list[global_index]),'train_test_q')
+            r_test.add(self.relation_list[global_index])
+        ct.print('test not in train', 'train_test_q')
+        # 看看哪些关系是训练有，测试没有的
+        r3 = (r_train | r_test) - r_train
+        for r in r3:
+            ct.print(r,'train_test_q')
+        print(11111)
+
 
     def get_max_length(self):
         if self.mode == "cc":
@@ -318,26 +349,35 @@ class DataClass:
         idx = 0
         # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
         # 机械设计基础         作者          杨可桢，程光蕴，李仲生
-        # 问题0 答案1 实体s-2 关系p-3 属性值o-4
+        # 问题0 答案1 实体s-2 关系p-3 属性值o-4    匹配到的实体s-5
         with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
             try:
                 for line in read_file.readlines():
                     idx += 1
                     line_seg = line.split('\t')
-                    if len(line_seg) < 5 or line.__contains__('$'):  # todo:rewrite input file,重写输入文件
+                    if len(line_seg) < 6 or line.__contains__('NULL'):  # todo:rewrite input file,重写输入文件
                         ct.print("bad:" + line, "bad")
                         continue
                     answer = line_seg[1]
                     entity1 = line_seg[2]
                     relation1 = line_seg[3]
                     entity2 = line_seg[4]
+                    entity_ner = line_seg[5].replace('\n','').replace('\r','')
                     # todo: if char can't convert ,filter them,如果需要转换不了，到时候在这里直接过滤
+                    # 6.1.1.3 3 在载入问题的时候用♠替换掉实体
                     question = line_seg[0]
+                    question = question.replace(' ','').lower()
+                    if not question.__contains__(entity_ner):
+                        ct.print(question,'entity_ner')
+                    question = question.replace(entity_ner,'♠')
 
                     self.entity1_list.append(entity1)
                     self.relation_list.append(relation1)
                     self.entity2_list.append(entity2)
-                    self.question_list.append(question)
+
+                    self.question_list.append(question) # 将问题替换掉
+                    self.entity_ner_list.append(entity_ner)
+
                     # todo:111
                     # 针对CC的排除关系 ，需要遍历找出其他的属性
                     rs1 = [relation1]
@@ -574,8 +614,8 @@ class DataClass:
         total = len(self.q_neg_r_tuple_train)
         shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
 
-        info1 = "q total:%d ; epohches-size:%s "%(total,len(self.q_neg_r_tuple_train)/batch_size)
-        ct.print(info1,'info')
+        info1 = "q total:%d ; epohches-size:%s " % (total, len(self.q_neg_r_tuple_train) / batch_size)
+        ct.print(info1, 'info')
 
         for list_index in range(total):
             # 获取q_neg_r_tuple里面打乱的下标的对应的 q_r 对
@@ -597,7 +637,7 @@ class DataClass:
             # log
             info1 = "q=%d ,r-pos=%d,r-neg=%d q=%s e=%s  " % (
                 index, index, list_index,
-                self.converter.arr_to_text_by_space(x[index]).replace('<unk>','').replace(' ',''),
+                self.converter.arr_to_text_by_space(x[index]).replace('<unk>', '').replace(' ', ''),
                 self.entity1_list[index])
             ct.print(info1[0:30], "debug")
             ct.just_log2("info", info1)
@@ -861,7 +901,7 @@ class DataClass:
 
         # log
         ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
-        msg = "%s id=%s " % (model,index)
+        msg = "%s id=%s " % (model, index)
         ct.print(msg)
         ct.log3(msg)
         ct.just_log2("info", msg)
@@ -869,7 +909,8 @@ class DataClass:
         if model == "valid":
             global_index = index
         elif model == "test":
-            global_index = index + len(self.train_question_list_index) + 1
+            global_index = index + self.padding
+            # index=global_index
         else:
             raise Exception("MODEL 参数出错")
 
@@ -1040,7 +1081,6 @@ class DataClass:
             with open(p1, mode='w', encoding='utf-8') as o1:
                 o1.write('')
 
-
         questions_len_train = min(questions_len_train, len(self.entity1_list))
         for index in range(questions_len_train):
             if index % 1000 == 0:
@@ -1150,7 +1190,7 @@ class DataClass:
         #             if self.mode == "sq":
         #                 ct.just_log("%s/q_neg_r_tuple.txt" % config.get_sq_topic_path()
         #                             , "%s\t%s" % (question, neg_r))
-        ct.print("load_all_q_r_tuple finish total:%d "%(len(self.q_neg_r_tuple)))
+        ct.print("load_all_q_r_tuple finish total:%d " % (len(self.q_neg_r_tuple)))
 
         # for index in range(questions_len_train):
         #     # name = self.entity1_list[index]
@@ -1322,37 +1362,40 @@ def test_cc():
         train_q = gen[0]
         train_cand = gen[1]
         train_neg = gen[2]
-        print("%s\t%s\t%s"%(train_q,train_cand,train_neg))
+        print("%s\t%s\t%s" % (train_q, train_cand, train_neg))
         break
 
     batchsize = 10
     evaluate_batchsize = 10
     i = 0
-    for model in ['valid','test']:
+    for model in ['valid', 'test']:
         i += 1
         if model == "valid":
             id_list = ct.get_static_id_list_debug()
+            question_list_index = dh.train_question_list_index
+            relation_list_index = dh.train_relation_list_index
         else:
             id_list = ct.get_static_id_list_debug_test()
+            question_list_index = dh.test_question_list_index
+            relation_list_index = dh.test_relation_list_index
 
+        id_list = ct.random_get_some_from_list(id_list, evaluate_batchsize)
         print(id_list)
-
         for i in range(batchsize):
             index = id_list[i]
-            id_list = ct.random_get_some_from_list(id_list, evaluate_batchsize)
-            dh.batch_iter_wq_test_one_debug(dh.train_question_list_index,
-                                    dh.train_relation_list_index,
-                                    model, index)
-        if i ==2:
-            break
 
+            dh.batch_iter_wq_test_one_debug(question_list_index,
+                                            relation_list_index,
+                                            model, index)
+        if i == 2:
+            break
 
 
 def init_cc():
     dh = DataClass(mode="cc", run_type='init')
     # 只需要构建一次
-    dh.build_all_q_r_tuple(config.get_static_q_num_debug(),
-                           config.get_static_num_debug(), is_record=True)
+    dh.build_all_q_r_tuple(99999999999999,
+                           99999999999999, is_record=True)
 
 
 if __name__ == "__main__":

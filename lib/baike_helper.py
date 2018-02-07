@@ -29,6 +29,9 @@ MAX_POOL_NUM = 5
 
 
 class baike_helper:
+
+
+
     # 统计关系的数目并做分析，排序
     @staticmethod
     def relatons_statistics(f1="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb",
@@ -150,7 +153,7 @@ class baike_helper:
 
         print(312321)
 
-    #
+    # 抽取需要的KB
     def extract_kb(self,
                    f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
                    f2="../data/nlpcc2016/demo1/kb.txt",
@@ -185,6 +188,33 @@ class baike_helper:
 
         print('ok')
 
+    def rewrite_rdf(self,f3='',
+                    f2= '',
+                    f1=''):
+        f3 = f3 or config.cc_par('q.rdf')
+        f2 = f2 or config.cc_par('q.rdf.m_s')
+        f1 = f1 or config.cc_par('q.rdf.txt.math_s')
+
+        f3s = ct.file_read_all_lines_strip(f3)
+        f1s = ct.file_read_all_lines_strip(f1)
+        print(len(f3s))
+        f3s_new = []
+        f2s = []
+        i = -1
+        for x in f3s:
+            i += 1
+            x1 = str(x).split('\t')
+            if len(x1) < 3:
+                f2s.append(x)
+                continue
+            f2s.append("%s\t%s"%(x,f1s[i]))
+
+        ct.file_wirte_list(f2,f2s)
+
+
+        print('6.1.1.2')
+
+    ######################################NER
     @staticmethod
     def get_ngrams(input, n):
         output = {}  # 构造字典
@@ -1346,10 +1376,12 @@ class baike_test:
             if len(str(f1s[i]).split('\t')) < 3:
                 skip += 1
                 # print(f1s[i])
+                f7s.append('NULL')
                 continue
             if str(f1s[i]).__contains__('NULL'):
                 skip += 1
                 # print(f1s[i])
+                f7s.append('NULL')
                 continue
 
             total2 += 1
@@ -1477,6 +1509,7 @@ class baike_test:
 
                 if not exist:
                     record.append("%s\t%s" % (f1s[i], f3s[i]))
+                    f7s.append('NULL')
                     # list1 = str(f3s[i]).split('\t')[0:3]
                     # exist = f1s_i_e in list1 or f1s_i_e2 in list1
                     #     # 记录下来 分析一下
@@ -1614,6 +1647,45 @@ class baike_test:
                 msg = "%s\t" % (l[0])
                 o1.write(msg + '\n')
         return d1
+
+
+class classification:
+    def extract_property(self,f3='../data/nlpcc2016/demo1/q.rdf.txt',
+                         f_out='../data/nlpcc2016/class/rdf_extract_property.txt'):
+        f3s = ct.file_read_all_lines_strip(f3)
+        print(len(f3s))
+        f3s_new = []
+        d_f3s = dict()
+        d_line_f3s = dict()
+        for x in f3s:
+            x1 = str(x).split('\t')
+            if len(x1) < 4:
+                print(x)
+                continue
+            x1_3 = ct.clean_str_rel(x1[3].lower())
+            # x1_3 = x1[3]
+            f3s_new.append( x)
+            if x1_3 in d_f3s:
+                d_f3s[x1_3] += 1
+            else:
+                d_f3s[x1_3] = 1
+
+        # f3s_new
+        print(3)
+        tp = ct.sort_dict(d_f3s, True)
+        with codecs.open(f_out, mode="w", encoding="utf-8") as out:
+            for t in tp:
+                out.write("%s\t%s\n" % (t[0], t[1]))
+
+        # for x1 in f3s_new:
+        #     x1_3 = ct.clean_str_rel(x1[3].lower())
+        #
+        #     # for t in tp:
+        #     #     out.write("%s\t%s\n" % (t[0], t[1]))
+
+
+
+
 
 
 # F2.3 空格分割
@@ -1804,6 +1876,12 @@ def extract_not_use_cx():
         msg += '\'%s\',' % a
     print(msg)
 
+if __name__ == '__main__':
+    cf = classification()
+    # C1.2.1
+    # cf.extract_property(f3='../data/nlpcc2016/demo1/q.rdf.txt',
+    #                      f_out='../data/nlpcc2016/class/rdf_extract_property_origin.txt')
+
 
 if __name__ == '__main__':
 
@@ -1836,15 +1914,17 @@ if __name__ == '__main__':
     # c = baike_helper.entity_re_extract_one(b)
     # print(c)
 
-    if True:
+    if False:
         # extract_entitys_all_tj.txt
+        num = 999
         bkt.try_test_acc_of_m1(
             f1='../data/nlpcc2016/ner_t1/q.rdf.txt',
-            f3='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',
+            f3='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt',
             # extract_entitys_v3                extract_entitys_all
-            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed_1.txt',
-            use_cx=False, use_expect=False, acc_index=[999],
+            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed_v3_%d.txt'%num,
+            use_cx=False, use_expect=False, acc_index=[num],
             get_math_subject=True,
+            f6='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt.statistics.txt',
             f7='../data/nlpcc2016/ner_t1/q.rdf.txt.math_s.txt')
 
     # baike_helper.e_r_combine()
@@ -1971,5 +2051,9 @@ if __name__ == '__main__':
     # baike_test.try_jieba()
     # 5.8.2
     # extract_not_use_cx()
+
+    # 6.1.1.2
+    bkh.rewrite_rdf()
+
 
     ct.print_t("finsih ")

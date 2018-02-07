@@ -892,6 +892,12 @@ class ct:
                 # ct.just_log('../data/nlpcc2016/ner_t1/filter_log.txt',_)
         return list1_new
 
+    @staticmethod
+    def file_wirte_list(path,list1):
+        with open(path, mode='w', encoding='utf-8') as o1:
+            for item in list1:
+                o1.write(item + '\n')
+
 
 log_path = ct.log_path_static()
 if __name__ == "__main__":
