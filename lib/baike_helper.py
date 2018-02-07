@@ -29,9 +29,6 @@ MAX_POOL_NUM = 5
 
 
 class baike_helper:
-
-
-
     # 统计关系的数目并做分析，排序
     @staticmethod
     def relatons_statistics(f1="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb",
@@ -188,8 +185,8 @@ class baike_helper:
 
         print('ok')
 
-    def rewrite_rdf(self,f3='',
-                    f2= '',
+    def rewrite_rdf(self, f3='',
+                    f2='',
                     f1=''):
         f3 = f3 or config.cc_par('q.rdf')
         f2 = f2 or config.cc_par('q.rdf.m_s')
@@ -207,10 +204,9 @@ class baike_helper:
             if len(x1) < 3:
                 f2s.append(x)
                 continue
-            f2s.append("%s\t%s"%(x,f1s[i]))
+            f2s.append("%s\t%s" % (x, f1s[i]))
 
-        ct.file_wirte_list(f2,f2s)
-
+        ct.file_wirte_list(f2, f2s)
 
         print('6.1.1.2')
 
@@ -1482,11 +1478,12 @@ class baike_test:
                         f3s_i_list = str(f3s[i]).split('\t')
                         #
                         for list1_item in f3s_i_list:
-                            list1_index +=1
+                            list1_index += 1
                             list1_item_bak = list1_item
-                            list1_item = baike_helper.entity_re_extract_one_repeat(ct.clean_str_zh2en(list1_item.lower().replace(' ','')))
+                            list1_item = baike_helper.entity_re_extract_one_repeat(
+                                ct.clean_str_zh2en(list1_item.lower().replace(' ', '')))
                             if list1_item == f1s_i_e2:
-                                list1_find =True
+                                list1_find = True
                                 break
                         if list1_find:
                             f7s.append(list1_item_bak)
@@ -1517,7 +1514,7 @@ class baike_test:
                     #     record.append("%s\t%s" % (f1s[i], f3s[i]))
 
         print("skip:%d total:%d  toatal2:%d ;total_f1s_i_e1 %d; total_f1s_i_e2 %d ;" % (
-        skip, total, total2, total_f1s_i_e1, total_f1s_i_e2))
+            skip, total, total2, total_f1s_i_e1, total_f1s_i_e2))
 
         for k, v in acc.items():
             print("前%s,get:%d   acc: %f,total - skip=%d  " % (k, v, v / (total - skip), total - skip))
@@ -1530,7 +1527,6 @@ class baike_test:
             with open(f7, mode='w', encoding='utf-8') as o1:
                 for item in f7s:
                     o1.write(item + '\n')
-
 
     # 一次性 合并
     @staticmethod
@@ -1650,42 +1646,60 @@ class baike_test:
 
 
 class classification:
-    def extract_property(self,f3='../data/nlpcc2016/demo1/q.rdf.txt',
-                         f_out='../data/nlpcc2016/class/rdf_extract_property.txt'):
+    def extract_property(self, f3='',  # 输入
+                         f4='', # 过滤的RDF
+                         f_out='' # 抽取出的关系集合
+                         ):
         f3s = ct.file_read_all_lines_strip(f3)
         print(len(f3s))
         f3s_new = []
         d_f3s = dict()
         d_line_f3s = dict()
-        for x in f3s:
+        f1s_new = []
+        idx = 0
+        # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
+        # 机械设计基础         作者          杨可桢，程光蕴，李仲生
+        # 问题0 答案1 实体s-2 关系p-3 属性值o-4    匹配到的实体s-5
+        with codecs.open(f3, mode="r", encoding="utf-8") as read_file:
+            try:
+                for line in read_file.readlines():
+                    idx += 1
+                    line_seg = line.split('\t')
+                    if len(line_seg) < 6 or line.__contains__('NULL'):  # todo:rewrite input file,重写输入文件
+                        ct.print("bad:" + line, "bad")
+                        continue
+                    f1s_new.append(line.strip().replace('\r','').replace('\n',''))
+            except Exception as e:
+                print(e)
+                ct.print("error_index", idx)
+
+        index = -1
+        for x in f1s_new:
+            index += 1
             x1 = str(x).split('\t')
-            if len(x1) < 4:
-                print(x)
-                continue
             x1_3 = ct.clean_str_rel(x1[3].lower())
-            # x1_3 = x1[3]
-            f3s_new.append( x)
+            f3s_new.append(x)
             if x1_3 in d_f3s:
                 d_f3s[x1_3] += 1
+                s1 = d_line_f3s[x1_3]
+                s1.append(str(index))
+                d_line_f3s[x1_3] = s1
             else:
                 d_f3s[x1_3] = 1
+                # 吧index 存进去
+                s1 = []
+                s1.append(str(index))
+                d_line_f3s[x1_3] = s1
 
         # f3s_new
         print(3)
         tp = ct.sort_dict(d_f3s, True)
         with codecs.open(f_out, mode="w", encoding="utf-8") as out:
             for t in tp:
-                out.write("%s\t%s\n" % (t[0], t[1]))
+                msg = '_'.join(d_line_f3s[t[0]])
+                out.write("%s\t%s\t%s\n" % (t[0], t[1], msg))
 
-        # for x1 in f3s_new:
-        #     x1_3 = ct.clean_str_rel(x1[3].lower())
-        #
-        #     # for t in tp:
-        #     #     out.write("%s\t%s\n" % (t[0], t[1]))
-
-
-
-
+        ct.file_wirte_list(f4, list1=f1s_new)
 
 
 # F2.3 空格分割
@@ -1876,12 +1890,13 @@ def extract_not_use_cx():
         msg += '\'%s\',' % a
     print(msg)
 
+
 if __name__ == '__main__':
     cf = classification()
     # C1.2.1
-    # cf.extract_property(f3='../data/nlpcc2016/demo1/q.rdf.txt',
-    #                      f_out='../data/nlpcc2016/class/rdf_extract_property_origin.txt')
-
+    cf.extract_property(f3=config.cc_par('q.rdf.m_s'),
+                        f4=config.cc_par('q.rdf.m_s.filter'),
+                        f_out='../data/nlpcc2016/class/rdf_extract_property_origin.txt')
 
 if __name__ == '__main__':
 
@@ -1921,7 +1936,7 @@ if __name__ == '__main__':
             f1='../data/nlpcc2016/ner_t1/q.rdf.txt',
             f3='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt',
             # extract_entitys_v3                extract_entitys_all
-            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed_v3_%d.txt'%num,
+            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed_v3_%d.txt' % num,
             use_cx=False, use_expect=False, acc_index=[num],
             get_math_subject=True,
             f6='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt.statistics.txt',

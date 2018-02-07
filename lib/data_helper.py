@@ -178,7 +178,6 @@ class DataClass:
 
         # self.load_all_q_r_tuple(config.get_static_q_num_debug(),
         #                         config.get_static_num_debug(), is_record=False)
-        # todo :change load q_r tuple
 
         # ct.print("build_all_q_r_tuple 生成所有的q和neg r的组合")
 
@@ -205,13 +204,27 @@ class DataClass:
 
     def division_data(self, rate=0.8):
         ct.print("division_data start!", 'debug')
+
+        # 6.2.2 选取指定个数的关系来实验
+        f1s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
+        max_r_num = config.get_t_relation_num()
+        max_r_num = min(max_r_num, len(f1s))
+        f1s = f1s[0:max_r_num]
+
+        # 处理问题集合、关系集合、实体集合、答案集合；
+        # 预生成的问题负例集合
+        # S1 通过指定关系过滤一遍获取到对应的问题编号
+
+
+
         # 在此对问题做一下设置，总问题数
         assert (len(self.question_list_index) == len(self.relation_list_index))
         max_q = config.get_total_questions()
         max_q = min(max_q, len(self.question_list_index))
         self.question_list_index = self.question_list_index[0:max_q]
         self.relation_list_index = self.relation_list_index[0:max_q]
-        ct.print("division top %d for train and test " % max_q, 'debug')
+        ct.print("division top %d for train and test,max_q=%d "
+                 % (max_q,config.get_total_questions()), 'debug')
 
         self.train_question_list_index, self.test_question_list_index = \
             self.cap_nums(self.question_list_index, rate)
@@ -235,7 +248,9 @@ class DataClass:
                     self.padding = qr_tuple[0]
                 # 测试问题是 [train_q_l,train_q_l + test_q_l]
                 self.q_neg_r_tuple_test.append(qr_tuple)
-
+        if config.use_property():
+            self.padding = train_q_l
+        ct.print('use_property: %s'%config.use_property(),'debug')
         ct.print(
             "division_data finish! train:%d test:%d" %
             (len(self.q_neg_r_tuple_train), len(self.q_neg_r_tuple_test)),
@@ -246,21 +261,21 @@ class DataClass:
         r_test = set()
         ct.print('train', 'train_test_q')
         for l in range(len(self.train_question_list_index)):
-            ct.print("\t%s\t%s\t%s"%(self.entity1_list[l],self.relation_list[l],self.question_list[l]),'train_test_q')
+            ct.print("\t%s\t%s\t%s" % (self.entity1_list[l], self.relation_list[l], self.question_list[l]),
+                     'train_test_q')
             r_train.add(self.relation_list[l])
         ct.print('test', 'train_test_q')
         for l in range(len(self.test_question_list_index)):
-            global_index = l +self.padding
+            global_index = l + self.padding
             ct.print("\t%s\t%s\t%s" % (self.entity1_list[global_index], self.relation_list[global_index],
-                                           self.question_list[global_index]),'train_test_q')
+                                       self.question_list[global_index]), 'train_test_q')
             r_test.add(self.relation_list[global_index])
         ct.print('test not in train', 'train_test_q')
         # 看看哪些关系是训练有，测试没有的
         r3 = (r_train | r_test) - r_train
         for r in r3:
-            ct.print(r,'train_test_q')
+            ct.print(r, 'train_test_q')
         print(11111)
-
 
     def get_max_length(self):
         if self.mode == "cc":
@@ -346,6 +361,7 @@ class DataClass:
 
     # -----------------cc 将问答集合，
     def init_cc_questions(self, file_name):
+        f1s_new = []
         idx = 0
         # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
         # 机械设计基础         作者          杨可桢，程光蕴，李仲生
@@ -358,43 +374,59 @@ class DataClass:
                     if len(line_seg) < 6 or line.__contains__('NULL'):  # todo:rewrite input file,重写输入文件
                         ct.print("bad:" + line, "bad")
                         continue
-                    answer = line_seg[1]
-                    entity1 = line_seg[2]
-                    relation1 = ct.clean_str_rel(line_seg[3].lower()) # 清洗关系
-                    entity2 = line_seg[4]
-                    entity_ner = line_seg[5].replace('\n','').replace('\r','')
-                    # todo: if char can't convert ,filter them,如果需要转换不了，到时候在这里直接过滤
-                    # 6.1.1.3 3 在载入问题的时候用♠替换掉实体
-                    question = line_seg[0]
-                    question = question.replace(' ','').lower()
-                    if not question.__contains__(entity_ner):
-                        ct.print(question,'entity_ner')
-                    question = question.replace(entity_ner,'♠')
-
-                    self.entity1_list.append(entity1)
-                    self.relation_list.append(relation1)
-                    self.entity2_list.append(entity2)
-
-                    self.question_list.append(question) # 将问题替换掉
-                    self.entity_ner_list.append(entity_ner)
-
-                    # todo:111
-                    # 针对CC的排除关系 ，需要遍历找出其他的属性
-                    rs1 = [relation1]
-                    vs = self.bh.kbqa.get(entity1, '')
-                    if vs != '':
-                        for k, v in vs:
-                            if v == answer:
-                                rs1.append(k)
-
-                    self.relation_path_clear_str_all.append(rs1)
-                    # self.rdf_list.append([entity1, relation1, entity2])
-                    # check it
-                    # line_list.append(line)
+                    f1s_new.append(line)
             except Exception as e:
                 print(e)
                 ct.print("index = ", idx)
                 logging.error("error ", e)
+        use_property = config.use_property()
+        index = -1
+        f2s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
+        f2s = f2s[0:config.get_t_relation_num()]
+        property_list = []
+        for f2s_line in f2s:
+            property_list.extend(str(f2s_line).split('\t')[2:])
+            ct.print(str(f2s_line).split('\t')[0], 'use_r')
+        property_list = [int(x) for x in property_list]
+
+        for line in f1s_new:
+            index += 1
+            if use_property and index not in property_list:
+                continue
+            line_seg = line.split('\t')
+            answer = line_seg[1]
+            entity1 = line_seg[2]
+            relation1 = ct.clean_str_rel(line_seg[3].lower())  # 清洗关系
+            entity2 = line_seg[4]
+            entity_ner = line_seg[5].replace('\n', '').replace('\r', '')
+            # todo: if char can't convert ,filter them,如果需要转换不了，到时候在这里直接过滤
+            # 6.1.1.3 3 在载入问题的时候用♠替换掉实体
+            question = line_seg[0]
+            question = question.replace(' ', '').lower()
+            if not question.__contains__(entity_ner):
+                ct.print(question, 'entity_ner')
+            question = question.replace(entity_ner, '♠')
+
+            self.entity1_list.append(entity1)
+            self.relation_list.append(relation1)
+            self.entity2_list.append(entity2)
+
+            self.question_list.append(question)  # 将问题替换掉
+            self.entity_ner_list.append(entity_ner)
+
+            # todo:111
+            # 针对CC的排除关系 ，需要遍历找出其他的属性
+            rs1 = [relation1]
+            vs = self.bh.kbqa.get(entity1, '')
+            if vs != '':
+                for k, v in vs:
+                    if v == answer:
+                        rs1.append(k)
+            self.relation_path_clear_str_all.append(rs1)
+            # self.rdf_list.append([entity1, relation1, entity2])
+            # check it
+            # line_list.append(line)
+
         ct.print("entity1_list:%d " % len(self.entity1_list))
 
     # brazil	/m/015fr@@1~/m/03385m^/location/country/currency_used@@1~text
@@ -637,7 +669,7 @@ class DataClass:
             # log
             info1 = "q=%d ,r-pos=%d,r-neg=%d q=%s e=%s  " % (
                 index, index, list_index,
-                self.converter.arr_to_text_by_space(x[index]).replace('<unk>', '').replace(' ', ''),
+                self.converter.arr_to_text_no_unk(x[index]).replace('<unk>', '').replace(' ', ''),
                 self.entity1_list[index])
             ct.print(info1[0:30], "debug")
             ct.just_log2("info", info1)
@@ -919,11 +951,13 @@ class DataClass:
         # arr_to_text_by_space(x[index]).replace(' ','').replace('<unk>','')\
         #         == self.question_list[global_index]:
         #     # 部分语句中有空格的会不相等，
-
+        if global_index>=len(self.entity1_list):
+            print(1111)
         name = self.entity1_list[global_index]
         # todo: index should not in
-        ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
-        ps_to_except1 = [ps_to_except1]
+        # ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
+        ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
+        # ps_to_except1 = [ps_to_except1]
         padding_num = self.converter.vocab_size - 1
         # r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
         if self.mode == "wq":
@@ -936,6 +970,8 @@ class DataClass:
 
         # rs = list(set(rs))
         # 加入正确的
+        if index >= len(x):
+            print(3132131)
         x_new.append(x[index])
         y_new.append(y[index])
         labels.append(True)
@@ -945,8 +981,8 @@ class DataClass:
         # ct.just_log2("info","relation:%s " % name)
 
         # ct.print(y[index])
-        r1_text = self.converter.arr_to_text_by_space(y[index])
-        q1_text = self.converter.arr_to_text_by_space(x[index])
+        r1_text = self.converter.arr_to_text_no_unk(y[index])
+        q1_text = self.converter.arr_to_text_no_unk(x[index])
         r1_msg = "r-pos: %s" % r1_text
         q1_msg = "q : %s" % q1_text
         ct.just_log2("info", q1_msg)
@@ -960,7 +996,7 @@ class DataClass:
         for r1 in rs:
             r1_split = r1.split(" ")
             r1 = self.converter.text_to_arr_list(r1_split)
-            r1_text = self.converter.arr_to_text_by_space(r1)
+            r1_text = self.converter.arr_to_text_no_unk(r1)
             # ct.log3(r1_text)
             ct.just_log2("info", "r1_neg in test %s" % r1_text)
             # ct.print(r1_text)
@@ -1210,7 +1246,7 @@ class DataClass:
 
     def build_train_test_q(self):
         for q in self.train_question_list_index:
-            q1 = self.converter.arr_to_text_by_space(q)
+            q1 = self.converter.arr_to_text_no_unk(q)
             ct.just_log("../data/web_questions/train_questions.txt", q1)
 
         for q in self.test_question_list_index:
@@ -1356,6 +1392,8 @@ def test_cc():
 
     # dh.batch_iter_wq_debug()
 
+
+
     my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
                                           batch_size=10)
     for gen in my_generator:
@@ -1387,8 +1425,8 @@ def test_cc():
             dh.batch_iter_wq_test_one_debug(question_list_index,
                                             relation_list_index,
                                             model, index)
-        # if i == 2:
-        #     break
+            # if i == 2:
+            #     break
 
 
 def init_cc():

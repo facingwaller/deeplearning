@@ -382,7 +382,7 @@ def main():
                                           dh.test_relation_list_index,
                                           model)
                     # 测试 集合不做训练 但是将其记录下来
-                    # ct.print('\nlog_test_error','test_error')
+
                     ct.just_log2("test_error", '\n--------------------------log_test_error:%d\n'%len(_1))
                     skip_flag = ''
                     for i in range(len(_1)):  # 问题集合
@@ -393,12 +393,12 @@ def main():
                         # ct.just_log2("test_error", valid_msg)
                         flag = v_s_1
 
-                        v_s_1 = dh.converter.arr_to_text_no_unk(_2[i])
-                        valid_msg2 = model + " test_r_pos :" + v_s_1
+                        v_s_2 = dh.converter.arr_to_text_no_unk(_2[i])
+                        valid_msg2 = model + " test_r_pos :" + v_s_2
                         # ct.just_log2("test_error", valid_msg)
 
-                        v_s_1 = dh.converter.arr_to_text_no_unk(_3[i])
-                        valid_msg3 = model + " test_r_neg :" + v_s_1
+                        v_s_3 = dh.converter.arr_to_text_no_unk(_3[i])
+                        valid_msg3 = model + " test_r_neg :" + v_s_3
                         # ct.just_log2("test_error", valid_msg)
                         #
                         if skip_flag != flag: # 新起一个问题
