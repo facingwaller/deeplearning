@@ -1647,8 +1647,8 @@ class baike_test:
 
 class classification:
     def extract_property(self, f3='',  # 输入
-                         f4='', # 过滤的RDF
-                         f_out='' # 抽取出的关系集合
+                         f4='',  # 过滤的RDF
+                         f_out=''  # 抽取出的关系集合
                          ):
         f3s = ct.file_read_all_lines_strip(f3)
         print(len(f3s))
@@ -1668,7 +1668,7 @@ class classification:
                     if len(line_seg) < 6 or line.__contains__('NULL'):  # todo:rewrite input file,重写输入文件
                         ct.print("bad:" + line, "bad")
                         continue
-                    f1s_new.append(line.strip().replace('\r','').replace('\n',''))
+                    f1s_new.append(line.strip().replace('\r', '').replace('\n', ''))
             except Exception as e:
                 print(e)
                 ct.print("error_index", idx)
@@ -1894,9 +1894,10 @@ def extract_not_use_cx():
 if __name__ == '__main__':
     cf = classification()
     # C1.2.1
-    cf.extract_property(f3=config.cc_par('q.rdf.m_s'),
-                        f4=config.cc_par('q.rdf.m_s.filter'),
-                        f_out='../data/nlpcc2016/class/rdf_extract_property_origin.txt')
+    if False:
+        cf.extract_property(f3=config.cc_par('q.rdf.m_s'),
+                            f4=config.cc_par('q.rdf.m_s.filter'),
+                            f_out='../data/nlpcc2016/class/rdf_extract_property_origin.txt')
 
 if __name__ == '__main__':
 

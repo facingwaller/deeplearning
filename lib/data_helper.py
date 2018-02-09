@@ -104,11 +104,14 @@ class DataClass:
         :param mode:
         """
         # ---------------------初始化实体
+        self.q_neg_r_tuple_train = []  # train
+        self.q_neg_r_tuple_test = []  # test
         self.entity1_list = []
         self.relation_list = []
         self.entity2_list = []
         self.question_list = []
         self.entity_ner_list = []
+        self.answer_list = []
 
         self.rdf_list = []
         self.mode = mode
@@ -204,38 +207,28 @@ class DataClass:
 
     def division_data(self, rate=0.8):
         ct.print("division_data start!", 'debug')
-
         # 6.2.2 选取指定个数的关系来实验
-        f1s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
-        max_r_num = config.get_t_relation_num()
-        max_r_num = min(max_r_num, len(f1s))
-        f1s = f1s[0:max_r_num]
-
-        # 处理问题集合、关系集合、实体集合、答案集合；
-        # 预生成的问题负例集合
-        # S1 通过指定关系过滤一遍获取到对应的问题编号
-
+        # f1s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
+        # max_r_num = config.get_t_relation_num()
+        # max_r_num = min(max_r_num, len(f1s))
+        # f1s = f1s[0:max_r_num]
 
 
         # 在此对问题做一下设置，总问题数
         assert (len(self.question_list_index) == len(self.relation_list_index))
         max_q = config.get_total_questions()
         max_q = min(max_q, len(self.question_list_index))
+
+        ct.print("division top %d for train and test(max_q=%d, total=%d) "
+                 % (max_q, config.get_total_questions(), len(self.question_list_index)), 'debug')
+
         self.question_list_index = self.question_list_index[0:max_q]
         self.relation_list_index = self.relation_list_index[0:max_q]
-        ct.print("division top %d for train and test,max_q=%d "
-                 % (max_q,config.get_total_questions()), 'debug')
 
         self.train_question_list_index, self.test_question_list_index = \
             self.cap_nums(self.question_list_index, rate)
         self.train_relation_list_index, self.test_relation_list_index = \
             self.cap_nums(self.relation_list_index, rate)
-
-        # 拆分负例的训练集合和测试集合
-        # self.q_neg_r_tuple # train
-        # self.q_neg_r_tuple # test
-        self.q_neg_r_tuple_train = []  # train
-        self.q_neg_r_tuple_test = []  # test
 
         self.padding = 0  # 训练集和测试集合之间问题index的偏移量
         train_q_l = len(self.train_question_list_index)
@@ -250,32 +243,65 @@ class DataClass:
                 self.q_neg_r_tuple_test.append(qr_tuple)
         if config.use_property():
             self.padding = train_q_l
-        ct.print('use_property: %s'%config.use_property(),'debug')
+
+        ct.print('use_property: %s' % config.use_property(), 'debug')
         ct.print(
             "division_data finish! train:%d test:%d" %
             (len(self.q_neg_r_tuple_train), len(self.q_neg_r_tuple_test)),
             'debug')
 
         # 记录问题集合和测试集合 输出问句
+        print('看看哪些neg关系是训练有')
         r_train = set()
         r_test = set()
         ct.print('train', 'train_test_q')
+        ct.print('\t%d\t%s\t%s\t%s\t%s' % (0, '实体', '关系', '问题', '被替换词'), 'train_test_q')
         for l in range(len(self.train_question_list_index)):
-            ct.print("\t%s\t%s\t%s" % (self.entity1_list[l], self.relation_list[l], self.question_list[l]),
+            ct.print("\t%d\t%s\t%s\t%s\t%s" % (l, self.entity1_list[l], self.relation_list[l],
+                                               self.question_list[l], self.entity_ner_list[l]),
                      'train_test_q')
             r_train.add(self.relation_list[l])
         ct.print('test', 'train_test_q')
         for l in range(len(self.test_question_list_index)):
             global_index = l + self.padding
-            ct.print("\t%s\t%s\t%s" % (self.entity1_list[global_index], self.relation_list[global_index],
-                                       self.question_list[global_index]), 'train_test_q')
+            ct.print("\t%d\t%s\t%s\t%s\t%s" % (
+            global_index, self.entity1_list[global_index], self.relation_list[global_index],
+            self.question_list[global_index], self.entity_ner_list[l]), 'train_test_q')
             r_test.add(self.relation_list[global_index])
         ct.print('test not in train', 'train_test_q')
-        # 看看哪些关系是训练有，测试没有的
+        # 看看哪些pos关系是训练有，测试没有的
         r3 = (r_train | r_test) - r_train
         for r in r3:
             ct.print(r, 'train_test_q')
-        print(11111)
+
+        # 看看哪些neg关系是训练有，测试没有的
+        ct.print('neg test not in train', 'train_test_q')
+        neg_r_train = set()
+        neg_r_test = set()
+        for l in range(len(self.train_question_list_index)):
+            global_index = l
+            ps_to_except1 = self.relation_path_clear_str_all[global_index]
+            rs = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
+            for r in rs:
+                neg_r_train.add(r)
+
+        for l in range(len(self.test_question_list_index)):
+            global_index = l + self.padding
+            ps_to_except1 = self.relation_path_clear_str_all[global_index]
+            rs = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
+            for r in rs:
+                neg_r_test.add(r)
+
+        r4 = (neg_r_train | neg_r_test) - neg_r_train
+        for r in r4:
+            ct.print(r, 'train_test_q')
+
+        print('记录所有的训练和测试的负问句')
+        # 记录所有的训练和测试的负问句，其中测试负问句不会参与训练
+        # (len(self.q_neg_r_tuple_train), len(self.q_neg_r_tuple_test))
+        ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_train], 'log_q_neg_r_tuple')
+        ct.print_list(['\nTEST\n'], 'log_q_neg_r_tuple')
+        ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_test], 'log_q_neg_r_tuple')
 
     def get_max_length(self):
         if self.mode == "cc":
@@ -382,7 +408,7 @@ class DataClass:
         use_property = config.use_property()
         index = -1
         f2s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
-        f2s = f2s[0:config.get_t_relation_num()]
+        f2s = ct.list_safe_sub(f2s, config.get_t_relation_num())
         property_list = []
         for f2s_line in f2s:
             property_list.extend(str(f2s_line).split('\t')[2:])
@@ -413,15 +439,19 @@ class DataClass:
 
             self.question_list.append(question)  # 将问题替换掉
             self.entity_ner_list.append(entity_ner)
+            self.answer_list.append(answer)
 
             # todo:111
             # 针对CC的排除关系 ，需要遍历找出其他的属性
+            # if entity1 == '对酒':
+            #     print(543535)
             rs1 = [relation1]
             vs = self.bh.kbqa.get(entity1, '')
             if vs != '':
                 for k, v in vs:
                     if v == answer:
-                        rs1.append(k)
+                        if k not in rs1:
+                            rs1.append(k)
             self.relation_path_clear_str_all.append(rs1)
             # self.rdf_list.append([entity1, relation1, entity2])
             # check it
@@ -902,12 +932,20 @@ class DataClass:
         :return:
         """
         ct.print("enter:batch_iter_wq_test_one_debug")
-        x = question_list_index.copy()
-        y = relation_list_index.copy()
+        # x = question_list_index.copy()
+        # y = relation_list_index.copy()
         x_new = []  # 问题集合
         y_new = []  # 关系集合
         z_new = []  #
         labels = []  # 标签集合
+
+        if model == "valid":
+            global_index = index
+        elif model == "test":
+            global_index = index + self.padding
+            # index=global_index
+        else:
+            raise Exception("MODEL 参数出错")
 
         # shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
         # ct.print("shuffle_indices", str(shuffle_indices))
@@ -933,25 +971,17 @@ class DataClass:
 
         # log
         ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
-        msg = "%s id=%s " % (model, index)
+        msg = "model=%s,id=%s,global_index=%d " % (model, index, global_index)
         ct.print(msg)
         ct.log3(msg)
         ct.just_log2("info", msg)
-
-        if model == "valid":
-            global_index = index
-        elif model == "test":
-            global_index = index + self.padding
-            # index=global_index
-        else:
-            raise Exception("MODEL 参数出错")
 
         # 这个index应该要偏移出训练集
         # if self.converter.
         # arr_to_text_by_space(x[index]).replace(' ','').replace('<unk>','')\
         #         == self.question_list[global_index]:
         #     # 部分语句中有空格的会不相等，
-        if global_index>=len(self.entity1_list):
+        if global_index >= len(self.entity1_list):
             print(1111)
         name = self.entity1_list[global_index]
         # todo: index should not in
@@ -970,10 +1000,10 @@ class DataClass:
 
         # rs = list(set(rs))
         # 加入正确的
-        if index >= len(x):
-            print(3132131)
-        x_new.append(x[index])
-        y_new.append(y[index])
+        # if index >= len(x):
+        #     print(3132131)
+        x_new.append(self.question_list_index[global_index])
+        y_new.append(self.relation_list_index[global_index])
         labels.append(True)
         # ct.print("batch_iter_wq_test_one_debug ")
 
@@ -981,9 +1011,9 @@ class DataClass:
         # ct.just_log2("info","relation:%s " % name)
 
         # ct.print(y[index])
-        r1_text = self.converter.arr_to_text_no_unk(y[index])
-        q1_text = self.converter.arr_to_text_no_unk(x[index])
-        r1_msg = "r-pos: %s" % r1_text
+        r1_text = self.converter.arr_to_text_no_unk(self.relation_list_index[global_index])
+        q1_text = self.converter.arr_to_text_no_unk(self.question_list_index[global_index])
+        r1_msg = "r-pos: %s \t answer:%s" % (r1_text, self.answer_list[global_index])
         q1_msg = "q : %s" % q1_text
         ct.just_log2("info", q1_msg)
         ct.just_log2("info", r1_msg)
@@ -1002,7 +1032,7 @@ class DataClass:
             # ct.print(r1_text)
             # ct.just_log2("info","neg-r test:" + r1_text)
             r1 = ct.padding_line(r1, self.max_document_length, padding_num)
-            x_new.append(x[index])
+            x_new.append(self.question_list_index[global_index])
             y_new.append(r1)  # neg
             labels.append(False)
 
@@ -1409,11 +1439,12 @@ def test_cc():
     for model in ['valid', 'test']:
         i += 1
         if model == "valid":
-            id_list = ct.get_static_id_list_debug()
+            id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
             question_list_index = dh.train_question_list_index
             relation_list_index = dh.train_relation_list_index
+
         else:
-            id_list = ct.get_static_id_list_debug_test()
+            id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
             question_list_index = dh.test_question_list_index
             relation_list_index = dh.test_relation_list_index
 

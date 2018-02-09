@@ -103,11 +103,11 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         lstm.test_input_r: test_r,
     }
     for _ in test_q:
-        v_s_1 = dh.converter.arr_to_text_by_space(_)
+        v_s_1 = dh.converter.arr_to_text_no_unk(_)
         valid_msg = model + " test_q 1:" + v_s_1
         ct.just_log2("valid_step", valid_msg)
     for _ in test_r:
-        v_s_1 = dh.converter.arr_to_text_by_space(_)
+        v_s_1 = dh.converter.arr_to_text_no_unk(_)
         valid_msg = model + " test_r 1:" + v_s_1
         ct.just_log2("valid_step", valid_msg)
 
@@ -149,7 +149,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         # 得到得分最高的关系跟labels做判断是否是正确答案，加入统计
         better_index = st.index
         # 根据对应的关系数组找到对应的文字
-        r1 = dh.converter.arr_to_text_by_space(test_r[better_index])
+        r1 = dh.converter.arr_to_text_no_unk(test_r[better_index])
         # ct.print(r1)
         ct.just_log2("info", "step:%d st.index:%d,score:%f,r:%s" % (step, st.index, st.score, r1))
 
@@ -183,25 +183,6 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     return is_right, error_test_q, error_test_pos_r, error_test_neg_r
 
 
-# 暂时不用
-# def valid_batch(sess, lstm, step, train_op, merged, writer, dh, batchsize=100):
-#     test_q, test_r, labels = \
-#         dh.batch_iter_wq_test_one(dh.test_question_list_index, dh.test_relation_list_index)
-#     right = 0
-#     wrong = 0
-#     for i in range(batchsize):
-#         ok = valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh)
-#         if ok:
-#             right += 1
-#         else:
-#             wrong += 1
-#     acc = right / (right + wrong)
-#     result_msg = "right:%d wrong:%d" % (right, wrong)
-#     ct.ct.print(result_msg, "debug")
-#     ct.log3(result_msg)
-#     return acc
-
-
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
                       train_relation_list_index, model):
     right = 0
@@ -209,16 +190,24 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
     # 产生随机的index给debug那边去获得index
     # 仅供现在验证用
     if model == "valid":
-        id_list = ct.get_static_id_list_debug()
+        id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
     else:
-        id_list = ct.get_static_id_list_debug_test()
+        id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+
     id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
     error_test_q_list = []
     error_test_pos_r_list = []
     error_test_neg_r_list = []
+    if batchsize > len(id_list):
+        batchsize = len(id_list)
+        ct.print('batchsize too big ,now is %d'%batchsize, 'error')
     for i in range(batchsize):
-        index = id_list[i]
-        ct.print(" valid_batch_debug:%s %d ,%d" % (model,i, index))
+        try:
+            /index = id_list[i]
+        except Exception as e1:
+            ct.print(e1, 'error')
+
+        ct.print(" valid_batch_debug:%s %d ,%d" % (model, i, index))
         test_q, test_r, labels = \
             dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index)
 
@@ -234,6 +223,38 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
     acc = right / (right + wrong)
     ct.print("right:%d wrong:%d" % (right, wrong), "debug")
     return acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list
+
+
+def log_error_questions(dh, model, _1, _2, _3, error_test_dict):
+    ct.just_log2("test_error", '\n--------------------------log_test_error:%d\n' % len(_1))
+    skip_flag = ''
+    for i in range(len(_1)):  # 问题集合
+        v_s_1 = dh.converter.arr_to_text_no_unk(_1[i])
+        valid_msg1 = model + " test_q 1:" + v_s_1
+        flag = v_s_1
+
+        v_s_2 = dh.converter.arr_to_text_no_unk(_2[i])
+        valid_msg2 = model + " test_r_pos :" + v_s_2
+
+        v_s_3 = dh.converter.arr_to_text_no_unk(_3[i])
+        valid_msg3 = model + " test_r_neg :" + v_s_3
+
+        if skip_flag != flag:  # 新起一个问题
+            skip_flag = flag
+            if valid_msg1 in error_test_dict:
+                error_test_dict[valid_msg1] += 1
+            else:
+                error_test_dict[valid_msg1] = 1
+
+            ct.just_log2("test_error", '\n')
+            ct.just_log2("test_error", valid_msg1 + ' %s' % str(error_test_dict[valid_msg1]))
+            ct.just_log2("test_error", valid_msg2)
+
+        # else:
+        ct.just_log2("test_error", valid_msg3)
+    ct.just_log2("test_error", '--------------%d' % len(_1))
+
+    return error_test_dict
 
 
 # --
@@ -269,6 +290,8 @@ def main():
     ct.just_log2("info", get_config_msg())
     ct.log3(now)
     embedding_weight = None
+    error_test_dict = dict()
+    valid_test_dict = dict()
     # 1 读取所有的数据,返回一批数据标记好的数据{data.x,data.label}
     dh = data_helper.DataClass(model)
     if FLAGS.word_model == "word2vec_train":
@@ -361,19 +384,19 @@ def main():
 
                 test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
                 if (train_step + 1) % FLAGS.evaluate_every == 0:
-                    # if ct.is_debug_few():
-                    # dh.train_question_list_index, dh.train_relation_list_index
                     model = "valid"
                     acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list = \
                         valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
                                           dh, test_batchsize, dh.train_question_list_index,
                                           dh.train_relation_list_index,
                                           model)
-                    # else:
-                    #     acc = valid_batch(sess, lstm, 0, train_op, merged, writer, dh, batchsize=test_batchsize)
+
                     msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
                     ct.print(msg)
                     ct.just_log2("valid", msg)
+                    valid_test_dict = log_error_questions(dh, model, error_test_q_list,
+                                                          error_test_pos_r_list, error_test_neg_r_list, valid_test_dict)
+
                 if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
                     model = "test"
                     acc, _1, _2, _3 = \
@@ -383,31 +406,7 @@ def main():
                                           model)
                     # 测试 集合不做训练 但是将其记录下来
 
-                    ct.just_log2("test_error", '\n--------------------------log_test_error:%d\n'%len(_1))
-                    skip_flag = ''
-                    for i in range(len(_1)):  # 问题集合
-                        # for i2 in range(len(_1[i])):  #
-                        # for _ in _1[i]:
-                        v_s_1 = dh.converter.arr_to_text_no_unk(_1[i])
-                        valid_msg1 = model + " test_q 1:" + v_s_1
-                        # ct.just_log2("test_error", valid_msg)
-                        flag = v_s_1
-
-                        v_s_2 = dh.converter.arr_to_text_no_unk(_2[i])
-                        valid_msg2 = model + " test_r_pos :" + v_s_2
-                        # ct.just_log2("test_error", valid_msg)
-
-                        v_s_3 = dh.converter.arr_to_text_no_unk(_3[i])
-                        valid_msg3 = model + " test_r_neg :" + v_s_3
-                        # ct.just_log2("test_error", valid_msg)
-                        #
-                        if skip_flag != flag: # 新起一个问题
-                            skip_flag = flag
-                            ct.just_log2("test_error", '\n')
-                            ct.just_log2("test_error", valid_msg1)
-                            ct.just_log2("test_error", valid_msg2)
-                        # else:
-                        ct.just_log2("test_error", valid_msg3)
+                    error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict)
 
                     _1.clear()
                     _2.clear()

@@ -388,13 +388,13 @@ class ct:
 
     # --获取指定id的样本
     @staticmethod
-    def get_static_id_list_debug():
-        return config.get_static_id_list_debug()
+    def get_static_id_list_debug(max_length):
+        return config.get_static_id_list_debug(max_length)
         # return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     @staticmethod
-    def get_static_id_list_debug_test():
-        return config.get_static_id_list_debug_test()
+    def get_static_id_list_debug_test(max_length):
+        return config.get_static_id_list_debug_test(max_length)
 
     # --获取指定个数的错误关系
     @staticmethod
@@ -595,7 +595,6 @@ class ct:
     def clean_str_entity(string):
         return str(string).strip().strip('\n').strip('\r').replace(' ', '').upper()
 
-
     @staticmethod
     def clean_str_rel(string):
         return str(string).strip().strip('\n').strip('\r').replace(' ', '') \
@@ -609,20 +608,21 @@ class ct:
         return str(ct.strQ2B(string)) \
             .replace("（", "(").replace("）", ")") \
             .replace("【", "[").replace("】", "]") \
-
+ \
     @staticmethod
-    def  str_start_with (line,words):
+    def str_start_with(line, words):
         for w in words:
             if str(line).startswith(w):
-                return  True
+                return True
         return False
 
     @staticmethod
-    def be_contains(list1_new_word,list1_new):
+    def be_contains(list1_new_word, list1_new):
         for w in list1_new:
-            if str(w).__contains__(list1_new_word) and w!=list1_new_word:
+            if str(w).__contains__(list1_new_word) and w != list1_new_word:
                 return True
         return False
+
     @staticmethod
     def strQ2B(ustring):
         """全角转半角"""
@@ -685,7 +685,7 @@ class ct:
     def just_log2(file_name, msg):
         time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
         file_name = log_path + "/" + file_name + time_str + ".txt"
-        f1_writer = codecs.open(file_name+'_bak.txt', mode="a", encoding="utf-8")
+        f1_writer = codecs.open(file_name + '_bak.txt', mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
 
@@ -796,6 +796,16 @@ class ct:
         ct.just_log4(m, "%s : %s" % (timestamp, msg))
 
     @staticmethod
+    def print_list(list1, m="none"):
+
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        ms = config.get_print_type()
+        for msg in list1:
+            if m in ms:
+                print("%s : %s" % (timestamp, msg))
+            ct.just_log4(m, "%s : %s" % (timestamp, msg))
+
+    @staticmethod
     def print_t():
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         ct.print(timestamp, "time")
@@ -866,7 +876,7 @@ class ct:
         return obj
 
     @staticmethod
-    def list_no_repeat_cx(list1,d_f4s_line):
+    def list_no_repeat_cx(list1, d_f4s_line):
         list1_new = []
         for _ in list1:
             if _ not in list1_new and _ != '':
@@ -876,10 +886,11 @@ class ct:
                 if need_add:
                     list1_new.append(_)
                 else:
-                    print("filter:%s"%_)
-                    ct.just_log('../data/nlpcc2016/ner_t1/filter_log.txt',_)
+                    print("filter:%s" % _)
+                    ct.just_log('../data/nlpcc2016/ner_t1/filter_log.txt', _)
 
         return list1_new
+
     @staticmethod
     def list_no_repeat(list1):
         list1_new = []
@@ -887,16 +898,21 @@ class ct:
             if _ not in list1_new and _ != '':
                 # 增加词性过滤
                 list1_new.append(_)
-            # else:
+                # else:
                 # print("filter:%s"%_)
                 # ct.just_log('../data/nlpcc2016/ner_t1/filter_log.txt',_)
         return list1_new
 
     @staticmethod
-    def file_wirte_list(path,list1):
+    def file_wirte_list(path, list1):
         with open(path, mode='w', encoding='utf-8') as o1:
             for item in list1:
                 o1.write(item + '\n')
+
+    @staticmethod
+    def list_safe_sub(list1, min1):
+        list1 = list1[0:min(min1, len(list1))]
+        return list1
 
 
 log_path = ct.log_path_static()
