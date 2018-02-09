@@ -203,7 +203,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
         ct.print('batchsize too big ,now is %d'%batchsize, 'error')
     for i in range(batchsize):
         try:
-            /index = id_list[i]
+            index = id_list[i]
         except Exception as e1:
             ct.print(e1, 'error')
 
