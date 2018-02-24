@@ -254,6 +254,12 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict):
         ct.just_log2("test_error", valid_msg3)
     ct.just_log2("test_error", '--------------%d' % len(_1))
 
+    # 再记录一次 出错问题的排序
+    tp = ct.sort_dict(error_test_dict)
+    ct.just_log2('error_count', "\n\n")
+    for t in tp:
+         ct.just_log2('error_count',"%s\t%s\n" % (t[0], t[1]))
+
     return error_test_dict
 
 
@@ -289,6 +295,7 @@ def main():
     ct.just_log2("test", now)
     ct.just_log2("info", get_config_msg())
     ct.log3(now)
+
     embedding_weight = None
     error_test_dict = dict()
     valid_test_dict = dict()

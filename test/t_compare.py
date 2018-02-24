@@ -45,8 +45,8 @@ for i in range(len(f1s)):
     print(i)
     if i == 36:
         print(3333)
-    p1 = str(f1s[i]).split('\t')[3].lower()
-    p2 = str(f2s[i]).split('\t')[3].lower()
+    p1 = str(f1s[i]).split('\t')[2].lower()
+    p2 = str(f2s[i]).split('\t')[2].lower()
     if p1.replace(' ', '') != p2.replace(' ', ''):
         # 比较这2个属性，谁在句子中的词多
         line = str(f1s[i]).split('\t')[0]
@@ -68,5 +68,5 @@ for i in range(len(f1s)):
         l1.append(f1s[i] + l1_append)
         l2.append(f2s[i] + l2_append)
 
-ct.file_wirte_list('../data/nlpcc2016/ner_t1/q.rdf.compare-3.txt', l1)
-ct.file_wirte_list('../data/nlpcc2016/ner_t1/q.rdf.compare-4.txt', l2)
+ct.file_wirte_list('../data/nlpcc2016/ner_t1/q.rdf.compare-1.txt', l1)
+ct.file_wirte_list('../data/nlpcc2016/ner_t1/q.rdf.compare-2.txt', l2)

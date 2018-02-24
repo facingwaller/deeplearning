@@ -30,7 +30,9 @@
         result[index] = tmp
 
 
-
+            tp = ct.sort_dict(d_dict, True)
+            for t in tp:
+                out.write("%s\t%s\n" % (t[0], t[1]))
 
 
 
