@@ -150,7 +150,7 @@ class baike_helper:
 
         print(312321)
 
-    # 抽取需要的KB
+    # 从答案的文件中抽取需要的KB
     def extract_kb(self,
                    f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
                    f2="../data/nlpcc2016/demo1/kb.txt",
@@ -165,6 +165,41 @@ class baike_helper:
                 print(x)
                 continue
             f3s_new.append(x1[2].lower())
+        f3s = f3s_new
+
+        print(f3s[0])
+        print(f3s[1])
+
+        self.init_spo(f_in=f1)
+
+        with open(f2, mode='w', encoding='utf-8') as o1:
+            for f3s_e in f3s:
+                vs = self.kbqa.get(f3s_e, "")
+                if vs == '':
+                    ct.just_log('../data/nlpcc2016/demo1/extract_kb.log.txt', f3s_e)
+                    print(f3s_e)
+                    continue
+                for po in vs:
+                    msg = "%s\t%s\t%s" % (f3s_e, po[0], po[1])
+                    o1.write(msg + '\n')
+
+        print('ok')
+
+    # 从答案KB-ONE的文件（答案存在的所有KB）中抽取需要的KB
+    def extract_kb_possible(self,
+                   f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
+                   f2="../data/nlpcc2016/demo1/kb_possible.txt",
+                   f3='../data/nlpcc2016/demo1/kb-one.txt'):
+        f3s = ct.file_read_all_lines_strip(f3)
+        print(len(f3s))
+        # f3s = [str(x).split('\t')[2].lower() for x in f3s]
+        f3s_new = []
+        for x in f3s:
+            x1 = str(x).split('\t')
+            if len(x1) < 3:
+                print(x)
+                continue
+            f3s_new.append(x1[0].lower())
         f3s = f3s_new
 
         print(f3s[0])
@@ -1911,9 +1946,9 @@ if __name__ == '__main__':
     # baike_helper.gzip_file()
 
     # F0.1.3
-    # bkh.extract_kb(f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
-    #                f2="../data/nlpcc2016/demo1/kb?.txt",
-    #                f3='../data/nlpcc2016/demo1/q.rdf.txt')
+    bkh.extract_kb_possible(f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
+                    f2="../data/nlpcc2016/demo1/kb-2.txt",
+                    f3='../data/nlpcc2016/demo1/kb-one.txt')
 
     # 3.1
 

@@ -266,7 +266,7 @@ class DataClass:
             global_index = l + self.padding
             ct.print("\t%d\t%s\t%s\t%s\t%s" % (
             global_index, self.entity1_list[global_index], self.relation_list[global_index],
-            self.question_list[global_index], self.entity_ner_list[l]), 'train_test_q')
+            self.question_list[global_index], self.entity_ner_list[global_index]), 'train_test_q')
             r_test.add(self.relation_list[global_index])
         ct.print('test not in train', 'train_test_q')
         # 看看哪些pos关系是训练有，测试没有的
