@@ -59,7 +59,7 @@ class baike_helper:
     # 1.去除属性中的空白字符 1
     # 2.去除属性中所有非中文、数字和英文字母的字符
     # 3.将实体和属性中的所有大写外文字符转为小写 1
-    # 4.p=o的删除掉 1
+    # 4.实体中的空格去掉
     @staticmethod
     def clean_baike_kb(file_name="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb",
                        file_out_name="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt",
@@ -78,19 +78,20 @@ class baike_helper:
             for line in read_file:
                 index += 1
                 if index % 10000 == 0:
-                    print("%d / %d" % (index / 10000, 4300))
+                    print("s1: %d / %d" % (index / 10000, 4300))
+
                 if len(line.strip().split('\t')) != 3:
                     ct.just_log(clean_log_path, line)
                     continue
                 # 3 大写变小写
                 line = line.strip().lower().strip('\n').strip('\r')
-                s = line.split('\t')[0]
+                s = line.split('\t')[0].replace(' ', '')
                 p = line.split('\t')[1]
                 o = line.split('\t')[2]
                 # 4
-                if p == o:
-                    ct.just_log(clean_log_path, line)
-                    continue
+                # if p == o:
+                #     ct.just_log(clean_log_path, line)
+                #     continue
                 # 2
                 p = p.replace(" ", "").replace("•", "").replace("-", "") \
                     .replace("【", "").replace("】", "") \
@@ -116,14 +117,14 @@ class baike_helper:
         #         if i %10000 ==0:
         #             print(i)
         #         f_out.write("%s\n"%(l))
-        print(5435354)
+        print(len(new_line_list))
         index = 0
         with open(file_out_name, mode='w', encoding='utf-8') as f_out:
             for s in new_line_list:
                 index += 1
                 if index % 10000 == 0:
-                    print("%d / %d" % (index / 10000, 4300))
-                    f_out.write("%s\n" % (s))
+                    print("s2: %d / %d" % (index / 10000, 4300))
+                f_out.write("%s\n" % (s))
         print("_clean1_s.txt")
 
         # s_word_set = set()
@@ -135,6 +136,7 @@ class baike_helper:
         #         # ct.just_log(file_name + "_clean1_s.txt", s)
         #         f_out.write("%s\n" % (s))
         # print("_clean1_s.txt")
+
         # for s in s_word_set:
         #     ct.just_log(file_name + "_clean1_s_word.txt", s)
         # with open(file_name + "_clean1_s_word.txt", mode='w', encoding='utf-8') as f_out:
@@ -187,9 +189,9 @@ class baike_helper:
 
     # 从答案KB-ONE的文件（答案存在的所有KB）中抽取需要的KB
     def extract_kb_possible(self,
-                   f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
-                   f2="../data/nlpcc2016/demo1/kb_possible.txt",
-                   f3='../data/nlpcc2016/demo1/kb-one.txt'):
+                            f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
+                            f2="../data/nlpcc2016/demo1/kb_possible.txt",
+                            f3='../data/nlpcc2016/demo1/kb-one.txt'):
         f3s = ct.file_read_all_lines_strip(f3)
         print(len(f3s))
         # f3s = [str(x).split('\t')[2].lower() for x in f3s]
@@ -263,15 +265,24 @@ class baike_helper:
                                f_out="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb_clean1_s.txt.statistics_len_and_sort.txt"):
 
         d_dict = dict()
+        s_set = set()
         with codecs.open(f_out, mode="w", encoding="utf-8") as out:
             with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
+                index = 0
                 for line in read_file:
+                    index += 1
+                    if index % 100000 == 0:
+                        ct.print("s3: %d / %d" % (index / 100000, 430))
+                    s_set.add(line.split('\t')[0])
+                ct.print('计算长度')
+                for line in s_set:
                     d_dict[line.strip('\n').strip()] = len(line.strip('\n').strip())
+                ct.print('排序')
             tp = ct.sort_dict(d_dict, True)
             for t in tp:
                 out.write("%s\t%s\n" % (t[0], t[1]))
 
-        print(5435436)
+        ct.print('finish statistics_subject_len !')
 
     # 合并和重新排序实体
     @staticmethod
@@ -1335,7 +1346,6 @@ class baike_test:
         index2 = 0
         for i in range(len(q_s)):
             if str(q_s[i]).split('\t')[0] == str(r2_s[index1]).split('\t')[0]:
-
                 new_ls.append(r2_s[index1])
                 index1 += 1
             else:
@@ -1926,6 +1936,33 @@ def extract_not_use_cx():
     print(msg)
 
 
+# 一键纠错
+if __name__ == '__main__':  #
+    bkt = baike_test()
+    bkh = baike_helper()
+    if False:
+        # 1 过滤KB
+        baike_helper.clean_baike_kb(file_name="../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.kb",
+                                    file_out_name="../data/nlpcc2016/2-kb/kb.v1.txt",
+                                    clean_log_path="../data/nlpcc2016/2-kb/clean_baike_kb.txt")
+        # 2 生成KB的实体统计文件
+    if False:
+        baike_helper.statistics_subject_len(f_in="../data/nlpcc2016/2-kb/kb.v1.txt"
+                                            ,
+                                            f_out="../data/nlpcc2016/2-kb/kb-entity.v1.txt")
+    if False:
+        num = 999
+        bkt.try_test_acc_of_m1(
+            f1='../data/nlpcc2016/3-questions/q.rdf.txt',
+            f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt',
+            # extract_entitys_v3                extract_entitys_all
+            f2='../data/nlpcc2016/4-ner/q.rdf.txt.failed_v3_%d.txt' % num,
+            use_cx=False, use_expect=False, acc_index=[num],
+            get_math_subject=True,
+            f6='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt.statistics.txt',
+            f7='../data/nlpcc2016/4-ner/q.rdf.txt.math_s.txt')
+    # 重写q.txt
+
 if __name__ == '__main__':
     cf = classification()
     # C1.2.1
@@ -1946,9 +1983,9 @@ if __name__ == '__main__':
     # baike_helper.gzip_file()
 
     # F0.1.3
-    bkh.extract_kb_possible(f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
-                    f2="../data/nlpcc2016/demo1/kb-2.txt",
-                    f3='../data/nlpcc2016/demo1/kb-one.txt')
+    # bkh.extract_kb_possible(f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
+    #                 f2="../data/nlpcc2016/demo1/kb-2.txt",
+    #                 f3='../data/nlpcc2016/demo1/kb-one.txt')
 
     # 3.1
 
