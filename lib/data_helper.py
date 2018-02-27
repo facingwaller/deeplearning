@@ -104,6 +104,7 @@ class DataClass:
         :param mode:
         """
         # ---------------------初始化实体
+        self.question_labels = []  # 训练还是测试集的标记
         self.q_neg_r_tuple_train = []  # train
         self.q_neg_r_tuple_test = []  # test
         self.entity1_list = []
@@ -140,9 +141,9 @@ class DataClass:
             need_load_kb = True
             if need_load_kb:
                 self.bh = baike_helper()
-                self.bh.init_spo(f_in=config.par('cc_kb_path_full'))
+                self.bh.init_spo(f_in=config.cc_par('kb-use'))
 
-            self.init_cc_questions(config.par('cc_q_path'))
+            self.init_cc_questions(config.cc_par('cc_q_path'))
             ct.print("init_cc_questions finish.")
             self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'), type="zh-cn")
             if run_type == 'init':  # 初始化
@@ -154,7 +155,7 @@ class DataClass:
             self.get_max_length()
             self.q_r_2_arrary_and_padding()
             # 按比例分割训练和测试集
-            self.division_data()
+            self.division_data(0.8, config.cc_par('real_split_train_test'))
             self.build_embedding_weight(config.wiki_vector_path(mode))
             #
             ct.print("load embedding ok!")
@@ -205,8 +206,8 @@ class DataClass:
             #     s = ct.padding_line(s,self.max_document_length,padding_num)
             # 截断
 
-    def division_data(self, rate=0.8):
-        ct.print("division_data start!", 'debug')
+    def division_data(self, rate=0.8, real_split_train_test=False):
+        ct.print("division_data start! real_split_train_test %s " % real_split_train_test, 'debug')
         # 6.2.2 选取指定个数的关系来实验
         # f1s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
         # max_r_num = config.get_t_relation_num()
@@ -225,10 +226,17 @@ class DataClass:
         self.question_list_index = self.question_list_index[0:max_q]
         self.relation_list_index = self.relation_list_index[0:max_q]
 
-        self.train_question_list_index, self.test_question_list_index = \
-            self.cap_nums(self.question_list_index, rate)
-        self.train_relation_list_index, self.test_relation_list_index = \
-            self.cap_nums(self.relation_list_index, rate)
+        if real_split_train_test:
+            skip = config.cc_par('real_split_train_test_skip')
+            self.train_question_list_index, self.test_question_list_index = \
+                ct.cap_nums_by_rate_index(self.question_list_index, self.question_labels, skip)
+            self.train_relation_list_index, self.test_relation_list_index = \
+                ct.cap_nums_by_rate_index(self.relation_list_index, self.question_labels, skip)
+        else:
+            self.train_question_list_index, self.test_question_list_index = \
+                ct.cap_nums(self.question_list_index, rate)
+            self.train_relation_list_index, self.test_relation_list_index = \
+                ct.cap_nums(self.relation_list_index, rate)
 
         self.padding = 0  # 训练集和测试集合之间问题index的偏移量
         train_q_l = len(self.train_question_list_index)
@@ -265,8 +273,8 @@ class DataClass:
         for l in range(len(self.test_question_list_index)):
             global_index = l + self.padding
             ct.print("\t%d\t%s\t%s\t%s\t%s" % (
-            global_index, self.entity1_list[global_index], self.relation_list[global_index],
-            self.question_list[global_index], self.entity_ner_list[global_index]), 'train_test_q')
+                global_index, self.entity1_list[global_index], self.relation_list[global_index],
+                self.question_list[global_index], self.entity_ner_list[global_index]), 'train_test_q')
             r_test.add(self.relation_list[global_index])
         ct.print('test not in train', 'train_test_q')
         # 看看哪些pos关系是训练有，测试没有的
@@ -296,12 +304,12 @@ class DataClass:
         for r in r4:
             ct.print(r, 'train_test_q')
 
-        print('记录所有的训练和测试的负问句')
-        # 记录所有的训练和测试的负问句，其中测试负问句不会参与训练
-        # (len(self.q_neg_r_tuple_train), len(self.q_neg_r_tuple_test))
-        ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_train], 'log_q_neg_r_tuple')
-        ct.print_list(['\nTEST\n'], 'log_q_neg_r_tuple')
-        ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_test], 'log_q_neg_r_tuple')
+        # print('记录所有的训练和测试的负问句')
+        # # 记录所有的训练和测试的负问句，其中测试负问句不会参与训练
+        # # (len(self.q_neg_r_tuple_train), len(self.q_neg_r_tuple_test))
+        # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_train], 'log_q_neg_r_tuple')
+        # ct.print_list(['\nTEST\n'], 'log_q_neg_r_tuple')
+        # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_test], 'log_q_neg_r_tuple')
 
     def get_max_length(self):
         if self.mode == "cc":
@@ -406,10 +414,25 @@ class DataClass:
                 ct.print("index = ", idx)
                 logging.error("error ", e)
         use_property = config.use_property()
-        index = -1
-        f2s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
-        f2s = ct.list_safe_sub(f2s, config.get_t_relation_num())
         property_list = []
+        index = -1
+
+        if use_property == 'num':
+            f2s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
+        elif use_property == 'special':
+            f2s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
+            f3s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property_test'))
+            # 选出所有的实体，筛选一遍f2s
+            f3s = [str(x).split('\t')[0] for x in f3s]
+            f2s_new = []
+            for x in f2s:
+                if str(x).split('\t')[0] in f3s:
+                    f2s_new.append(x)
+            f2s = f2s_new
+        else:
+            raise Exception('error use_property')
+        f2s = ct.list_safe_sub(f2s, config.get_t_relation_num())
+
         for f2s_line in f2s:
             property_list.extend(str(f2s_line).split('\t')[2:])
             ct.print(str(f2s_line).split('\t')[0], 'use_r')
@@ -457,7 +480,13 @@ class DataClass:
             # check it
             # line_list.append(line)
 
+            # 增加一个容器 标记所有的问题是否属于训练集合还是测试集合
+            is_train = index > config.cc_par('real_split_train_test_skip')
+            self.question_labels.append(is_train)
+
         ct.print("entity1_list:%d " % len(self.entity1_list))
+        if len(self.entity1_list) == 0:
+            raise Exception('entity1_list 长度为0 file_name= %s ' % file_name)
 
     # brazil	/m/015fr@@1~/m/03385m^/location/country/currency_used@@1~text
     # Brazilian real	what type of money does brazil have?
@@ -1143,14 +1172,16 @@ class DataClass:
         # questions_len_train = len(self.question_list)
         # counter = ct.generate_counter()
         if is_record and self.mode == "cc":
-            p1 = "%s/q_neg_r_tuple.txt" % config.par('cc_path')
+            p1 = config.cc_par('q_neg_r_tuple')
             with open(p1, mode='w', encoding='utf-8') as o1:
                 o1.write('')
-
-        questions_len_train = min(questions_len_train, len(self.entity1_list))
+        if config.use_property():
+            questions_len_train = min(questions_len_train, len(self.entity1_list))
+        else:
+            questions_len_train = min(questions_len_train, len(self.question_list))
         for index in range(questions_len_train):
             if index % 1000 == 0:
-                ct.print_t(index / 1000)
+                ct.print("%d / %d" % (index / 1000, questions_len_train), 'build_all_q_r_tuple')
             name = self.entity1_list[index]
             question = self.question_list[index]
             ps_to_except1 = self.relation_path_clear_str_all[index]
@@ -1168,9 +1199,10 @@ class DataClass:
             tmp_error_relation_num = min(len(r_all_neg), error_relation_num)
             r_all_neg = r_all_neg[0:tmp_error_relation_num]
             if len(r_all_neg) == 0:
-                print("index = %d 0:%s ", index, question)
-                ct.just_log("%s/q_neg_r_tuple_0_error_r.txt" % config.par('sq_fb_path')
-                            , "%s\t%s" % (name, index))
+                ct.print("index =%d name:%s " % (index, name), 'r_all_neg')
+                # ct.just_log("%s/q_neg_r_tuple_0_error_r.txt" % config.par('sq_fb_path')
+                #             , "%s\t%s" % (name, index))
+
             # print(len(r_all_neg))
 
             for neg_r in r_all_neg:
@@ -1183,7 +1215,7 @@ class DataClass:
                         ct.just_log("%s/q_neg_r_tuple1.txt" % config.par('sq_fb_path')
                                     , "%s\t%s" % (question, neg_r))
                     if self.mode == "cc":
-                        ct.just_log("%s/q_neg_r_tuple.txt" % config.par('cc_path')
+                        ct.just_log(config.cc_par('q_neg_r_tuple')
                                     , "%s\t%s\t%s" % (index, question, neg_r))
         ct.print_t("build_all_q_r_tuple q_neg_r_tuple")
 
@@ -1212,7 +1244,7 @@ class DataClass:
         if self.mode == "sq":
             fname = "%s/q_neg_r_tuple.txt" % config.par('sq_fb_rdf_path')
         if self.mode == "cc":
-            fname = "%s/q_neg_r_tuple.txt" % config.par('cc_path')
+            fname = config.cc_par('q_neg_r_tuple')
         # 加载fname
         # 处理
         # 得到self.q_neg_r_tuple
@@ -1420,10 +1452,6 @@ def test_sq():
 def test_cc():
     dh = DataClass("cc")
 
-    # dh.batch_iter_wq_debug()
-
-
-
     my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
                                           batch_size=10)
     for gen in my_generator:
@@ -1450,14 +1478,13 @@ def test_cc():
 
         id_list = ct.random_get_some_from_list(id_list, evaluate_batchsize)
         print(id_list)
+        batchsize = min(batchsize, len(id_list))
         for i in range(batchsize):
             index = id_list[i]
 
             dh.batch_iter_wq_test_one_debug(question_list_index,
                                             relation_list_index,
                                             model, index)
-            # if i == 2:
-            #     break
 
 
 def init_cc():

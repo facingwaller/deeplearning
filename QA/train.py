@@ -19,8 +19,8 @@ import numpy as np
 import lib.my_log as mylog
 from lib.ct import ct
 from lib.config import FLAGS, get_config_msg
+from lib.config import config
 import os
-
 
 # -----------------------------------定义变量
 
@@ -31,6 +31,9 @@ import os
 # 2.    get_static_id_list_debug 和 get_static_num_debug 设置id和错误关系的个数
 # 3.    放方便多机共享测试，已经迁移到config文件
 # ----------------------------------- execute train model ---------------------------------
+maybe_dict = dict()
+maybe_dict['r'] = 0
+maybe_dict['e'] = 0
 
 
 # ---在用
@@ -90,12 +93,11 @@ def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_
         checkpoint(sess)
 
 
-# ------
-
 # ---先做多个问题（一样的问题），多个答案，多个标签，输出得分前X的答案并给出得分
 # test_q,问题
 # test_r,关系
 # labels,标签,
+# 2018.2.26 把相近的分数也带回去
 def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model):
     start_time = time.time()
     feed_dict = {
@@ -114,6 +116,8 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     error_test_q = []
     error_test_pos_r = []
     error_test_neg_r = []
+    fuzzy_boundary = []
+
     test_q_r_cosin = sess.run(
         [lstm.test_q_r],
         feed_dict=feed_dict)
@@ -176,11 +180,50 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         ct.just_log2("info", "!!!!! error %d  " % step)
     ct.just_log2("info", "\n =================================end\n")
 
+    # 在这里增加跳变检查,通过一个文件动态判断是否执行
+    # 实际是稳定的模型来执行
+    run = ct.file_read_all_lines_strip('config')[0] == '1'
+    ct.print("run %s " % run, 'info')
+    maybe_list = []
+    if run:
+        st_list_sort = list(st_list_sort)
+        for index in range(len(st_list_sort) - 1):
+            # if index == len(st_list_sort) :
+            #     continue
+
+            space = st_list_sort[index].score - st_list_sort[index + 1].score
+            maybe_list.append(st_list_sort[index])
+
+            if space > config.skip_threshold():
+                break
+
+        # 判断是否在其中
+        pos_in_it = False
+        for index in range(len(maybe_list)):
+            item = maybe_list[index]
+            # 输出相关的相近属性，并记录是否在其中，并作出全局准确率预测
+            if item.index == 0 and pos_in_it == False:
+                pos_in_it = True
+            better_index = item.index
+            r1 = dh.converter.arr_to_text_no_unk(test_r[better_index])
+            msg1 = "step:%d st.index:%d,score:%f,r:%s" % (step, item.index, item.score, r1)
+            item.msg1 = msg1
+            maybe_list[index] = item
+            ct.print(msg1, "maybe")
+
+        if pos_in_it:
+            maybe_dict['r'] += 1
+        else:
+            maybe_dict['e'] += 1
+        acc0 = maybe_dict['r'] / (maybe_dict['r'] + maybe_dict['e'])
+        ct.print("%f pos_in_it  %s" % (acc0, pos_in_it), "maybe")
+        ct.print("\n", "maybe")
+
     time_elapsed = time.time() - start_time
     time_str = datetime.datetime.now().isoformat()
     ct.print("%s: step %s,  score %s, is_right %s, %6.7f secs/batch" % (
         time_str, step, score, str(is_right), time_elapsed))
-    return is_right, error_test_q, error_test_pos_r, error_test_neg_r
+    return is_right, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list
 
 
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
@@ -198,9 +241,10 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
     error_test_q_list = []
     error_test_pos_r_list = []
     error_test_neg_r_list = []
+    maybe_list_list = []
     if batchsize > len(id_list):
         batchsize = len(id_list)
-        ct.print('batchsize too big ,now is %d'%batchsize, 'error')
+        ct.print('batchsize too big ,now is %d' % batchsize, 'error')
     for i in range(batchsize):
         try:
             index = id_list[i]
@@ -211,21 +255,23 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
         test_q, test_r, labels = \
             dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index)
 
-        ok, error_test_q, error_test_pos_r, error_test_neg_r = valid_step(sess, lstm, step, train_op, test_q, test_r,
-                                                                          labels, merged, writer, dh, model)
+        ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = valid_step(sess, lstm, step, train_op,
+                                                                                      test_q, test_r,
+                                                                                      labels, merged, writer, dh, model)
         error_test_q_list.extend(error_test_q)
         error_test_pos_r_list.extend(error_test_pos_r)
         error_test_neg_r_list.extend(error_test_neg_r)
+        maybe_list_list.append(maybe_list)
         if ok:
             right += 1
         else:
             wrong += 1
     acc = right / (right + wrong)
     ct.print("right:%d wrong:%d" % (right, wrong), "debug")
-    return acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list
+    return acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list
 
 
-def log_error_questions(dh, model, _1, _2, _3, error_test_dict):
+def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,acc):
     ct.just_log2("test_error", '\n--------------------------log_test_error:%d\n' % len(_1))
     skip_flag = ''
     for i in range(len(_1)):  # 问题集合
@@ -258,7 +304,43 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict):
     tp = ct.sort_dict(error_test_dict)
     ct.just_log2('error_count', "\n\n")
     for t in tp:
-         ct.just_log2('error_count',"%s\t%s\n" % (t[0], t[1]))
+        ct.just_log2('error_count', "%s\t%s\n" % (t[0], t[1]))
+
+    # 记录
+    maybe_tmp_dict = dict()
+    maybe_tmp_dict['r'] = 0
+    maybe_tmp_dict['e'] = 0
+    maybe_tmp_dict['m1'] = 0  # 错误中 在可能列表中 找到
+    maybe_tmp_dict['m2'] = 0  # 错误中 在可能列表中 没找到的
+    for maybe_list in maybe_list_list:
+        pos_in_it = False
+        for item in maybe_list:
+            # 输出相关的相近属性，并记录是否在其中，并作出全局准确率预测
+            if item.index == 0 and pos_in_it == False:
+                pos_in_it = True
+
+            ct.print(item.msg1, "maybe1")
+
+        is_right = False
+        if maybe_list[0].index == 0:
+            is_right = True
+
+        if pos_in_it:
+            maybe_tmp_dict['r'] += 1
+            if is_right == False:
+                maybe_tmp_dict['m1'] += 1
+        else:
+            maybe_tmp_dict['e'] += 1
+
+        ct.print("pos_in_it  %s" % (pos_in_it), "maybe1")
+        ct.print("\n", "maybe1")
+
+    total = (maybe_tmp_dict['r'] + maybe_tmp_dict['e'])
+    acc0 = maybe_tmp_dict['r'] / total
+    maybe_canget = maybe_tmp_dict['m1'] / total
+    ct.print("%s %f 正确答案数（%d）/总数(%d)：%f;候补(%d)/总数:%f "
+             % (model,acc,maybe_tmp_dict['r'],total,acc0, maybe_tmp_dict['m1'],maybe_canget), "maybe1")
+    ct.print("\n---------------------------", "maybe1")
 
     return error_test_dict
 
@@ -346,6 +428,7 @@ def main():
             ct.log3(toogle_line)
             ct.just_log2("info", toogle_line)
 
+            my_generator = ''
             if FLAGS.fix_model and len(error_test_q_list) != 0:
                 my_generator = dh.batch_iter_wq_debug_fix_model(
                     error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, FLAGS.batch_size)
@@ -392,7 +475,7 @@ def main():
                 test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
                 if (train_step + 1) % FLAGS.evaluate_every == 0:
                     model = "valid"
-                    acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list = \
+                    acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list = \
                         valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
                                           dh, test_batchsize, dh.train_question_list_index,
                                           dh.train_relation_list_index,
@@ -402,18 +485,19 @@ def main():
                     ct.print(msg)
                     ct.just_log2("valid", msg)
                     valid_test_dict = log_error_questions(dh, model, error_test_q_list,
-                                                          error_test_pos_r_list, error_test_neg_r_list, valid_test_dict)
+                                                          error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
+                                                          maybe_list_list,acc)
 
                 if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
                     model = "test"
-                    acc, _1, _2, _3 = \
+                    acc, _1, _2, _3, maybe_list_list = \
                         valid_batch_debug(sess, lstm, step, train_op, merged, writer,
                                           dh, test_batchsize, dh.test_question_list_index,
                                           dh.test_relation_list_index,
                                           model)
                     # 测试 集合不做训练 但是将其记录下来
 
-                    error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict)
+                    error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,acc)
 
                     _1.clear()
                     _2.clear()

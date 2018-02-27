@@ -191,18 +191,18 @@ class baike_helper:
     def extract_kb_possible(self,
                             f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
                             f2="../data/nlpcc2016/demo1/kb_possible.txt",
-                            f3='../data/nlpcc2016/demo1/kb-one.txt'):
+                            f3='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt'):
         f3s = ct.file_read_all_lines_strip(f3)
         print(len(f3s))
         # f3s = [str(x).split('\t')[2].lower() for x in f3s]
-        f3s_new = []
+        f3s_new = set()
         for x in f3s:
             x1 = str(x).split('\t')
             if len(x1) < 3:
                 print(x)
                 continue
-            f3s_new.append(x1[0].lower())
-        f3s = f3s_new
+            f3s_new.add(x1[2].lower().replace(' ', ''))
+        f3s = list(f3s_new)
 
         print(f3s[0])
         print(f3s[1])
@@ -213,14 +213,14 @@ class baike_helper:
             for f3s_e in f3s:
                 vs = self.kbqa.get(f3s_e, "")
                 if vs == '':
-                    ct.just_log('../data/nlpcc2016/demo1/extract_kb.log.txt', f3s_e)
+                    ct.print(f3s_e, 'extract_kb_log')
                     print(f3s_e)
                     continue
                 for po in vs:
                     msg = "%s\t%s\t%s" % (f3s_e, po[0], po[1])
                     o1.write(msg + '\n')
 
-        print('ok')
+        ct.print('extract_kb_possible ok')
 
     def rewrite_rdf(self, f3='',
                     f2='',
@@ -1088,10 +1088,12 @@ class baike_helper:
 
     # 读取实体所有的实体    返回所有的关系集合
     def read_entity_and_get_all_neg_relations_cc(self, entity_id, ps_to_except):
-        e_s = self.kbqa.get(str(entity_id).lower(), "")
+        e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
         if e_s == "":
             print(entity_id)
-            raise Exception('entity cant find')
+            # raise Exception('entity cant find')
+            ct.print(str(entity_id).replace(' ', '').lower()
+                     , 'read_entity_and_get_all_neg_relations_cc')
         r1 = []
         for s1 in e_s:
             if s1[0] not in ps_to_except:
@@ -1693,7 +1695,8 @@ class baike_test:
 class classification:
     def extract_property(self, f3='',  # 输入
                          f4='',  # 过滤的RDF
-                         f_out=''  # 抽取出的关系集合
+                         f_out='',  # 抽取出的关系集合
+                         skip = 0
                          ):
         f3s = ct.file_read_all_lines_strip(f3)
         print(len(f3s))
@@ -1709,11 +1712,19 @@ class classification:
             try:
                 for line in read_file.readlines():
                     idx += 1
-                    line_seg = line.split('\t')
-                    if len(line_seg) < 6 or line.__contains__('NULL'):  # todo:rewrite input file,重写输入文件
-                        ct.print("bad:" + line, "bad")
+                    if idx < skip:
                         continue
-                    f1s_new.append(line.strip().replace('\r', '').replace('\n', ''))
+
+                    line_seg = line.split('\t')
+                    if len(line_seg) < 5 or line.__contains__('NULL'):  # todo:rewrite input file,重写输入文件
+                        ct.print("NULL bad:" + line, "bad")
+                        continue
+                    if line_seg[0] == line_seg[2]:
+                        ct.print("过滤掉问题等于实体的 bad:" + line, "bad")
+                        continue
+
+
+                    f1s_new.append(line.strip().replace('\r', '').replace('\n', '').replace(' ', '').lower())
             except Exception as e:
                 print(e)
                 ct.print("error_index", idx)
@@ -1741,10 +1752,10 @@ class classification:
         tp = ct.sort_dict(d_f3s, True)
         with codecs.open(f_out, mode="w", encoding="utf-8") as out:
             for t in tp:
-                msg = '_'.join(d_line_f3s[t[0]])
+                msg = '\t'.join(d_line_f3s[t[0]])
                 out.write("%s\t%s\t%s\n" % (t[0], t[1], msg))
-
-        ct.file_wirte_list(f4, list1=f1s_new)
+        if f4 != '':
+            ct.file_wirte_list(f4, list1=f1s_new)
 
 
 # F2.3 空格分割
@@ -1935,33 +1946,6 @@ def extract_not_use_cx():
         msg += '\'%s\',' % a
     print(msg)
 
-
-# 一键纠错
-if __name__ == '__main__':  #
-    bkt = baike_test()
-    bkh = baike_helper()
-    if False:
-        # 1 过滤KB
-        baike_helper.clean_baike_kb(file_name="../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.kb",
-                                    file_out_name="../data/nlpcc2016/2-kb/kb.v1.txt",
-                                    clean_log_path="../data/nlpcc2016/2-kb/clean_baike_kb.txt")
-        # 2 生成KB的实体统计文件
-    if False:
-        baike_helper.statistics_subject_len(f_in="../data/nlpcc2016/2-kb/kb.v1.txt"
-                                            ,
-                                            f_out="../data/nlpcc2016/2-kb/kb-entity.v1.txt")
-    if False:
-        num = 999
-        bkt.try_test_acc_of_m1(
-            f1='../data/nlpcc2016/3-questions/q.rdf.txt',
-            f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt',
-            # extract_entitys_v3                extract_entitys_all
-            f2='../data/nlpcc2016/4-ner/q.rdf.txt.failed_v3_%d.txt' % num,
-            use_cx=False, use_expect=False, acc_index=[num],
-            get_math_subject=True,
-            f6='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt.statistics.txt',
-            f7='../data/nlpcc2016/4-ner/q.rdf.txt.math_s.txt')
-    # 重写q.txt
 
 if __name__ == '__main__':
     cf = classification()

@@ -607,8 +607,8 @@ class ct:
     def clean_str_zh2en(string):
         return str(ct.strQ2B(string)) \
             .replace("（", "(").replace("）", ")") \
-            .replace("【", "[").replace("】", "]") \
- \
+            .replace("【", "[").replace("】", "]")
+
     @staticmethod
     def str_start_with(line, words):
         for w in words:
@@ -792,8 +792,8 @@ class ct:
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         ms = config.get_print_type()
         if m in ms:
-            print("%s : %s" % (timestamp, msg))
-        ct.just_log4(m, "%s : %s" % (timestamp, msg))
+            print("%s:\t%s" % (timestamp, msg))
+        ct.just_log4(m, "%s:\t%s" % (timestamp, msg))
 
     @staticmethod
     def print_list(list1, m="none"):
@@ -913,6 +913,36 @@ class ct:
     def list_safe_sub(list1, min1):
         list1 = list1[0:min(min1, len(list1))]
         return list1
+
+    @staticmethod
+    # --------------------按比例分割
+    def cap_nums(y, rate=0.8):
+        y = y.copy()
+        y = np.array(y)
+        s = 0
+        total_len = len(y)
+        total_index = total_len * rate
+        e = int(total_index)
+        reverseIndex = int(total_len - total_index)
+        y1 = y[s:e]  # [ > s and <= e  ]
+        y2 = y[-reverseIndex:]
+        ct.print("split into 2 " + str(len(y1)) + " " + str(len(y2)))
+        return y1, y2
+
+    # --------------------按比例和边界index分割
+    @staticmethod
+    def cap_nums_by_rate_index(y, question_labels, skip=0):
+        y = y.copy()
+        y = np.array(y)
+        y1 = []
+        y2 = []
+        for index in range(len(y)):
+            if question_labels[index]:
+                y2.append(y[index])
+            else:
+                y1.append(y[index])
+        ct.print("split into 2 " + str(len(y1)) + " " + str(len(y2)))
+        return y1, y2
 
 
 log_path = ct.log_path_static()
