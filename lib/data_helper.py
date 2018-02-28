@@ -104,6 +104,7 @@ class DataClass:
         :param mode:
         """
         # ---------------------初始化实体
+        self.question_global_index = []
         self.question_labels = []  # 训练还是测试集的标记
         self.q_neg_r_tuple_train = []  # train
         self.q_neg_r_tuple_test = []  # test
@@ -143,7 +144,7 @@ class DataClass:
                 self.bh = baike_helper()
                 self.bh.init_spo(f_in=config.cc_par('kb-use'))
 
-            self.init_cc_questions(config.cc_par('cc_q_path'))
+            self.init_cc_questions(config.cc_par('cc_q_path'), run_type)
             ct.print("init_cc_questions finish.")
             self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'), type="zh-cn")
             if run_type == 'init':  # 初始化
@@ -151,6 +152,7 @@ class DataClass:
             msg = 'questions_len_train:%s\twrong_relation_num:%s\t' % (
                 config.get_static_q_num_debug(), config.get_static_num_debug())
             ct.print(msg, 'debug')
+
             self.load_all_q_r_tuple(config.get_static_q_num_debug(), config.get_static_num_debug(), is_record=True)
             self.get_max_length()
             self.q_r_2_arrary_and_padding()
@@ -226,12 +228,21 @@ class DataClass:
         self.question_list_index = self.question_list_index[0:max_q]
         self.relation_list_index = self.relation_list_index[0:max_q]
 
+        # self.question_global_index
+        # self.train_question_global_index
+
+        self.train_question_global_index = []
+        self.test_question_global_index = []
         if real_split_train_test:
             skip = config.cc_par('real_split_train_test_skip')
-            self.train_question_list_index, self.test_question_list_index = \
-                ct.cap_nums_by_rate_index(self.question_list_index, self.question_labels, skip)
-            self.train_relation_list_index, self.test_relation_list_index = \
-                ct.cap_nums_by_rate_index(self.relation_list_index, self.question_labels, skip)
+            self.train_question_list_index, self.test_question_list_index, \
+            self.train_question_global_index, self.test_question_global_index = \
+                ct.cap_nums_by_skip(self.question_list_index, self.question_labels,
+                                    skip, self.question_global_index)
+            self.train_relation_list_index, self.test_relation_list_index, \
+            self.train_question_global_index, self.test_question_global_index = \
+                ct.cap_nums_by_skip(self.relation_list_index, self.question_labels,
+                                    skip, self.question_global_index)
         else:
             self.train_question_list_index, self.test_question_list_index = \
                 ct.cap_nums(self.question_list_index, rate)
@@ -265,14 +276,14 @@ class DataClass:
         ct.print('train', 'train_test_q')
         ct.print('\t%d\t%s\t%s\t%s\t%s' % (0, '实体', '关系', '问题', '被替换词'), 'train_test_q')
         for l in range(len(self.train_question_list_index)):
-            ct.print("\t%d\t%s\t%s\t%s\t%s" % (l, self.entity1_list[l], self.relation_list[l],
+            ct.print("\t%d\t%d\t%s\t%s\t%s\t%s" % (self.question_global_index[l],l, self.entity1_list[l], self.relation_list[l],
                                                self.question_list[l], self.entity_ner_list[l]),
                      'train_test_q')
             r_train.add(self.relation_list[l])
         ct.print('test', 'train_test_q')
         for l in range(len(self.test_question_list_index)):
             global_index = l + self.padding
-            ct.print("\t%d\t%s\t%s\t%s\t%s" % (
+            ct.print("\t%d\t%d\t%s\t%s\t%s\t%s" % (self.question_global_index[global_index],
                 global_index, self.entity1_list[global_index], self.relation_list[global_index],
                 self.question_list[global_index], self.entity_ner_list[global_index]), 'train_test_q')
             r_test.add(self.relation_list[global_index])
@@ -304,12 +315,12 @@ class DataClass:
         for r in r4:
             ct.print(r, 'train_test_q')
 
-        # print('记录所有的训练和测试的负问句')
-        # # 记录所有的训练和测试的负问句，其中测试负问句不会参与训练
-        # # (len(self.q_neg_r_tuple_train), len(self.q_neg_r_tuple_test))
-        # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_train], 'log_q_neg_r_tuple')
-        # ct.print_list(['\nTEST\n'], 'log_q_neg_r_tuple')
-        # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_test], 'log_q_neg_r_tuple')
+            # print('记录所有的训练和测试的负问句')
+            # # 记录所有的训练和测试的负问句，其中测试负问句不会参与训练
+            # # (len(self.q_neg_r_tuple_train), len(self.q_neg_r_tuple_test))
+            # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_train], 'log_q_neg_r_tuple')
+            # ct.print_list(['\nTEST\n'], 'log_q_neg_r_tuple')
+            # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_test], 'log_q_neg_r_tuple')
 
     def get_max_length(self):
         if self.mode == "cc":
@@ -394,7 +405,7 @@ class DataClass:
         ct.print("entity1_list:%d " % len(self.entity1_list))
 
     # -----------------cc 将问答集合，
-    def init_cc_questions(self, file_name):
+    def init_cc_questions(self, file_name, run_type='run'):
         f1s_new = []
         idx = 0
         # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
@@ -415,10 +426,15 @@ class DataClass:
                 logging.error("error ", e)
         use_property = config.use_property()
         property_list = []
-        index = -1
+
+
+        if run_type == 'init':
+            use_property = 'none'
+            f2s = []
 
         if use_property == 'num':
             f2s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
+            f2s = ct.list_safe_sub(f2s, config.get_t_relation_num())
         elif use_property == 'special':
             f2s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
             f3s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property_test'))
@@ -429,18 +445,51 @@ class DataClass:
                 if str(x).split('\t')[0] in f3s:
                     f2s_new.append(x)
             f2s = f2s_new
+            f2s = ct.list_safe_sub(f2s, config.get_t_relation_num())
+        elif use_property == 'maybe':
+            f2s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property'))
+            # f3s = ct.file_read_all_lines_strip(config.cc_par('rdf_extract_property_test'))
+            f4s = ct.file_read_all_lines_strip(config.cc_par('rdf_maybe_property'))
+            f5s = ct.file_read_all_lines_strip(config.cc_par('rdf_maybe_property_index'))
+            index = int(f5s[len(f5s) - 1])  # 取最后一行
+            # 筛选1遍f2s
+            if index > len(f4s):
+                raise Exception('完成')
+            for i in range(len(f4s)):
+                if i < index:
+                    continue
+                if str(f4s[i]).__contains__('===='):
+                    continue
+                index = i
+                test_id = int(str(f4s[i]).split('\t')[1])
+                ct.print('test_id = %d'%test_id, 'train_test_q')
+                f3s = str(f4s[i]).split('\t')[2:]
+                break
+
+            ct.just_log(config.cc_par('rdf_maybe_property_index'), str(index+1))
+            # +1 然后处理下一个
+
+            # 选出所有的实体，筛选一遍f2s
+            # f3s = [str(x).split('\t')[0] for x in f3s]
+            f2s_new = []
+            for x in f2s:
+                if str(x).split('\t')[0] in f3s:
+                    f2s_new.append(x)
+            f2s = f2s_new
+            f2s = ct.list_safe_sub(f2s, config.get_t_relation_num())
         else:
-            raise Exception('error use_property')
-        f2s = ct.list_safe_sub(f2s, config.get_t_relation_num())
+            # raise Exception('error use_property')
+            ct.print("use_property=%s,no的时候只适用于生成模式非训练模型 " % use_property)
 
         for f2s_line in f2s:
             property_list.extend(str(f2s_line).split('\t')[2:])
             ct.print(str(f2s_line).split('\t')[0], 'use_r')
         property_list = [int(x) for x in property_list]
 
+        index = -1
         for line in f1s_new:
             index += 1
-            if use_property and index not in property_list:
+            if (use_property in ['num', 'special', 'maybe']) and index not in property_list:
                 continue
             line_seg = line.split('\t')
             answer = line_seg[1]
@@ -483,6 +532,8 @@ class DataClass:
             # 增加一个容器 标记所有的问题是否属于训练集合还是测试集合
             is_train = index > config.cc_par('real_split_train_test_skip')
             self.question_labels.append(is_train)
+
+            self.question_global_index.append(index)
 
         ct.print("entity1_list:%d " % len(self.entity1_list))
         if len(self.entity1_list) == 0:
@@ -1000,7 +1051,8 @@ class DataClass:
 
         # log
         ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
-        msg = "model=%s,id=%s,global_index=%d " % (model, index, global_index)
+        msg = "model=%s,id=%s,global_index=%d;q_global_index=%d;" % (
+            model, index, global_index, self.question_global_index[global_index])
         ct.print(msg)
         ct.log3(msg)
         ct.just_log2("info", msg)

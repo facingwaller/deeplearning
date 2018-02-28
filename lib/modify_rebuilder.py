@@ -48,7 +48,7 @@ if __name__ == '__main__':  #
                             f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
                             skip=0)
         print('重写q.rdf.m_s.filter.txt和rdf_extract_property_origin.txt')
-    if True:
+    if False:
         # 仅用于测试
         cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.m_s.txt',
                             f4='../data/nlpcc2016/3-questions/q.rdf.m_s.filter_test.txt',
@@ -63,7 +63,7 @@ if __name__ == '__main__':  #
                                 f3='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt')
         print('根据答案抽取出精简的KB kb-use.v2.txt')
     # 重写q.txt        # 3 生成新的训练文件
-    if False:
+    if True:
         dh = DataClass(mode="cc", run_type='init')
         dh.build_all_q_r_tuple(99999999999999,
                                99999999999999, is_record=True)

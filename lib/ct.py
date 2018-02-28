@@ -931,18 +931,22 @@ class ct:
 
     # --------------------按比例和边界index分割
     @staticmethod
-    def cap_nums_by_rate_index(y, question_labels, skip=0):
+    def cap_nums_by_skip(y, question_labels, skip,question_global_index):
         y = y.copy()
         y = np.array(y)
         y1 = []
         y2 = []
+        y1_index = []
+        y2_index = []
         for index in range(len(y)):
             if question_labels[index]:
                 y2.append(y[index])
+                y2_index.append(question_global_index[index])
             else:
                 y1.append(y[index])
+                y1_index.append(question_global_index[index])
         ct.print("split into 2 " + str(len(y1)) + " " + str(len(y2)))
-        return y1, y2
+        return y1, y2,y1_index,y2_index
 
 
 log_path = ct.log_path_static()

@@ -80,6 +80,8 @@ class baike_helper:
                 if index % 10000 == 0:
                     print("s1: %d / %d" % (index / 10000, 4300))
 
+                line= line.replace('&nbsp;','') # 去除HTML的空格
+
                 if len(line.strip().split('\t')) != 3:
                     ct.just_log(clean_log_path, line)
                     continue
@@ -89,9 +91,9 @@ class baike_helper:
                 p = line.split('\t')[1]
                 o = line.split('\t')[2]
                 # 4
-                # if p == o:
-                #     ct.just_log(clean_log_path, line)
-                #     continue
+                if p == o:
+                     ct.just_log(clean_log_path, line)
+                     continue
                 # 2
                 p = p.replace(" ", "").replace("•", "").replace("-", "") \
                     .replace("【", "").replace("】", "") \
@@ -1696,7 +1698,7 @@ class classification:
     def extract_property(self, f3='',  # 输入
                          f4='',  # 过滤的RDF
                          f_out='',  # 抽取出的关系集合
-                         skip = 0
+                         skip=0
                          ):
         f3s = ct.file_read_all_lines_strip(f3)
         print(len(f3s))
@@ -1715,6 +1717,7 @@ class classification:
                     if idx < skip:
                         continue
 
+                    # line = "".join(line.split())
                     line_seg = line.split('\t')
                     if len(line_seg) < 5 or line.__contains__('NULL'):  # todo:rewrite input file,重写输入文件
                         ct.print("NULL bad:" + line, "bad")
@@ -1722,9 +1725,11 @@ class classification:
                     if line_seg[0] == line_seg[2]:
                         ct.print("过滤掉问题等于实体的 bad:" + line, "bad")
                         continue
+                    if line_seg[3] == line_seg[4]:
+                        ct.print("过滤掉问题的答案=属性:" + line, "bad")
+                        continue
 
-
-                    f1s_new.append(line.strip().replace('\r', '').replace('\n', '').replace(' ', '').lower())
+                    f1s_new.append(line.strip().replace('\xa0','').replace('\r', '').replace('\n', '').replace(' ', '').lower())
             except Exception as e:
                 print(e)
                 ct.print("error_index", idx)
