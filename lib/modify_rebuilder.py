@@ -40,18 +40,22 @@ if __name__ == '__main__':  #
                         f2='../data/nlpcc2016/3-questions/q.rdf.m_s.txt',
                         f1='../data/nlpcc2016/3-questions/q.rdf.txt.math_s.txt')
         print('重写q.rdf.m_s.txt')
+    if False:
+        # 重新选择一遍属性
+        bkh.choose_property(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.txt',
+                            f2='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.txt')
     # 重写rdf_extract_property_origin
     # C1.2.1
     if False:
-        cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.m_s.txt',
-                            f4='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',
+        cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.txt',
+                            f4='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt',
                             f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
                             skip=0)
-        print('重写q.rdf.m_s.filter.txt和rdf_extract_property_origin.txt')
+        print('重写q.rdf.m_s.suggest.filter.txt和rdf_extract_property_origin.txt')
     if False:
         # 仅用于测试
-        cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.m_s.txt',
-                            f4='../data/nlpcc2016/3-questions/q.rdf.m_s.filter_test.txt',
+        cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt',
+                            f4='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter_test.txt',
                             f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin_test.txt',
                             skip=14610)
 
@@ -63,7 +67,7 @@ if __name__ == '__main__':  #
                                 f3='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt')
         print('根据答案抽取出精简的KB kb-use.v2.txt')
     # 重写q.txt        # 3 生成新的训练文件
-    if True:
+    if False:
         dh = DataClass(mode="cc", run_type='init')
         dh.build_all_q_r_tuple(99999999999999,
                                99999999999999, is_record=True)

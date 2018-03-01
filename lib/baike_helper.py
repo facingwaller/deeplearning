@@ -24,6 +24,7 @@ import gc
 
 from multiprocessing import Pool, Manager
 import math
+import heapq
 
 MAX_POOL_NUM = 5
 
@@ -80,7 +81,7 @@ class baike_helper:
                 if index % 10000 == 0:
                     print("s1: %d / %d" % (index / 10000, 4300))
 
-                line= line.replace('&nbsp;','') # 去除HTML的空格
+                line = line.replace('&nbsp;', '')  # 去除HTML的空格
 
                 if len(line.strip().split('\t')) != 3:
                     ct.just_log(clean_log_path, line)
@@ -92,8 +93,8 @@ class baike_helper:
                 o = line.split('\t')[2]
                 # 4
                 if p == o:
-                     ct.just_log(clean_log_path, line)
-                     continue
+                    ct.just_log(clean_log_path, line)
+                    continue
                 # 2
                 p = p.replace(" ", "").replace("•", "").replace("-", "") \
                     .replace("【", "").replace("】", "") \
@@ -1212,6 +1213,288 @@ class baike_helper:
                     f_out.write(l.encode('utf-8'))
         print('ok')
 
+    def get_overlap(self, sentence, words):
+        ct.math1(sentence, words)
+
+    # F0.2.2 通过取N-GRAM选择属性
+    def choose_property(self, f1='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',
+                        f2='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.match_p.txt'):
+        # 加载 q.rdf
+        # 加载KB（带value）
+        # 对比各个属性
+
+        # 问题0 答案1 实体s-2 关系p-3 属性值o-4    匹配到的实体s-5
+
+        f1s = ct.file_read_all_lines_strip(f1)
+        self.init_spo(f_in=config.cc_par('kb-use'))
+
+        #
+        suggest = []
+        for item in f1s:
+            if len(str(item).split('\t')) < 5:
+                suggest.append('')
+                continue
+            q = str(item).split('\t')[0]
+            s = str(item).split('\t')[2]
+            p = str(item).split('\t')[3]
+            o = str(item).split('\t')[1]
+
+            ps = []
+            t1_set = self.kbqa.get(s, '')
+            if t1_set == '':
+                print('not exist')
+                suggest.append('')
+                continue
+            t1_set = set(t1_set)
+            for t1 in t1_set:
+                p1 = t1[0]
+                o1 = t1[1]
+                if o1 == o:
+                    ps.append(p1)
+            # 如果超过2个相同的则开始比较
+            if len(ps) >= 2:
+                # 比较得出最好的
+                best_ps = p
+                best_count = ct.math1(q, p) / len(p)
+                cand_ps = []
+                cand_count = []
+                for _ps in ps:
+                    _count = ct.math1(q, _ps) / len(_ps)
+                    if _count > best_count:
+                        best_ps = _ps
+                        best_count = _count
+                    elif _count == best_count:
+                        cand_ps.append(_ps)
+                        cand_count.append(_count)
+                if best_ps != p:
+                    suggest.append(best_ps)
+                    ct.print("%s-%d" % (best_ps, best_count))
+                else:
+                    suggest.append('')
+                    # if len(cand_ps) >= 2:
+                    #     suggest.append('@@@@\t%s' % ('\t'.join(cand_ps)))
+                    # else:
+                    #     suggest.append('')
+
+
+
+            else:
+                suggest.append('')
+        f1s_new = []
+
+        for index in range(len(f1s)):
+            # if not str(suggest[index]).__contains__('@@@@'):
+            f1s_split = str(f1s[index]).split('\t')
+            if suggest[index] != '' and f1s_split[3] != suggest[index]:
+                f1s_split[3] = suggest[index]
+            f1s_line = '\t'.join(f1s_split)
+            f1s_new.append("%s" % f1s_line)
+        ct.file_wirte_list(f2, f1s_new)
+
+    # F0.2.3  按格式去除不重要的部分，方便寻找规律
+    def core_question_extraction(self, f1='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',
+                                 f2='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.v2.txt',
+                                 f3='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.tj.txt'):
+        f1s = ct.file_read_all_lines_strip(f1)
+        q_s_new = []
+
+        for x in f1s:
+            _q1 = str(x).split('\t')[0]
+            _m_s = str(x).split('\t')[5]
+            _q1 = _q1.replace(_m_s, '♠')
+            _q1 = ct.re_clean_question(_q1)
+            q_s_new.append(_q1)
+
+        for index in range(len(f1s)):
+            ls = f1s[index].split('\t')
+            ls[0] = q_s_new[index]
+            f1s[index] = '\t'.join(ls)
+
+        ct.file_wirte_list(f2, f1s)
+
+    # F0.2.4  分析重复的部分
+    def repeat_alaysis(self, f1='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',
+                       f3='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.tj.txt'):
+        f1s = ct.file_read_all_lines_strip(f1)
+
+        d1 = dict()
+        d1_p_dict = dict()
+        p_set = set()
+        for x in f1s:
+            p = str(x).split('\t')[3]
+            p_set.add(p)
+            _q1 = str(x).split('\t')[0]
+            _m_s = str(x).split('\t')[5]
+            _q1 = _q1.replace(_m_s, '♠')
+            # _q1 = ct.re_clean_question(_q1)
+            es = ct.all_gram(_q1)
+            for _e in es:
+                # if str(_e).__contains__('♠'):
+                #     continue
+
+                if _e in d1:
+                    d1[_e] += 1
+                    _tmp_p_set = d1_p_dict[_e]
+                    _tmp_p_set.add(p)
+                    d1_p_dict[_e] = _tmp_p_set
+
+                else:
+                    _tmp_p_set = set()
+                    d1[_e] = 1
+                    _tmp_p_set.add(p)
+                    d1_p_dict[_e] = _tmp_p_set
+                    # q_s_new.append(_q1)
+
+        if False:
+            tp = ct.sort_dict(d1, True)
+            f3s = []
+            for t in tp:
+                f3s.append("%s\t%s" % (t[0], t[1]))
+
+            ct.file_wirte_list(f3, f3s)
+        if False:
+            max_len = len('你知道♠(xeone5506*2/6gb/3*300gb）这个产品的结构吗？')
+            for _len in range(max_len):
+                tmp_d1 = dict()
+                for k in d1:
+                    if len(k) == _len:
+                        tmp_d1[k] = d1[k]
+
+                tp = ct.sort_dict(tmp_d1, True)
+                f3s = []
+                for t in tp:
+                    f3s.append("%s\t%s" % (t[0], t[1]))
+                ct.file_wirte_list(f3 + "%d.txt" % _len, f3s)
+
+        # 遍历每个
+        d1_new = dict()
+        for _k in d1:
+            total = d1[_k]  # 出现的次数
+            in_p = d1_p_dict[_k]  # 出现的属性个数
+            # 1个属性 出现了10次，每次都在不同的属性（8属性） 值是0.8 通用属性
+            # 1个属性 出现了10次，每次都在不同的属性（2属性） 值是0.2 专用属性
+            score = len(in_p) / total
+            d1_new[_k] = score
+
+        tp = ct.sort_dict(d1_new, True)
+        f3s = []
+        for t in tp:
+            f3s.append("%s\t%s" % (t[0], t[1]))
+        ct.file_wirte_list(f3 + 'tj.v2.txt', f3s)
+
+        if True:
+            max_len = len('你知道♠(xeone5506*2/6gb/3*300gb）这个产品的结构吗？')
+            for _len in range(max_len):
+                tmp_d1 = dict()
+                for k in d1:
+                    if len(k) == _len:
+                        tmp_d1[k] = d1[k]
+
+                # 遍历同长度字典-计算分数
+                d1_new = dict()
+                for _k in tmp_d1:
+                    total = d1[_k]  # 出现的次数
+                    in_p = d1_p_dict[_k]  # 出现的属性个数
+                    # 1个属性 出现了10次，每次都在不同的属性（8属性） 值是0.8 通用属性
+                    # 1个属性 出现了10次，每次都在不同的属性（2属性） 值是0.2 专用属性
+                    score = len(in_p) / total
+                    d1_new[_k] = score
+
+                tp = ct.sort_dict(d1_new, True)
+                f3s = []
+                for t in tp:
+                    # 词 期望  个数 属性们
+
+                    _k = t[0]
+                    total = d1[_k]
+                    in_p = d1_p_dict[_k]
+                    r_s = '\t'.join(list(d1_p_dict[t[0]]))
+
+                    if total <= 2:
+                        continue
+                    f3s.append("%s\t%s\t%s\t%s\t%s" % (t[0], t[1], total, len(in_p), r_s))
+                ct.file_wirte_list(f3 + "-qiwang-%d.txt" % _len, f3s)
+        # N-GRAM打分
+        win = 0
+        win2 = 0
+        win3 = 0
+        lose = 0
+        fin_score = 0.0
+        f4s_top1 = []
+        f4s_top2 = []
+        f4s_top3 = []
+        index = -1
+        if True:
+            # gc1 = ct.generate_counter()
+            for x in f1s:
+                index += 1
+
+                # print("%d - %d"%(index/100,len(f1s)))
+                p = str(x).split('\t')[3]
+                p_set.add(p)
+                _q1 = str(x).split('\t')[0]
+                _m_s = str(x).split('\t')[5]
+                _q1 = _q1.replace(_m_s, '♠')
+                # _q1 = ct.re_clean_question(_q1)
+                es = ct.all_gram(_q1)
+                _tmp_d2 = dict()
+                for _e in es:
+                    _s1 = d1_p_dict[_e]
+                    for _p1 in _s1:
+                        if _p1 in _tmp_d2:
+                            _tmp_d2[_p1] += 1
+                        else:
+                            _tmp_d2[_p1] = 1
+
+                best_k, best_count = ct.find_best_in_dict(_tmp_d2)
+                _tmp_d2[best_k] = -1
+
+                if best_k == p:
+                    win += 1
+                else:
+                    lose += 1
+                    # 记录问句以及错误的属性和他的前3名
+                    # 两者之间的差值
+                    f4s_top1.append("%s\t%s\t%d\t%d" % (x, best_k, best_count, _tmp_d2[p]))
+
+                win2_k, win2_count = ct.find_best_in_dict(_tmp_d2)
+                _tmp_d2[win2_k] = -1
+                win3_k, win3_count = ct.find_best_in_dict(_tmp_d2)
+
+                if p in [best_k, win2_k]:
+                    win2 += 1
+                else:
+                    f4s_top2.append("%s\t%s\t%d\t%d" % (x, best_k, best_count, _tmp_d2[p]))
+                if p in [best_k, win2_k, win3_k]:
+                    win3 += 1
+                else:
+                    f4s_top3.append("%s\t%s\t%d\t%d" % (x, best_k, best_count, _tmp_d2[p]))
+
+                if index % 100 == 0:
+                    _total = win + lose
+                    print("%d-%d= top1:%s top2:%s top3:%s  "
+                          % (win, lose, win / _total, win2 / _total, win3 / _total))
+
+            _total = win + lose
+            print("%d-%d= top1:%s top2:%s top3:%s  "
+                  % (win, lose, win / _total, win2 / _total, win3 / _total))
+        ct.file_wirte_list(f3 + "-top1.txt", f4s_top1)
+        ct.file_wirte_list(f3 + "-top2.txt", f4s_top2)
+        ct.file_wirte_list(f3 + "-top3.txt", f4s_top3)
+
+        # p_list = list(p_set)
+        # for _len in p_list:
+        #     tmp_d1 = dict()
+        #     for k in d1:
+        #         if len(k) == _len:
+        #             tmp_d1[k] = d1[k]
+        #
+        #     tp = ct.sort_dict(tmp_d1, True)
+        #     f3s = []
+        #     for t in tp:
+        #         f3s.append("%s\t%s" % (t[0], t[1]))
+        #     ct.file_wirte_list(f3 + "%d.txt" % _len, f3s)
+
 
 class baike_test:
     @staticmethod
@@ -1729,7 +2012,8 @@ class classification:
                         ct.print("过滤掉问题的答案=属性:" + line, "bad")
                         continue
 
-                    f1s_new.append(line.strip().replace('\xa0','').replace('\r', '').replace('\n', '').replace(' ', '').lower())
+                    f1s_new.append(
+                        line.strip().replace('\xa0', '').replace('\r', '').replace('\n', '').replace(' ', '').lower())
             except Exception as e:
                 print(e)
                 ct.print("error_index", idx)
@@ -1975,6 +2259,19 @@ if __name__ == '__main__':
     # bkh.extract_kb_possible(f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
     #                 f2="../data/nlpcc2016/demo1/kb-2.txt",
     #                 f3='../data/nlpcc2016/demo1/kb-one.txt')
+
+    # F0.2.2 通过取字表面特征选择属性
+    # bkh.choose_property(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',
+    #                     f2='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.suggest.txt')
+    # print('choose_property ok ')
+
+    # F0.2.3 按格式去除不重要的部分，方便寻找规律
+
+    # bkh.core_question_extraction(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt',
+    #                              f2='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.re.txt')
+
+    bkh.repeat_alaysis(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt',
+                       f3='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.tj.txt')
 
     # 3.1
 

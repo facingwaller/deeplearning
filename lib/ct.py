@@ -863,6 +863,15 @@ class ct:
 
         return add_one
 
+    @staticmethod
+    def find_best_in_dict(_tmp_d2):
+        best_k = ''
+        best_count = 0
+        for _k in _tmp_d2:
+            if _tmp_d2[_k] > best_count:
+                best_count = _tmp_d2[_k]
+                best_k = _k
+        return best_k,best_count
     #
     @staticmethod
     def pickle_save(filename, obj):
@@ -931,7 +940,7 @@ class ct:
 
     # --------------------按比例和边界index分割
     @staticmethod
-    def cap_nums_by_skip(y, question_labels, skip,question_global_index):
+    def cap_nums_by_skip(y, question_labels, skip, question_global_index):
         y = y.copy()
         y = np.array(y)
         y1 = []
@@ -946,12 +955,66 @@ class ct:
                 y1.append(y[index])
                 y1_index.append(question_global_index[index])
         ct.print("split into 2 " + str(len(y1)) + " " + str(len(y2)))
-        return y1, y2,y1_index,y2_index
+        return y1, y2, y1_index, y2_index
+
+    @staticmethod
+    def get_ngrams(input, n):
+        output = {}  # 构造字典
+        for i in range(len(input) - n + 1):
+            ngramTemp = "".join(input[i:i + n])  # .encode('utf-8')
+            if ngramTemp not in output:  # 词频统计
+                output[ngramTemp] = 0  # 典型的字典操作
+            output[ngramTemp] += 1
+        return output
+
+    @staticmethod
+    def all_gram(new_line):
+        # for i in range(new_line_len):
+        all_entitys = []
+        for i in range(len(new_line)):
+            index = len(new_line) - int(i)
+
+            all_entitys.extend(ct.get_ngrams(new_line, index))
+        return all_entitys
+
+    @staticmethod
+    def math1(line, p1):
+        count = 0
+        p1s = ct.all_gram(p1)
+        for p in p1s:
+            if p in line:
+                count += 1
+        return count
+
+    @staticmethod
+    def re_clean_question(str):
+        # b = re.sub('\r\n','',a)
+        re_list = []
+        re_list.append('(啊|呀|(你知道)？吗|呢)？(？|\?)*$')
+        re_list.append('来着$')
+        re_list.append('呃(……)?')
+        re_list.append('请问|请问(一下|你知道)')
+        re_list.append('(那么|什么是|我想知道|我很好奇|有谁了解|问一下|请问你知道|谁能告诉我一下)')
+        re_list.append('((谁|(请|麻烦)?你|请)?(能|可以)?告诉我)')
+        re_list.append('((我想(问|请教)一下),?)')
+        re_list.append('((有人|谁|你|你们|有谁|大家)(记得|知道))')
+        #
+        re_list.append('你可以解释|你可以解释一下')
+
+        for i in range(len(re_list)):
+            for _re in re_list:
+                str = re.sub(_re,'',str)
+                # str_list = re.findall(_re, str)
+                # for s1 in str_list:
+                #     str = str.replace(s1, '')
+        return str
 
 
 log_path = ct.log_path_static()
 if __name__ == "__main__":
-    ct.test_read_entity_and_get_all_neg_relations_sq()
+    c1 = ct.re_clean_question('请问谁知道♠要打印多少张？')
+    print(c1)
+    # ct.test_read_entity_and_get_all_neg_relations_sq()
     # ct.test_random_get_some_from_list()
     # ct.test_read_entity_and_get_all_relations()
     # ct.test_decode_all_relations()
