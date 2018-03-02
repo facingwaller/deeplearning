@@ -34,7 +34,11 @@
             for t in tp:
                 out.write("%s\t%s\n" % (t[0], t[1]))
 
-
+            tp = ct.sort_dict(extract_dict, True)
+            f5s = []
+            for t in tp:
+                f5s.append("%s\t%s\n" % (t[0], t[1]))
+            ct.file_wirte_list('',f5s)
 
     # def __init__(self):
     #     # jieba.set_dictionary('../data/jieba_dict/dict.txt.big')

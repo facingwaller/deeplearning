@@ -871,8 +871,19 @@ class ct:
             if _tmp_d2[_k] > best_count:
                 best_count = _tmp_d2[_k]
                 best_k = _k
-        return best_k,best_count
-    #
+        return best_k, best_count
+
+    @staticmethod
+    def find_the_same_in_dict(_tmp_d2, best_count):
+
+        the_same_key = []
+        for _k in _tmp_d2:
+            if _tmp_d2[_k] == best_count:
+                # best_count = _tmp_d2[_k]
+                best_k = _k
+                the_same_key.append(_k)
+        return the_same_key
+
     @staticmethod
     def pickle_save(filename, obj):
         with open(filename, 'wb') as f:
@@ -1003,7 +1014,7 @@ class ct:
 
         for i in range(len(re_list)):
             for _re in re_list:
-                str = re.sub(_re,'',str)
+                str = re.sub(_re, '', str)
                 # str_list = re.findall(_re, str)
                 # for s1 in str_list:
                 #     str = str.replace(s1, '')

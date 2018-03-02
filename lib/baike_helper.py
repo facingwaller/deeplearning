@@ -1316,12 +1316,18 @@ class baike_helper:
     def repeat_alaysis(self, f1='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',
                        f3='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.tj.txt'):
         f1s = ct.file_read_all_lines_strip(f1)
-
+        self.init_spo(f_in=config.cc_par('kb-use'))
+        test_model = True
         d1 = dict()
         d1_p_dict = dict()
         p_set = set()
+        _index1 = -1
         for x in f1s:
-            p = str(x).split('\t')[3]
+            _index1 += 1
+            if test_model:
+                if _index1 > 14610:
+                    break
+            p = ct.clean_str_rel(str(x).split('\t')[3])
             p_set.add(p)
             _q1 = str(x).split('\t')[0]
             _m_s = str(x).split('\t')[5]
@@ -1382,7 +1388,7 @@ class baike_helper:
             f3s.append("%s\t%s" % (t[0], t[1]))
         ct.file_wirte_list(f3 + 'tj.v2.txt', f3s)
 
-        if True:
+        if False:
             max_len = len('你知道♠(xeone5506*2/6gb/3*300gb）这个产品的结构吗？')
             for _len in range(max_len):
                 tmp_d1 = dict()
@@ -1413,7 +1419,7 @@ class baike_helper:
                     if total <= 2:
                         continue
                     f3s.append("%s\t%s\t%s\t%s\t%s" % (t[0], t[1], total, len(in_p), r_s))
-                ct.file_wirte_list(f3 + "-qiwang-%d.txt" % _len, f3s)
+                    # ct.file_wirte_list(f3 + "-qiwang-%d.txt" % _len, f3s)
         # N-GRAM打分
         win = 0
         win2 = 0
@@ -1424,39 +1430,78 @@ class baike_helper:
         f4s_top2 = []
         f4s_top3 = []
         index = -1
-        if True:
+        if False:
             # gc1 = ct.generate_counter()
             for x in f1s:
                 index += 1
-
+                if test_model:
+                    if index < 14610:
+                        continue
                 # print("%d - %d"%(index/100,len(f1s)))
-                p = str(x).split('\t')[3]
+                p = ct.clean_str_rel(str(x).split('\t')[3])
                 p_set.add(p)
                 _q1 = str(x).split('\t')[0]
                 _m_s = str(x).split('\t')[5]
+                _ss = str(x).split('\t')[2]
                 _q1 = _q1.replace(_m_s, '♠')
                 # _q1 = ct.re_clean_question(_q1)
                 es = ct.all_gram(_q1)
                 _tmp_d2 = dict()
-                for _e in es:
-                    _s1 = d1_p_dict[_e]
-                    for _p1 in _s1:
+
+                # 过滤掉属性包含 名 称  笔画  这几个容易出错的
+                # if p.__contains__('名') or p.__contains__('称') or p=='笔画':
+                #     continue
+
+
+                for _e in es:  # 遍历N-GRAM
+                    # 获取每个N-GRAM的  # d1_p_dict KEY=N-GRAM，V= 他匹配的属性集合
+                    _s1 = d1_p_dict.get(_e, '')
+                    if _s1 == '':
+                        continue
+
+                    for _p1 in _s1:  # 遍历他的属性集合
+                        # 如果这个属性不属于 实体对应的属性集合 则放弃
+                        # if _p1.__contains__('名') or _p1.__contains__('称') or _p1 == '笔画':
+                        #     continue
+
+                        po_s = self.kbqa.get(_ss, '')  # 获取对应的PO
+                        if po_s == '':
+                            continue
+                        _exist_in = False
+                        for po_item in po_s:
+                            if po_item[0] == _p1:
+                                _exist_in = True
+                                break
+                        if not _exist_in:
+                            continue
+
                         if _p1 in _tmp_d2:
                             _tmp_d2[_p1] += 1
                         else:
                             _tmp_d2[_p1] = 1
 
                 best_k, best_count = ct.find_best_in_dict(_tmp_d2)
-                _tmp_d2[best_k] = -1
-
                 if best_k == p:
                     win += 1
                 else:
                     lose += 1
                     # 记录问句以及错误的属性和他的前3名
-                    # 两者之间的差值
-                    f4s_top1.append("%s\t%s\t%d\t%d" % (x, best_k, best_count, _tmp_d2[p]))
+                    # 原句-挑选出的最好的K-最好的总数-实际R的总数
+                    if _tmp_d2.get(p, '') == '':
+                        ct.print('cant find %s in x %s' % (p, x))
+                        continue
 
+                    # 选前3个
+                    f4s_top1.append("%s\t%s\t%d\t%d" % (x, best_k, best_count, _tmp_d2[p]))
+                    ct.print("%s\t%s\t%d\t%d" % (x, best_k, best_count, _tmp_d2[p]))
+                    if best_count != _tmp_d2[p]:
+                        ct.print(p, 'not_the_same')
+
+                    the_same_key = ct.find_the_same_in_dict(_tmp_d2, best_count)
+                    for tsk in the_same_key:
+                        ct.print(tsk)
+
+                _tmp_d2[best_k] = -1  # 排除出去
                 win2_k, win2_count = ct.find_best_in_dict(_tmp_d2)
                 _tmp_d2[win2_k] = -1
                 win3_k, win3_count = ct.find_best_in_dict(_tmp_d2)
@@ -1478,22 +1523,65 @@ class baike_helper:
             _total = win + lose
             print("%d-%d= top1:%s top2:%s top3:%s  "
                   % (win, lose, win / _total, win2 / _total, win3 / _total))
-        ct.file_wirte_list(f3 + "-top1.txt", f4s_top1)
-        ct.file_wirte_list(f3 + "-top2.txt", f4s_top2)
-        ct.file_wirte_list(f3 + "-top3.txt", f4s_top3)
+            ct.file_wirte_list(f3 + "-top1.txt", f4s_top1)
+            ct.file_wirte_list(f3 + "-top2.txt", f4s_top2)
+            ct.file_wirte_list(f3 + "-top3.txt", f4s_top3)
+        # 抽取♠前面的部分，做排序
+        if False:
+            p_set = set()
+            extract_dict = dict()
+            extract_ps_dict = dict()
+            for x in f1s:
+                index += 1
+                p = ct.clean_str_rel(str(x).split('\t')[3])
+                p_set.add(p)
+                _q1 = str(x).split('\t')[0]
+                _m_s = str(x).split('\t')[5]
+                _ss = str(x).split('\t')[2]
+                _q1 = _q1.replace(_m_s, '♠')
+                extract_start_str = _q1.split('♠')[0]
+                if extract_start_str in extract_dict:
+                    extract_dict[extract_start_str] += 1
+                else:
+                    extract_dict[extract_start_str] = 1
 
-        # p_list = list(p_set)
-        # for _len in p_list:
-        #     tmp_d1 = dict()
-        #     for k in d1:
-        #         if len(k) == _len:
-        #             tmp_d1[k] = d1[k]
-        #
-        #     tp = ct.sort_dict(tmp_d1, True)
-        #     f3s = []
-        #     for t in tp:
-        #         f3s.append("%s\t%s" % (t[0], t[1]))
-        #     ct.file_wirte_list(f3 + "%d.txt" % _len, f3s)
+            tp = ct.sort_dict(extract_dict, True)
+            f5s = []
+            for t in tp:
+                f5s.append("%s\t%s" % (t[0], t[1]))
+            ct.file_wirte_list('../data/nlpcc2016/3-questions/demo1/extract_dict.txt',f5s)
+            # 排序看看
+            # 如果排序不行就分子类再排序
+
+        #  试试利用相同的句式分类下属性
+        if True:
+            p_set = set()
+            extract_dict = dict()
+            for x in f1s:
+                index += 1
+                p = ct.clean_str_rel(str(x).split('\t')[3])
+                p_set.add(p)
+                _q1 = str(x).split('\t')[0]
+                _m_s = str(x).split('\t')[5]
+                _ss = str(x).split('\t')[2]
+                _q1 = _q1.replace(_m_s, '♠')
+                # 去掉书名号干扰
+                # 去掉无用次的干扰
+                # 把属性列出来看看
+                _q1 = _q1.replace('《♠》','♠')
+                _q1 = ct.re_clean_question(_q1)
+
+                extract_start_str = _q1 # .split('♠')[0]
+                if extract_start_str in extract_dict:
+                    extract_dict[extract_start_str] += 1
+                else:
+                    extract_dict[extract_start_str] = 1
+            tp = ct.sort_dict(extract_dict, True)
+            f5s = []
+            for t in tp:
+                f5s.append("%s\t%s" % (t[0], t[1]))
+            ct.file_wirte_list('../data/nlpcc2016/3-questions/demo1/class_p_by_q.txt',f5s)
+
 
 
 class baike_test:
