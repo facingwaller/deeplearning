@@ -298,7 +298,7 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
             else:
                 error_test_dict[valid_msg1] = 1
 
-            ct.just_log2("test_error", '\n')
+            # ct.just_log2("test_error", '\n')
             ct.just_log2("test_error", valid_msg1 + ' %s' % str(error_test_dict[valid_msg1]))
             ct.just_log2("test_error", valid_msg2)
 
