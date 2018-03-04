@@ -597,11 +597,15 @@ class ct:
 
     @staticmethod
     def clean_str_rel(string):
-        return str(string).strip().strip('\n').strip('\r').replace(' ', '') \
+        return str(string).lower().strip().strip('\n').strip('\r').replace(' ', '') \
             .replace(" ", "").replace("•", "").replace("-", "") \
             .replace("【", "").replace("】", "") \
             .replace("[", "").replace("]", "").replace('，', '') \
             .replace("”", '').replace('）', '').replace('（', '').replace('／', '')
+
+    @staticmethod
+    def clean_str_answer(string):
+        return str(string).lower().strip().strip('\n').strip('\r').replace(' ', '')
 
     @staticmethod
     def clean_str_zh2en(string):
@@ -1019,6 +1023,18 @@ class ct:
                 # for s1 in str_list:
                 #     str = str.replace(s1, '')
         return str
+
+    @staticmethod
+    def get_score_for_sort(question, sp):
+        # 实体在句子中 1000分 【必须在，否则不考虑？】
+        # 完全属性在句子中100分
+        # 部分属性在句子中10分
+        score = 0
+        if str(question).__contains__(sp[0]):
+            score += 100
+        if str(question).__contains__(sp[1]):
+            score += 10
+        return score
 
 
 log_path = ct.log_path_static()

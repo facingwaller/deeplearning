@@ -9,6 +9,21 @@
                 o1.write(item + '\n')
 
 
+f1s = ct.file_read_all_lines_strip('../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt')
+
+        # 问题0 答案1 实体s-2 关系p-3 属性值o-4    匹配到的实体s-5
+
+                vs = self.kbqa.get(f3s_e, "")
+                if vs == '':
+                    ct.just_log('../data/nlpcc2016/demo1/extract_kb.log.txt', f3s_e)
+                    print(f3s_e)
+                    continue
+                for po in vs:
+                    msg = "%s\t%s\t%s" % (f3s_e, po[0], po[1])
+                    o1.write(msg + '\n')
+
+
+                    extract_kb_possible
 
  2. 加载和保存一个模型
 
@@ -69,3 +84,7 @@
     #                         words_out.append(word)
     #                 f_out.write(' '.join(words_out) + '\n')
     #     print(321321)
+
+
+
+    tmp = sorted(tmp, key=bkh.get_total)

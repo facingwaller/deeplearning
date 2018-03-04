@@ -225,6 +225,40 @@ class baike_helper:
 
         ct.print('extract_kb_possible ok')
 
+    # 从答案all_s的文件（答案存在的所有KB）中抽取需要的KB
+    def extract_kb_all_s(self,
+                         f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
+                         f2="../data/nlpcc2016/demo1/kb_possible.txt",
+                         f3='../data/nlpcc2016/6-answer/all_s.txt'):
+        f3s = ct.file_read_all_lines_strip(f3)
+
+        # print(len(f3s))
+        # # f3s = [str(x).split('\t')[2].lower() for x in f3s]
+        # f3s_new = set()
+        # for x in f3s:
+        #     x1 = str(x).split('\t')
+        #     if len(x1) < 3:
+        #         print(x)
+        #         continue
+        #     f3s_new.add(x1[2].lower().replace(' ', ''))
+        # f3s = list(f3s_new)
+
+
+        self.init_spo(f_in=f1)
+
+        with open(f2, mode='w', encoding='utf-8') as o1:
+            for f3s_e in f3s:
+                vs = self.kbqa.get(f3s_e, "")
+                if vs == '':
+                    ct.print(f3s_e, 'extract_kb_log')
+                    print(f3s_e)
+                    continue
+                for po in vs:
+                    msg = "%s\t%s\t%s" % (f3s_e, po[0], po[1])
+                    o1.write(msg + '\n')
+
+        ct.print('extract_kb_possible ok')
+
     def rewrite_rdf(self, f3='',
                     f2='',
                     f1=''):
@@ -832,7 +866,7 @@ class baike_helper:
 
 
     # gzip完整装载需要6分钟,内存不会直接爆炸
-    def init_spo(self, f_in="../data/nlpcc2016/demo1/kb.gz"):
+    def init_spo(self, f_in="../data/nlpcc2016/2-kb/kb-use.v2.txt"):
         import time
         start_time = time.time()
         if f_in.endswith('.gz'):
@@ -883,6 +917,129 @@ class baike_helper:
         f_out.close()
         # ct.pickle_save(config.par('baike_dict_path'), self.kbqa)
         ct.print_t("init_spo ok")
+
+        time_elapsed = time.time() - start_time
+        ct.print_t("time_elapsed: %6.7f" % time_elapsed)
+
+        # ct.pickle_save(config.par('baike_dict_path'), self.kbqa)
+        # self.kbqa = d_dict
+
+        # 通过属性值
+
+    # gzip完整装载需要6分钟,内存不会直接爆炸
+    # 之前是S-P-O,K=S ,V = P-O  改成 K= O , V = S-p
+    def init_spo_vk(self, f_in="../data/nlpcc2016/2-kb/kb-use.v2.txt"):
+        import time
+        start_time = time.time()
+        if f_in.endswith('.gz'):
+            use_gzip = True
+        else:
+            use_gzip = False
+        # exist = os.path.exists(config.par('baike_dict_path'))
+        # if exist:
+        #     print('加载已经存在的字典')
+        #     self.kbqa = ct.pickle_load(config.par('baike_dict_path'))
+        #     return
+        ct.print_t('init_spo')
+        self.kb2 = dict()
+
+        index = 0
+        if use_gzip:
+            f_out = gzip.open(f_in, 'rb')
+        else:
+            f_out = codecs.open(f_in, mode="r", encoding="utf-8")
+        # with gzip.open(f_in, 'rb') as f_out:
+        for line in f_out:
+            if use_gzip:
+                line = line.decode('utf-8')
+            index += 1
+            if index % 100000 == 0:
+                ct.print_t("%d / 428" % (index / 100000))
+                # if (index / 100000)%10 == 0 :
+                #     print('collect')
+                #     gc.collect()
+
+            ls = str(line).strip('\n').strip('\r').split('\t')
+            # s = ct.clean_str_entity(ls[0])
+            s = ls[0]
+            p = ct.clean_str_rel(ls[1])
+            o1 = ct.clean_str_answer(ls[2])
+            t1 = (s, p)
+            # del line
+            if o1 in self.kb2:
+                # try:
+                s1 = self.kb2[o1]
+                s1.add(t1)
+                self.kb2[o1] = s1
+            else:
+                # except Exception as e1 :
+                s1 = set()
+                s1.add(t1)
+                self.kb2[o1] = s1
+        f_out.close()
+        # ct.pickle_save(config.par('baike_dict_path'), self.kbqa)
+        ct.print_t("init_spo2 ok")
+
+        time_elapsed = time.time() - start_time
+        ct.print_t("time_elapsed: %6.7f" % time_elapsed)
+
+        # ct.pickle_save(config.par('baike_dict_path'), self.kbqa)
+        # self.kbqa = d_dict
+
+        # 通过属性值
+
+    # 之前是S-P-O,K=S ,V = P-O  改成 K= O , V = S-p
+    def init_spo_vk2(self, f_in="../data/nlpcc2016/2-kb/kb-use.v2.txt"):
+        import time
+        start_time = time.time()
+        if f_in.endswith('.gz'):
+            use_gzip = True
+        else:
+            use_gzip = False
+        # exist = os.path.exists(config.par('baike_dict_path'))
+        # if exist:
+        #     print('加载已经存在的字典')
+        #     self.kbqa = ct.pickle_load(config.par('baike_dict_path'))
+        #     return
+        ct.print_t('init_spo')
+        self.kb2 = dict()
+
+        index = 0
+        if use_gzip:
+            f_out = gzip.open(f_in, 'rb')
+        else:
+            f_out = codecs.open(f_in, mode="r", encoding="utf-8")
+        # with gzip.open(f_in, 'rb') as f_out:
+        for line in f_out:
+            if use_gzip:
+                line = line.decode('utf-8')
+            index += 1
+            if index % 100000 == 0:
+                ct.print_t("%d / 428" % (index / 100000))
+                # if (index / 100000)%10 == 0 :
+                #     print('collect')
+                #     gc.collect()
+
+            ls = str(line).strip('\n').strip('\r').split('\t')
+            # s = ct.clean_str_entity(ls[0])
+            s = ls[0]
+            # p = ct.clean_str_rel(ls[1])
+            o1 = ct.clean_str_answer(ls[2])
+            t1 = s
+            # del line
+            if o1 in self.kb2:
+                # try:
+                s1 = self.kb2[o1]
+                s1.add(t1)
+                self.kb2[o1] = s1
+            else:
+                # except Exception as e1 :
+                s1 = set()
+                s1.add(t1)
+                self.kb2[o1] = s1
+        f_out.close()
+        # ct.pickle_save(config.par('baike_dict_path'), self.kbqa)
+        ct.print_t("init_spo2 ok")
 
         time_elapsed = time.time() - start_time
         ct.print_t("time_elapsed: %6.7f" % time_elapsed)
@@ -1549,7 +1706,7 @@ class baike_helper:
             f5s = []
             for t in tp:
                 f5s.append("%s\t%s" % (t[0], t[1]))
-            ct.file_wirte_list('../data/nlpcc2016/3-questions/demo1/extract_dict.txt',f5s)
+            ct.file_wirte_list('../data/nlpcc2016/3-questions/demo1/extract_dict.txt', f5s)
             # 排序看看
             # 如果排序不行就分子类再排序
 
@@ -1568,10 +1725,10 @@ class baike_helper:
                 # 去掉书名号干扰
                 # 去掉无用次的干扰
                 # 把属性列出来看看
-                _q1 = _q1.replace('《♠》','♠')
+                _q1 = _q1.replace('《♠》', '♠')
                 _q1 = ct.re_clean_question(_q1)
 
-                extract_start_str = _q1 # .split('♠')[0]
+                extract_start_str = _q1  # .split('♠')[0]
                 if extract_start_str in extract_dict:
                     extract_dict[extract_start_str] += 1
                 else:
@@ -1580,8 +1737,7 @@ class baike_helper:
             f5s = []
             for t in tp:
                 f5s.append("%s\t%s" % (t[0], t[1]))
-            ct.file_wirte_list('../data/nlpcc2016/3-questions/demo1/class_p_by_q.txt',f5s)
-
+            ct.file_wirte_list('../data/nlpcc2016/3-questions/demo1/class_p_by_q.txt', f5s)
 
 
 class baike_test:
@@ -2134,6 +2290,241 @@ class classification:
         if f4 != '':
             ct.file_wirte_list(f4, list1=f1s_new)
 
+    def pattern_class1(self, f1='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt'):
+        # 1         从答案入手做一次标注
+        # 2 2 从问题入手做一遍答案
+        # 3 计算 完全匹配的 准确率
+        f1s = ct.file_read_all_lines_strip(f1)
+        bkh = baike_helper()
+        bkh.init_spo()
+        win = 0
+        lose = 0
+        for l1 in f1s:
+            l1_split = l1.split('\t')
+            q = l1_split[0]
+            p = ct.clean_str_rel(l1_split[3])
+            s = l1_split[2]
+            o = l1_split[1]
+            q = str(q).replace(l1_split[5], '')
+            # 完全匹配
+            vs = bkh.kbqa.get(s, '')
+            if vs == '':
+                ct.print('error ! K 不存在\t%s' % s)
+                continue
+            full_match = False
+            full_match_ps = []
+            full_match_os = []
+            for po in vs:
+                if str(q).__contains__(po[0]):
+                    full_match_ps.append(po[0])
+                    full_match_os.append(po[1])
+                    full_match = True
+            # 检查准确率
+            if full_match:
+                if len(full_match_ps) > 1:
+                    # lose += 1
+                    ct.print("%s\t%s" % (l1, '\t'.join(full_match_ps)), 'pattern_class1_error_over')
+                elif len(full_match_ps) == 0:
+                    ct.print("%s\t%s" % (l1, '\t'.join(full_match_ps)), 'pattern_class1_match=0')
+                elif len(full_match_ps) == 1:
+                    if p in full_match_ps:
+                        # if o in  full_match_os:
+                        win += 1
+                        ct.print("%s\t%s" % (l1, '\t'.join(full_match_ps)), 'pattern_class1_right')
+                    else:
+                        lose += 1
+                        ct.print("%s\t###\t%s" % (l1, '\t'.join(full_match_ps)), 'pattern_class1_error')
+
+        ct.print("win %d lose%d   win/total:(%s)    " % (win, lose, win / (win + lose)), 'result')
+
+    # 找出那些匹配不到的，分析一下
+    def extract_spo_cant_find(self,
+                              f1='../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
+                              f2='../data/nlpcc2016/6-answer/kb_values.v1.txt',
+                              f3='../data/nlpcc2016/6-answer/cant_find_answer.txt'):
+        ### 步骤
+        # 1.         # 答案做进一个set
+        # 2.         # 遍历set抽取所有的KB实体名
+        # 3.         # 根据实体名抽取一份KB
+        #  减少KB大小的压力
+        # 4. 输出找不到的答案，这里要做校验检查下为什么找不到
+
+        find_set = set()
+        f1s = ct.file_read_all_lines_strip(f1)
+        f2s = ct.file_read_all_lines_strip(f2)
+        # answsers = [str(x).split('\t')[1] for x in f1s]
+        # answsers =list(set(answsers))
+
+        f2s = [ct.clean_str_answer(str(x)) for x in f2s]
+        cant_find = []
+        gc1 = ct.generate_counter()
+        for l1 in f1s:
+            index = gc1()
+            if index % 100 == 0:
+                print("%s\t%s" % (index / 100, len(f1s)))
+            if len(str(l1).split('\t')) < 2:
+                ct.print(l1, 'error1')
+                continue
+            a1 = ct.clean_str_answer(str(l1).split('\t')[1])
+            if a1 not in f2s:
+                cant_find.append(a1)
+        ct.file_wirte_list(f3, cant_find)
+
+    # 抽取所有可能的 S-P 对
+    def extract_spo(self,
+                    f1='../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
+                    f2='../data/nlpcc2016/2-kb/kb.v1.txt',
+                    f4='../data/nlpcc2016/2-kb/kb.v4.txt'):
+        ### 步骤
+        # 1. 加载所有的 <O,S-P>
+        # 2. 逐个匹配答案，并输出可能的S-P
+
+        f1s = ct.file_read_all_lines_strip(f1)
+        f2s = ct.file_read_all_lines_strip(f2)
+        f3s = []
+        # f2s = ct.file_read_all_lines_strip(f2)
+        gc1 = ct.generate_counter()
+        answsers = [ct.clean_str_answer(str(x).split('\t')[1]) for x in f1s]
+        answsers = list(set(answsers))
+
+        kb_set=set()
+        with open(f4, 'w', encoding='utf-8') as f_out:
+            for line in f2s:
+                index = gc1()
+                if index % 10000 == 0:
+                    print("%s\t%s" % (index / 10000, 4300))
+                # if len(str(line).split('\t')) < 2:
+                #     print('error %s' % line)
+                #     continue
+                if ct.clean_str_answer(str(line).split('\t')[2]) in answsers:
+                    if line not in kb_set:
+                        f_out.write(line)
+                        kb_set.add(line)
+
+            # with open(f2, 'r', encoding='utf-8') as f_in:
+            #     for line in f_in:
+
+
+
+                        # answser_set=set()
+
+    # 抽取所有可能的KB
+    def extract_kb(self,
+                   f1='../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
+
+                   f3='../data/nlpcc2016/6-answer/all_s.txt'):
+        ### 步骤
+        # 1. 加载所有的 <O,S-P>
+        # 2. 逐个匹配答案，并输出可能的S-P
+
+        f1s = ct.file_read_all_lines_strip(f1)
+        f3s = []
+        # f2s = ct.file_read_all_lines_strip(f2)
+        # answsers = [str(x).split('\t')[1] for x in f1s]
+        # answsers =list(set(answsers))
+        bkh = baike_helper()
+        # 记录所有的
+        bkh.init_spo_vk2(f_in="../data/nlpcc2016/2-kb/kb.v1.txt")
+
+        s_set = set()
+        cant_find = []
+        gc1 = ct.generate_counter()
+        for l1 in f1s:
+            index = gc1()
+            if index % 100 == 0:
+                print("%s\t%s" % (index / 100, len(f1s)))
+            if len(str(l1).split('\t')) < 2:
+                ct.print(l1, 'error1')
+                continue
+            a1 = ct.clean_str_answer(str(l1).split('\t')[1])
+
+            vs = bkh.kb2.get(a1, "")
+            if vs == '':
+                ct.print(a1, 'cant_find')
+                print(a1)
+                continue
+            # if a1 in answser_set:
+            #     # 输出过则跳过
+            #     continue
+            # else:
+            #     answser_set.add(a1)
+            msg_list = []
+            for po in vs:
+                s_set.add(po)
+                # msg = "%s\t%s\t" % (po[0], po[1])
+                # msg_list.append(msg)
+                # o1.write(msg + '\n')
+                # l2 = "%s\t%s"%(l1,'\t'.join(msg_list))
+                # f3s.append(l2)
+                # ct.print(l2,'log_extract')
+        f3s = list(s_set)
+        ct.file_wirte_list(f3, f3s)
+
+    def extract_spo_possible(self, f1='../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
+                             f3='../data/nlpcc2016/6-answer/all_s.txt',
+                             f4='../data/nlpcc2016/6-answer/q.rdf_all.txt'):
+        ### 步骤
+        # 1. 加载所有的 <O,S-P>
+        # 2. 逐个匹配答案，并输出可能的S-P
+        # 3. 实体和属性都包含在句子中的排名靠前。
+
+        f1s = ct.file_read_all_lines_strip(f1)
+        f3s = []
+        # f2s = ct.file_read_all_lines_strip(f2)
+        # answsers = [str(x).split('\t')[1] for x in f1s]
+        # answsers =list(set(answsers))
+        bkh = baike_helper()
+        # 记录所有的
+        bkh.init_spo_vk2(f_in="../data/nlpcc2016/2-kb/kb.v4.txt") # 仅匹配的
+
+        # answser_set=set()
+        cant_find = []
+        gc1 = ct.generate_counter()
+        for l1 in f1s:
+            q1=str(l1).split('\t')[0]
+            a1 = str(l1).split('\t')[1]
+
+            index = gc1()
+            if index % 100 == 0:
+                print("%s\t%s" % (index / 100, len(f1s)))
+            if len(str(l1).split('\t')) < 2:
+                ct.print(l1, 'error1')
+                continue
+            a1 = ct.clean_str_answer(str(l1).split('\t')[1])
+
+            vs = bkh.kb2.get(a1, "")
+            if vs == '':
+                ct.print(a1, 'cant_find')
+                print(a1)
+                continue
+            # if a1 in answser_set:
+            #     # 输出过则跳过
+            #     continue
+            # else:
+            #     answser_set.add(a1)
+            msg_list = []
+            # ct.sort_dict()
+            # 对S-P对排序；
+            # 1. S 出现在Q中，
+            # 2. P 唯一出现在Q 中，
+
+            vs = sorted(vs, key=lambda k:
+                q1.__contains__(
+                    # 提取出候选实体 去除掉书名号
+                    baike_helper.entity_re_extract_one_repeat(k[0])
+                ) * 100 + q1.__contains__(k[1]) * 10
+                        , reverse=True)
+            for po in vs:
+                msg = "%s\t%s\t\t" % (po[0], po[1])
+                msg_list.append(msg)
+                # o1.write(msg + '\n')
+            l2 = "%s\t%s" % (l1, '\t'.join(msg_list))
+            # f3s.append(l2)
+            # ct.print(l2, 'log_extract')
+            ct.just_log(f3, l2)
+
+            # ct.file_wirte_list(f3, f3s)
+
 
 # F2.3 空格分割
 def seg_m():
@@ -2331,7 +2722,33 @@ if __name__ == '__main__':
         cf.extract_property(f3=config.cc_par('q.rdf.m_s'),
                             f4=config.cc_par('q.rdf.m_s.filter'),
                             f_out='../data/nlpcc2016/class/rdf_extract_property_origin.txt')
+    # G1
+    if False:
+        cf.pattern_class1(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt')
+        print(1)
+    # G2 弃用·改成抽取KB中包含答案的SPO
+    if True:
+        cf.extract_spo(f1='../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
+                    f2='../data/nlpcc2016/2-kb/kb.v1.txt',
+                    f4='../data/nlpcc2016/2-kb/kb.v4.txt')
 
+        print(3)
+    # G2.2 抽取可能的KB的S
+    if False:
+        cf.extract_kb(f1='../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
+                      f3='../data/nlpcc2016/6-answer/all_s.txt')
+    # G 2.3 根据S列表抽取所有可能的KB
+    if False:
+        bkh = baike_helper()
+        bkh.extract_kb_all_s(f1='../data/nlpcc2016/2-kb/kb.v1.txt',
+                             f2='../data/nlpcc2016/2-kb/kb.v3.txt',
+                             f3='../data/nlpcc2016/6-answer/all_s.txt')
+    # 2.5 根据answer抽取所有可能的S-P
+
+    # G 2.4 加载KB列出所有可能的KB
+    if False:
+        cf.extract_spo_possible(f1='../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
+                                f3='../data/nlpcc2016/6-answer/all_s.txt')
 if __name__ == '__main__':
 
     bkt = baike_test()
@@ -2358,8 +2775,9 @@ if __name__ == '__main__':
     # bkh.core_question_extraction(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt',
     #                              f2='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.re.txt')
 
-    bkh.repeat_alaysis(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt',
-                       f3='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.tj.txt')
+    if False:
+        bkh.repeat_alaysis(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt',
+                           f3='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.tj.txt')
 
     # 3.1
 
