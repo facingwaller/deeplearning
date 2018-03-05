@@ -2613,6 +2613,8 @@ class classification:
                 index = gc1()
                 if index % 100 == 0:
                     print("%s\t 243 " % (index / 100))
+                # if index >200:
+                #     break
 
                 l1_splits = l1.split('|||')
                 q1 = l1_splits[0].split('\t')[0]
@@ -2744,10 +2746,11 @@ class classification:
                     f4s_dict[p1]=1
             tp = ct.sort_dict(f4s_dict)
             for f4s_s_l in tp:
-            # for f4s_s_l in f4s_set:
-                for f4_l in f4s:
-                    if str(f4_l).split('\t')[3]==f4s_s_l[0]:
-                        ct.just_log(f4+'.debug.txt', f4_l)
+                ct.just_log('../data/nlpcc2016/6-answer/sort.txt', "%s\t%s"%(f4s_s_l[0],f4s_s_l[1]))
+
+                # for f4_l in f4s:
+                #     if str(f4_l).split('\t')[3]==f4s_s_l[0]:
+                #         ct.just_log(f4+'.debug.txt', f4_l)
 
 
 # F2.3 空格分割
