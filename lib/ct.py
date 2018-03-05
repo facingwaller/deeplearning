@@ -831,8 +831,13 @@ class ct:
     @staticmethod
     def file_read_all_lines_strip(file_name):
         lines = []
-        with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
-            for line in read_file.readlines():
+        gc1 = ct.generate_counter()
+        with open(file_name, mode='r', encoding='utf-8') as read_file:
+            # with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
+            for line in read_file:
+                index = gc1()
+                if index % 10000 == 0:
+                    print("%s * 100" % (index / 10000))
                 lines.append(line.replace("\n", "").replace("\r", "").strip())
 
         return lines
@@ -1035,6 +1040,22 @@ class ct:
         if str(question).__contains__(sp[1]):
             score += 10
         return score
+
+    # 字表面特征
+    @staticmethod
+    def get_zi_flag_score(q1, _p):
+        zi_flag_total = 0
+        for p_char in _p:
+            if list(set(q1)).__contains__(p_char):
+                zi_flag_total += 1
+        p_len = len(_p)
+        if p_len == 0:
+            ct.print("%s\t%s" % (q1, _p), 'error')
+            p_len = 100
+        zi_flag_score = zi_flag_total / p_len * 10
+
+        zi_flag_score +=  p_len/10
+        return zi_flag_score
 
 
 log_path = ct.log_path_static()
