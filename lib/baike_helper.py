@@ -2569,16 +2569,20 @@ class classification:
 
     def choose_spo(self, f1='../data/nlpcc2016/6-answer/q.rdf_all-full.txt',
                    f4='../data/nlpcc2016/6-answer/q.rdf_all_choose.txt',
-                   mode='release'
+                   mode='release',
+                   skip_special_p=False
                    ):
         ### 步骤
         # 1. 加载所有的 <O,S-P>
         # 2. 逐个匹配答案，并输出可能的S-P
-        # 3. 实体和属性都包含在句子中的排名靠前。
+        # 3. 实体和属性都包含在句子中的排名靠前。通过打分机制
+        # 4. 不同的模式记录不同格式到不同的地方
 
         # f1s = ct.file_read_all_lines_strip(f1)
         f3s = []
         f4s = []
+        f5s = []
+        f6s = []
         # f2s = ct.file_read_all_lines_strip(f2)
         # answsers = [str(x).split('\t')[1] for x in f1s]
         # answsers =list(set(answsers))
@@ -2618,6 +2622,8 @@ class classification:
 
                 l1_splits = l1.split('|||')
                 q1 = l1_splits[0].split('\t')[0]
+                # 去除无意义
+                q1 = ct.re_clean_question(q1)
                 q1_origin = l1_splits[0].split('\t')[0]
                 q1 = q1.lower().replace(' ', '')
                 if len(l1_splits[0].split('\t')) < 2:
@@ -2626,12 +2632,18 @@ class classification:
                 a1 = l1_splits[0].split('\t')[1]
                 a1_origin = l1_splits[0].split('\t')[1]
                 a1 = ct.clean_str_answer(a1)
+                match_s = ''
+                match_p = ''
 
                 l1_splits = l1_splits[1:]
                 vs = []
-                if q1 in ['李明的出生年月日是什么？', '小说《韩娱守护力》完结还是连载呢？', '万达的总部在哪',
-                          '小说《韩娱守护力》完结还是连载呢？']:
-                    print(132131)
+                if q1 in [
+                    # '李明的出生年月日是什么？', '小说《韩娱守护力》完结还是连载呢？', '万达的总部在哪',
+                    #       '小说《韩娱守护力》完结还是连载呢？',
+                    '郑州驱逐舰型号是什么有人知道吗',
+                    '你知道玝的部首笔画是多少吗？',
+                    '请问全国人民代表大会常务委员会关于加入《世界知识产权组织表演和录音制品条约》的决定是由哪个会议提出的？', ]:
+                    print(223333)
                 i = 0
                 for _vs in l1_splits:
                     i += 1
@@ -2639,25 +2651,11 @@ class classification:
                         t1 = (_vs.split('\t')[1], _vs.split('\t')[2],)
                     else:
                         t1 = (_vs.split('\t')[0], _vs.split('\t')[1],)
+                    if t1[0] == '《是什么》':
+                        continue
+                    if t1[0] in '你知道吗的有多少笔画' and t1[1] == '笔画':
+                        continue
                     vs.append(t1)
-
-                # vs = bkh.kb2.get(a1, "")
-                # # vs =set()
-                # # for f3_l in f3s:
-                # #     if ct.clean_str_answer(f3_l[2])==a1:
-                # #         t1 = (f3_l[1],f3_l[2])
-                # #         vs.add(t1)
-                # # if len(vs) == 0:
-                # if vs == '':
-                #     ct.print(a1, 'cant_find')
-                #     print(a1)
-                #     continue
-                # # if a1 in answser_set:
-                # #     # 输出过则跳过
-                # #     continue
-                # # else:
-                # #     answser_set.add(a1)
-
 
                 msg_list = []
                 # ct.sort_dict()
@@ -2665,10 +2663,10 @@ class classification:
                 # 1. S 出现在Q中，
                 # 2. P 唯一出现在Q 中，
                 vs_new = []
-
                 vs = list(vs)
 
                 for index in range(len(vs)):
+                    null_special_flag = ''
                     k = vs[index]
                     _s = k[0]
                     _p = k[1]
@@ -2676,13 +2674,30 @@ class classification:
                     score = 0.0
 
                     # score += ct.get_zi_flag_score(q1, clean_s) * 100
-                    if q1.__contains__(clean_s):
-                        score += ct.get_zi_flag_score(q1, clean_s) * 100
+                    if q1.__contains__(clean_s) or q1.__contains__(_s):
+                        m1 = ct.get_zi_flag_score(q1, clean_s, _p) * 100
+                        m2 = ct.get_zi_flag_score(q1, _s, _p) * 100
+                        max_score = max(m1, m2)
+                        # if m1>=m2:
+                        #     match_s = clean_s
+                        # else:
+                        #     match_s = _s
+                        score += max_score
+                        # null_special_flag =''
+                        score_levle = 100
                     else:
-                        # if (len(vs)) != 1:
+                        score_levle = 10
+                        # 如果不完全包含，但是包含一半以上数字的也算是正确答案
+                        # null_special_flag='@@@@@@'
+                        m1 = ct.get_zi_flag_score(q1, clean_s, _p) * 100
+                        m2 = ct.get_zi_flag_score(q1, _s, _p) * 100
+                        max_score = max(m1, m2)
+                        score += max_score / 10
+                        # if (len(vs)) != 1:  # 一个或者多个都跳过
                         #     # 记录单个的答案
-                        continue
-                    score += ct.get_zi_flag_score(q1.replace(clean_s, ''), _p)
+                        #      continue
+
+                    score += ct.get_zi_flag_score_ps(q1.replace(clean_s, ''), _p)
 
                     k = (k[0], k[1], score)
                     # vs[index] = k
@@ -2690,30 +2705,52 @@ class classification:
 
                 vs = sorted(vs_new, key=lambda k: k[2], reverse=True)
 
-                # for score_levle in [100]: # , 10, -1
-                score_levle = 100
-                _vs1 = filter(lambda x: x[2] > score_levle, vs)
+                only_one = False
+                if len(vs) > 1:
+                    # for score_levle in [100]: # , 10, -1
 
-                vs1 = []
-                for _vs1_item in _vs1:
-                    vs1.append(_vs1_item)
-                if len(vs1) > 0:
-                    vs = vs1
-                else:
+                    _vs1 = filter(lambda x: x[2] > score_levle, vs)
+
+                    vs1 = []
+                    for _vs1_item in _vs1:
+                        vs1.append(_vs1_item)
+                    if len(vs1) > 0:
+                        vs = vs1
+                    else:
+                        vs = [('NULL', 'NULL', -1)]
+                elif len(vs) == 1:
+                    only_one = True
+                    # 直接记录
+                elif len(vs) == 0:
                     vs = [('NULL', 'NULL', -1)]
-                if mode == 'release':
-                    vs = ct.list_safe_sub(vs, 1)
-                    po = vs[0]
-                    msg = '%s\t%s' % (po[0], po[1])
-                    msg_list.append(msg)
-                    l2 = "%s\t%s\t%s" % (q1_origin, a1_origin, msg)
-                elif mode == 'debug':
+
+                # 不同模式记录的形式不一样
+                if mode == 'release' or mode == 'debug':
+                    # vs = ct.list_safe_sub(vs, 1)
+                    # po = vs[0]
+                    # msg = '%s\t%s' % (po[0], po[1])
+                    # msg_list.append(msg)
+                    # l2 = "%s\t%s\t%s" % (q1_origin, a1_origin, msg)
+                    # elif mode == 'debug':
                     vs = ct.list_safe_sub(vs, 1)
                     po = vs[0]
                     clean_s = baike_helper.entity_re_extract_one_repeat(po[0])
-                    msg = '%s\t%s\t%s\t%s' % (po[0], po[1], a1, q1.replace(clean_s, '♠'))
+
+                    if not q1.__contains__(clean_s) and not q1.__contains__(po[0]):
+                        null_special_flag = '@@@@@@'
+
+                    if q1.find(po[0]) != -1:  # 优先匹配更长的实体
+                        q1 = q1.replace(po[0], '♠')
+                        match_s = po[0]
+                    else:
+                        q1 = q1.replace(clean_s, '♠')
+                        match_s = clean_s
+                        # S P O  匹配S 替换匹配S的句子  替换匹配S和P的句子
+
+                    msg = '%s\t%s\t%s\t%s\t%s\t%s' % (po[0], po[1], a1, match_s, q1,
+                                                      q1.replace(po[1], '♢'))
                     msg_list.append(msg)
-                    l2 = "%s\t%s\t%s" % (q1_origin, a1_origin, msg)
+                    l2 = "%s\t%s\t%s" % (null_special_flag + q1_origin, a1_origin, msg)
                 else:
                     vs = ct.list_safe_sub(vs, 5)
                     for po in vs:
@@ -2721,36 +2758,58 @@ class classification:
                         msg_list.append(msg)
                     l2 = "%s\t%s\t|||\t%s" % (q1_origin, a1_origin, '|||\t'.join(msg_list))
 
+                # 不同的模式记录到不同的地方。
                 # f3s.append(l2)
                 # ct.print(l2, 'log_extract')
                 if mode == 'release':
-                    ct.just_log(f4, l2)
+                    # ct.just_log(f4, l2)
+                    f4s.append(l2)
                 elif mode == 'debug':
                     # ct.just_log(f4, l2)
                     f4s.append(l2)
+                    if not only_one:  # 记录下来校验
+                        f5s.append(l2)
+                    else:
+                        f6s.append(l2)
+
                 # del vs
 
                 # ct.file_wirte_list(f3, f3s)
                 elif mode == 'test' and (len(vs)) > 1:
                     # 记录到另一份文件
                     ct.just_log(f4 + '.maybe.txt', l2)
+        if mode == 'release':
+            ct.file_wirte_list(f4, f4s)
         # 遍历 获取 关系集合 逐个打印
         if mode == 'debug':
-            ct.print("begin output ",'debug')
-            f4s_dict=dict()
+            f4s = f5s  # 输出 不唯一的 临时
+            ct.file_wirte_list('../data/nlpcc2016/6-answer/only_one.txt', f6s)
+        if mode == 'debug':
+            ct.print("begin output ", 'debug')
+            f4s_dict = dict()
             for f4_l in f4s:
                 p1 = str(f4_l).split('\t')[3]
-                if f4_l in f4s_dict:
-                    f4s_dict[p1]+=1
+                if skip_special_p:
+                    if p1 in ['集数', '信仰', '国籍', '出版社', '星座', '片长',
+                              '英文名', '编剧', '发行商', '色彩'
+                              ]:  # 忽略指定的属性
+                        continue
+                if p1 in f4s_dict:
+                    f4s_dict[p1] += 1
                 else:
-                    f4s_dict[p1]=1
+                    f4s_dict[p1] = 1
             tp = ct.sort_dict(f4s_dict)
+            debug_ps = []
             for f4s_s_l in tp:
-                ct.just_log('../data/nlpcc2016/6-answer/sort.txt', "%s\t%s"%(f4s_s_l[0],f4s_s_l[1]))
+                debug_ps.append("%s\t%s" % (f4s_s_l[0], f4s_s_l[1]))
+            ct.file_wirte_list('../data/nlpcc2016/6-answer/sort.maybe.txt', debug_ps)
 
-                # for f4_l in f4s:
-                #     if str(f4_l).split('\t')[3]==f4s_s_l[0]:
-                #         ct.just_log(f4+'.debug.txt', f4_l)
+            for f4s_s_l in tp:
+                for f4_l in f4s:
+                    if str(f4_l).split('\t')[3] == f4s_s_l[0]:
+                        ct.just_log('../data/nlpcc2016/6-answer/sort_q_by_p.maybe.txt', f4_l)
+                ct.just_log('../data/nlpcc2016/6-answer/sort_q_by_p.maybe.txt',
+                            "====\t====\t====\t====\t====\t====\t====")
 
 
 # F2.3 空格分割
@@ -2981,9 +3040,11 @@ if __name__ == '__main__':
                                 f3='../data/nlpcc2016/6-answer/q.rdf_all.txt')
     # 从答案中选择
     if True:
+        mode = 'release'
         cf.choose_spo(f1='../data/nlpcc2016/6-answer/q.rdf_all-full.txt',
-                      f4='../data/nlpcc2016/6-answer/q.rdf_all_choose.debug.txt',
-                      mode='debug')
+                      f4='../data/nlpcc2016/6-answer/q.rdf_all_choose.%s.txt' % mode,
+                      mode=mode,
+                      skip_special_p=False)
 
 if __name__ == '__main__':
 

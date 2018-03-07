@@ -1012,21 +1012,45 @@ class ct:
         re_list = []
         re_list.append('(啊|呀|(你知道)？吗|呢)？(？|\?)*$')
         re_list.append('来着$')
-        re_list.append('呃(……)?')
-        re_list.append('请问|请问(一下|你知道)')
-        re_list.append('(那么|什么是|我想知道|我很好奇|有谁了解|问一下|请问你知道|谁能告诉我一下)')
-        re_list.append('((谁|(请|麻烦)?你|请)?(能|可以)?告诉我)')
-        re_list.append('((我想(问|请教)一下),?)')
-        re_list.append('((有人|谁|你|你们|有谁|大家)(记得|知道))')
+        re_list.append('^呃(……)?')
+        re_list.append('^(那么|什么是|我想知道|我很好奇|有谁了解|问一下|请问你知道|谁能告诉我一下)')
+        re_list.append('^((谁|(请|麻烦)?你|请)?(能|可以)?告诉我)')
+        re_list.append('^((我想(问|请教)一下),?)')
+        re_list.append('^((有人|谁|你|你们|有谁|大家)(记得|知道))')
+        re_list.append('^(请问(一下|你知道)|请问)')
         #
         re_list.append('你可以解释|你可以解释一下')
+        #  是(.)*还是(.)*$
+        re_list.append('是(.)*还是(.)*$')
 
-        for i in range(len(re_list)):
+        can_break = False
+        tmp_list = []
+        while(True):
             for _re in re_list:
-                str = re.sub(_re, '', str)
-                # str_list = re.findall(_re, str)
-                # for s1 in str_list:
-                #     str = str.replace(s1, '')
+                str_tmp = re.sub(_re, '', str)
+                tmp_list.append(str_tmp)
+            min_q = tmp_list[0]
+            for str_tmp in tmp_list:
+                if len(str_tmp)<len(min_q):
+                    min_q=str_tmp
+
+            # 长度没有变化则跳出
+            if min_q == str:
+                can_break =True
+            else:
+                str = min_q
+                tmp_list.clear()
+
+            if can_break:
+                break
+
+        # # 改成 遍历N次，知道匹配不到，然后每次都删除最长的
+        # for i in range(len(re_list)):
+        #     for _re in re_list:
+        #         str = re.sub(_re, '', str)
+        #         # str_list = re.findall(_re, str)
+        #         # for s1 in str_list:
+        #         #     str = str.replace(s1, '')
         return str
 
     @staticmethod
@@ -1043,7 +1067,9 @@ class ct:
 
     # 字表面特征
     @staticmethod
-    def get_zi_flag_score(q1, _p):
+    def get_zi_flag_score(q1, _p,p2):
+        ## _p 实体名
+        ## p2 属性名
         zi_flag_total = 0
         for p_char in _p:
             if list(set(q1)).__contains__(p_char):
@@ -1054,13 +1080,39 @@ class ct:
             p_len = 100
         zi_flag_score = zi_flag_total / p_len * 10
 
-        zi_flag_score +=  p_len/10
+        zi_flag_score += p_len / 10
+
+        if str(p2).__contains__('名') or str(p2).__contains__('称'):
+            if str(q1).__contains__('叫') or str(q1).__contains__('名') or str(q1).__contains__('称'):
+                zi_flag_score += 5
+            else:
+                zi_flag_score -= 5
+
+        return zi_flag_score
+
+    # 字表面特征
+    @staticmethod
+    def get_zi_flag_score_ps(q1, _p):
+        zi_flag_total = 0
+        for p_char in _p:
+            if list(set(q1)).__contains__(p_char):
+                zi_flag_total += 1
+        p_len = len(_p)
+        if p_len == 0:
+            ct.print("%s\t%s" % (q1, _p), 'error')
+            p_len = 100
+        zi_flag_score = zi_flag_total / p_len * 10
+
+        zi_flag_score += p_len / 10
+
+
+
         return zi_flag_score
 
 
 log_path = ct.log_path_static()
 if __name__ == "__main__":
-    c1 = ct.re_clean_question('请问谁知道♠要打印多少张？')
+    c1 = ct.re_clean_question('请问一下谁知道♠要打印多少张，请问下？')
     print(c1)
     # ct.test_read_entity_and_get_all_neg_relations_sq()
     # ct.test_random_get_some_from_list()
