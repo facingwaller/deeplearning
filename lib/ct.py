@@ -1025,18 +1025,18 @@ class ct:
 
         can_break = False
         tmp_list = []
-        while(True):
+        while (True):
             for _re in re_list:
                 str_tmp = re.sub(_re, '', str)
                 tmp_list.append(str_tmp)
             min_q = tmp_list[0]
             for str_tmp in tmp_list:
-                if len(str_tmp)<len(min_q):
-                    min_q=str_tmp
+                if len(str_tmp) < len(min_q):
+                    min_q = str_tmp
 
             # 长度没有变化则跳出
             if min_q == str:
-                can_break =True
+                can_break = True
             else:
                 str = min_q
                 tmp_list.clear()
@@ -1065,9 +1065,9 @@ class ct:
             score += 10
         return score
 
-    # 字表面特征
+    # 字表面特征 S
     @staticmethod
-    def get_zi_flag_score(q1, _p,p2):
+    def get_zi_flag_score(q1, _p, p2):
         ## _p 实体名
         ## p2 属性名
         zi_flag_total = 0
@@ -1090,7 +1090,7 @@ class ct:
 
         return zi_flag_score
 
-    # 字表面特征
+    # 字表面特征 P
     @staticmethod
     def get_zi_flag_score_ps(q1, _p):
         zi_flag_total = 0
@@ -1105,14 +1105,61 @@ class ct:
 
         zi_flag_score += p_len / 10
 
-
-
         return zi_flag_score
+
+    @staticmethod
+    def padding_date(str):
+        result = str
+        r1 = re.findall('(^[0-9]{1,4}年[0-9]{1,2}月[0-9]{1,2}日$)', str)
+        if len(r1) == 1 and r1[0] == str:
+            try:
+                t = time.strptime(str, "%Y年%m月%d日")
+                y, m, d = t[0:3]
+                result = "%d年%d月%d日" % (y, m, d)
+            except Exception as e1:
+                result = str
+                ct.print("%s\t%s"%(str,e1))
+        return result
+
+    @staticmethod
+    def padding_int(str):
+        item = str.lower().replace(' ', '')
+        value = re.compile(r'^[-+]?[0-9]+\.[0-9]+$')
+        result = value.match(item)
+        rt =str
+        try:
+            if item.isdigit():
+                rt = float(item)
+            if result:
+                rt = float(item)
+        except Exception as e1:
+            rt = str
+            ct.print("%s\t%s" % (str, e1))
+        return rt
+
+    @staticmethod
+    def do_some_clean(str):
+        str = re.sub('吗$', '',str)
+        str = re.sub('^请说出', '', str)
+        str = re.sub('^大家了解', '', str)
+        str = re.sub('^你了解', '', str)
+        str = re.sub('^你知道', '', str)
+        str = re.sub('\?$', '',str)
+        str = re.sub('？$', '', str)
+        return str
+
+
+
 
 
 log_path = ct.log_path_static()
 if __name__ == "__main__":
-    c1 = ct.re_clean_question('请问一下谁知道♠要打印多少张，请问下？')
+    print(len('死亡日记1999年电影thevirginsuicides(1999film)'))
+    # c1 = ct.re_clean_question('请问一下谁知道♠要打印多少张，请问下？')
+    # c1 = re.sub('(♠)+','♠','11231♠♠♠1♠♠3♠')
+    # c1 = re.sub('(♠.*♠)+', '♠', '112aaa♠♠♠1♠♠3♠ggg')
+
+    c1 = ct.do_some_clean('大家了解♠的♢吗？?')
     print(c1)
     # ct.test_read_entity_and_get_all_neg_relations_sq()
     # ct.test_random_get_some_from_list()

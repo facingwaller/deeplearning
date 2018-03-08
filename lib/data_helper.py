@@ -276,16 +276,19 @@ class DataClass:
         ct.print('train', 'train_test_q')
         ct.print('\t%d\t%s\t%s\t%s\t%s' % (0, '实体', '关系', '问题', '被替换词'), 'train_test_q')
         for l in range(len(self.train_question_list_index)):
-            ct.print("\t%d\t%d\t%s\t%s\t%s\t%s" % (self.question_global_index[l],l, self.entity1_list[l], self.relation_list[l],
-                                               self.question_list[l], self.entity_ner_list[l]),
+            ct.print("\t%d\t%d\t%s\t%s\t%s\t%s" % (
+                self.question_global_index[l], l, self.entity1_list[l], self.relation_list[l],
+                self.question_list[l], self.entity_ner_list[l]),
                      'train_test_q')
             r_train.add(self.relation_list[l])
         ct.print('test', 'train_test_q')
         for l in range(len(self.test_question_list_index)):
             global_index = l + self.padding
             ct.print("\t%d\t%d\t%s\t%s\t%s\t%s" % (self.question_global_index[global_index],
-                global_index, self.entity1_list[global_index], self.relation_list[global_index],
-                self.question_list[global_index], self.entity_ner_list[global_index]), 'train_test_q')
+                                                   global_index, self.entity1_list[global_index],
+                                                   self.relation_list[global_index],
+                                                   self.question_list[global_index],
+                                                   self.entity_ner_list[global_index]), 'train_test_q')
             r_test.add(self.relation_list[global_index])
         ct.print('test not in train', 'train_test_q')
         # 看看哪些pos关系是训练有，测试没有的
@@ -427,7 +430,6 @@ class DataClass:
         use_property = config.use_property()
         property_list = []
 
-
         if run_type == 'init':
             use_property = 'none'
             f2s = []
@@ -462,11 +464,11 @@ class DataClass:
                     continue
                 index = i
                 test_id = int(str(f4s[i]).split('\t')[1])
-                ct.print('test_id = %d'%test_id, 'train_test_q')
+                ct.print('test_id = %d' % test_id, 'train_test_q')
                 f3s = str(f4s[i]).split('\t')[2:]
                 break
 
-            ct.just_log(config.cc_par('rdf_maybe_property_index'), str(index+1))
+            ct.just_log(config.cc_par('rdf_maybe_property_index'), str(index + 1))
             # +1 然后处理下一个
 
             # 选出所有的实体，筛选一遍f2s
@@ -499,11 +501,13 @@ class DataClass:
             entity_ner = line_seg[5].replace('\n', '').replace('\r', '')
             # todo: if char can't convert ,filter them,如果需要转换不了，到时候在这里直接过滤
             # 6.1.1.3 3 在载入问题的时候用♠替换掉实体
-            question = line_seg[0]
-            question = question.replace(' ', '').lower()
-            if not question.__contains__(entity_ner):
-                ct.print(question, 'entity_ner')
-            question = question.replace(entity_ner, '♠')
+            # question = line_seg[0]
+            # question = question.replace(' ', '').lower()
+            # if not question.__contains__(entity_ner):
+            #     ct.print(question, 'entity_ner')
+            # question = question.replace(entity_ner, '♠')
+            # 改成直接取第7列
+            question = line_seg[6]
 
             self.entity1_list.append(entity1)
             self.relation_list.append(relation1)
@@ -1215,9 +1219,45 @@ class DataClass:
 
     # 生成一个epoches中的一个batch
     def build_all_q_r_tuple(self, questions_len_train, error_relation_num=9999, is_record=False):
+        """
+        V1.0 根据实体的NEG属性每条都生成一条训练数据。
+        V2.0
+            1.  扫一遍扫描测试集，收集完所有的属性(ps_set)，
+            2.  在训练集中找到所有的他们作为POS的问句(q_set)，
+            3.  针对每个问句，如果(ps_set)中的每个属性不是POS则是NEG
+        :param questions_len_train:
+        :param error_relation_num:
+        :param is_record:
+        :return:
+        """
         # 组合所有的问题和错误关系放进一个tuple中
         # self.question_list
         # self.relation_path_clear_str_all 正确关系
+        build_version = 2
+        # 1.  扫一遍扫描测试集，收集完所有的属性(ps_set)，
+        # self.question_labels
+        neg_ps_set = set()
+        neg_ps_dict = dict()
+        if build_version == 2:
+            for index in range(len(self.question_labels)):
+                if self.question_labels[index]:
+                    s1 = self.entity1_list[index]
+                    # ps_to_except1 = self.relation_path_clear_str_all[index]
+                    vs1 = self.bh.kbqa.get(s1, "")
+                    if vs1 == '':
+                        continue
+                    for _vs1 in vs1:
+                        if _vs1 not in neg_ps_dict:
+                            _tmp_set = set()
+                            neg_ps_dict[_vs1[0]] = _tmp_set
+
+                        for _vs2 in vs1:
+
+                            if _vs1 != _vs2:
+                                _tmp_set = neg_ps_dict[_vs1[0]]
+                                _tmp_set.add(_vs2[0])
+                                neg_ps_dict[_vs1] = _tmp_set
+
         ct.print_t("questions_len_train=%s,error_relation_num=%s" % (questions_len_train, error_relation_num))
         self.q_neg_r_tuple = []
         self.q_pos_r_tuple = []
@@ -1245,6 +1285,12 @@ class DataClass:
             elif self.mode == "cc":
                 # todo: add answer to filter more
                 r_all_neg = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
+                if build_version == 2:
+                    _tmp_set = set()
+                    for _p in ps_to_except1:
+                        _tmp_set = _tmp_set | set(neg_ps_dict.get(_p,set()))
+
+                    r_all_neg = list((set(r_all_neg) | _tmp_set | neg_ps_set ) - set(ps_to_except1))
             else:
                 raise Exception("mode error")
 

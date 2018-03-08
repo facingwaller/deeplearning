@@ -1721,12 +1721,12 @@ class baike_helper:
                 _q1 = str(x).split('\t')[0]
                 _m_s = str(x).split('\t')[5]
                 _ss = str(x).split('\t')[2]
-                _q1 = _q1.replace(_m_s, '♠')
-                # 去掉书名号干扰
-                # 去掉无用次的干扰
-                # 把属性列出来看看
-                _q1 = _q1.replace('《♠》', '♠')
-                _q1 = ct.re_clean_question(_q1)
+                # _q1 = _q1.replace(_m_s, '♠')
+                # # 去掉书名号干扰
+                # # 去掉无用次的干扰
+                # # 把属性列出来看看
+                # _q1 = _q1.replace('《♠》', '♠')
+                _q1 = str(x).split('\t')[7]
 
                 extract_start_str = _q1  # .split('♠')[0]
                 if extract_start_str in extract_dict:
@@ -1737,7 +1737,7 @@ class baike_helper:
             f5s = []
             for t in tp:
                 f5s.append("%s\t%s" % (t[0], t[1]))
-            ct.file_wirte_list('../data/nlpcc2016/3-questions/demo1/class_p_by_q.txt', f5s)
+            ct.file_wirte_list('../data/nlpcc2016/3-questions/demo2/class_p_by_q.txt', f5s)
 
 
 class baike_test:
@@ -2252,12 +2252,42 @@ class classification:
                     if line_seg[0] == line_seg[2]:
                         ct.print("过滤掉问题等于实体的 bad:" + line, "bad")
                         continue
-                    if line_seg[3] == line_seg[4]:
-                        ct.print("过滤掉问题的答案=属性:" + line, "bad")
-                        continue
+                    # if line_seg[3] == line_seg[4]:
+                    #     ct.print("过滤掉问题的答案=属性:" + line, "bad")
+                    #     continue
 
-                    f1s_new.append(
-                        line.strip().replace('\xa0', '').replace('\r', '').replace('\n', '').replace(' ', '').lower())
+                    # 处理下 如果是 手工矫正的
+                    new_line = line.strip().replace('\xa0', '').replace('\r', '')\
+                        .replace('\n', '').replace(' ','').lower() # .replace('？','').replace('?','')
+                    # 去掉问句后面的吗
+                    line_seg = new_line.split('\t')
+                    line_seg[6] = ct.do_some_clean( line_seg[6])
+                    line_seg[7] = ct.do_some_clean( line_seg[7])
+                    new_line = '\t'.join(line_seg)
+
+                    if line.__contains__('@@@@@@'):
+                        # line_seg
+                        line_seg[2] = line_seg[2].replace('1@@@@@@', '').replace('@@@@@@', '')
+                        line_seg[5] = line_seg[2]  # match s
+                        # 抠掉匹配的字
+                        _tmp_l5 = list(set(line_seg[5]))
+                        _tmp_q = line_seg[0]
+                        for _word in _tmp_l5:
+                            _tmp_q = _tmp_q.replace(_word,'♠')
+
+                        # _tt1 = re.sub('(♠.*♠)+', '♠', _tmp_q) 模糊全匹配
+                        _tt2 = re.sub('(♠)+', '♠', _tmp_q)   # 只去掉部分
+                        # if _tt1=='♠':
+                        #     _tmp_q = _tt1
+                        # else:
+                        _tmp_q = _tt2
+
+                        line_seg[6] = _tmp_q # line_seg[0].replace(line_seg[5], '♠')
+                        line_seg[7] = line_seg[6].replace(line_seg[3], '♢')
+                        new_line = '\t'.join(line_seg)
+                        print(new_line)
+
+                    f1s_new.append(new_line)
             except Exception as e:
                 print(e)
                 ct.print("error_index", idx)
@@ -2281,7 +2311,7 @@ class classification:
                 d_line_f3s[x1_3] = s1
 
         # f3s_new
-        print(3)
+        # print(3)
         tp = ct.sort_dict(d_f3s, True)
         with codecs.open(f_out, mode="w", encoding="utf-8") as out:
             for t in tp:
@@ -3004,13 +3034,14 @@ def extract_not_use_cx():
 if __name__ == '__main__':
     cf = classification()
     # C1.2.1
+    if True:
+        cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.txt',
+                            f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                            f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
+                            skip=0)
+    # G1 模式抽取
     if False:
-        cf.extract_property(f3=config.cc_par('q.rdf.m_s'),
-                            f4=config.cc_par('q.rdf.m_s.filter'),
-                            f_out='../data/nlpcc2016/class/rdf_extract_property_origin.txt')
-    # G1
-    if False:
-        cf.pattern_class1(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt')
+        cf.pattern_class1(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt')
         print(1)
     # G2 弃用·改成抽取KB中包含答案的SPO
     if False:
@@ -3039,7 +3070,7 @@ if __name__ == '__main__':
         cf.extract_spo_possible(f1='../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
                                 f3='../data/nlpcc2016/6-answer/q.rdf_all.txt')
     # 从答案中选择
-    if True:
+    if False:
         mode = 'release'
         cf.choose_spo(f1='../data/nlpcc2016/6-answer/q.rdf_all-full.txt',
                       f4='../data/nlpcc2016/6-answer/q.rdf_all_choose.%s.txt' % mode,
@@ -3072,9 +3103,9 @@ if __name__ == '__main__':
     # bkh.core_question_extraction(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt',
     #                              f2='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.re.txt')
 
-    if False:
-        bkh.repeat_alaysis(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt',
-                           f3='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.tj.txt')
+    if True:
+        bkh.repeat_alaysis(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                           f3='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.tj.txt')
 
     # 3.1
 
