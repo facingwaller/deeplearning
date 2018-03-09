@@ -611,7 +611,11 @@ class ct:
     def clean_str_zh2en(string):
         return str(ct.strQ2B(string)) \
             .replace("（", "(").replace("）", ")") \
-            .replace("【", "[").replace("】", "]")
+            .replace("【", "[").replace("】", "]")  \
+            .replace("•", "·")  \
+            .replace("【", "[").replace("】", "]") \
+            .replace('，', ',').replace("”", '"').replace('“','"') \
+            .replace('）', ')').replace('（', '(').replace('／', '/')
 
     @staticmethod
     def str_start_with(line, words):
@@ -1138,6 +1142,20 @@ class ct:
         return rt
 
     @staticmethod
+    def padding_answer(str1):
+        # 对齐带空格
+        str1 = str(str1).lower().replace(' ','')
+        # 对齐全角半角
+        str1 = ct.clean_str_zh2en(str1)
+        # 对齐整数
+        str1 = ct.padding_int(str1)
+        # 对齐日期
+        str1 = ct.padding_date(str1)
+
+        return str1
+
+
+    @staticmethod
     def do_some_clean(str):
         str = re.sub('吗$', '',str)
         str = re.sub('^请说出', '', str)
@@ -1154,12 +1172,12 @@ class ct:
 
 log_path = ct.log_path_static()
 if __name__ == "__main__":
-    print(len('死亡日记1999年电影thevirginsuicides(1999film)'))
+    # print(len('死亡日记1999年电影thevirginsuicides(1999film)'))
     # c1 = ct.re_clean_question('请问一下谁知道♠要打印多少张，请问下？')
     # c1 = re.sub('(♠)+','♠','11231♠♠♠1♠♠3♠')
     # c1 = re.sub('(♠.*♠)+', '♠', '112aaa♠♠♠1♠♠3♠ggg')
-
-    c1 = ct.do_some_clean('大家了解♠的♢吗？?')
+    print(ct.padding_answer('"“”【[【啊。.啊，,打的】【。a【`·43$#@3213 21 '))
+    c1 = ct.do_some_clean('大家1了解♠的♢吗？?')
     print(c1)
     # ct.test_read_entity_and_get_all_neg_relations_sq()
     # ct.test_random_get_some_from_list()

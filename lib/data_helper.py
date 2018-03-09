@@ -525,7 +525,8 @@ class DataClass:
             vs = self.bh.kbqa.get(entity1, '')
             if vs != '':
                 for k, v in vs:
-                    if v == answer:
+                    # 这里需要对齐两边的数据
+                    if ct.padding_answer(v) == ct.padding_answer(answer):
                         if k not in rs1:
                             rs1.append(k)
             self.relation_path_clear_str_all.append(rs1)
@@ -1288,9 +1289,9 @@ class DataClass:
                 if build_version == 2:
                     _tmp_set = set()
                     for _p in ps_to_except1:
-                        _tmp_set = _tmp_set | set(neg_ps_dict.get(_p,set()))
+                        _tmp_set = _tmp_set | set(neg_ps_dict.get(_p, set()))
 
-                    r_all_neg = list((set(r_all_neg) | _tmp_set | neg_ps_set ) - set(ps_to_except1))
+                    r_all_neg = list((set(r_all_neg) | _tmp_set | neg_ps_set) - set(ps_to_except1))
             else:
                 raise Exception("mode error")
 
