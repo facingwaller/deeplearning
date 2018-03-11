@@ -774,6 +774,7 @@ class DataClass:
             name = q_neg_r[1]  # 问题
             r_neg = q_neg_r[2]  # 关系
 
+            ## todo: 111111111111111
             ps_to_except1 = self.relation_list[index]
             ps_to_except1 = [ps_to_except1]
 
