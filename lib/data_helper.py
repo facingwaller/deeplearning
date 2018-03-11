@@ -526,9 +526,15 @@ class DataClass:
             if vs != '':
                 for k, v in vs:
                     # 这里需要对齐两边的数据
-                    if ct.padding_answer(v) == ct.padding_answer(answer):
-                        if k not in rs1:
-                            rs1.append(k)
+                    # ct.print(v)
+                    # ct.print(answer)
+                    # v = str(v)
+                    # try:
+                        if ct.padding_answer(v) == ct.padding_answer(answer):
+                            if k not in rs1:
+                                rs1.append(k)
+                    # except Exception as ee1:
+                    #     ct.print(ee1)
             self.relation_path_clear_str_all.append(rs1)
             # self.rdf_list.append([entity1, relation1, entity2])
             # check it

@@ -98,20 +98,24 @@ def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_
 # test_r,关系
 # labels,标签,
 # 2018.2.26 把相近的分数也带回去
-def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model):
+def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model, global_index):
     start_time = time.time()
     feed_dict = {
         lstm.test_input_q: test_q,
         lstm.test_input_r: test_r,
     }
+    question = ''
+    relations = []
     for _ in test_q:
         v_s_1 = dh.converter.arr_to_text_no_unk(_)
         valid_msg = model + " test_q 1:" + v_s_1
         ct.just_log2("valid_step", valid_msg)
+        question = v_s_1
     for _ in test_r:
         v_s_1 = dh.converter.arr_to_text_no_unk(_)
         valid_msg = model + " test_r 1:" + v_s_1
         ct.just_log2("valid_step", valid_msg)
+        relations.append(v_s_1)
 
     error_test_q = []
     error_test_pos_r = []
@@ -145,6 +149,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     st_list_sort = st_list  # 取全部 st_list[0:5]
 
     ct.just_log2("info", "\n ##3 score")
+    score_list = []
     for st in st_list_sort:
         # ct.print("index:%d ,score= %f " % (st.index, st.score))
         # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
@@ -156,6 +161,15 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         r1 = dh.converter.arr_to_text_no_unk(test_r[better_index])
         # ct.print(r1)
         ct.just_log2("info", "step:%d st.index:%d,score:%f,r:%s" % (step, st.index, st.score, r1))
+        if st.index == 0:
+            _tmp_right = 1
+        else:
+            _tmp_right = 0
+        # 训练的epoches步骤，R的index，得分，是否正确，关系，字表面特征
+        score_list.append("%d_%d_%f_%s" % (st.index, _tmp_right, st.score, r1.replace('_', '-')))
+    _tmp_msg1 = "%d\t%s\t%d\t%s\t%s" % (step,model,global_index, question, '\t'.join(score_list))
+    ct.just_log2("logistics", _tmp_msg1)
+    # 记录到单独文件
 
     is_right = False
     msg = " win r =%d  " % st_list_sort[0].index
@@ -255,14 +269,15 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
         if model == "test":
             global_index = test_question_global_index[index]
         else:
-            global_index = -1
-        ct.print(" valid_batch_debug:%s %d ,index = %d ;global_index=%d " % (model, i, index, global_index))
+            global_index = test_question_global_index[index]
+        ct.print("valid_batch_debug:%s %d ,index = %d ;global_index=%d " % (model, i, index, global_index))
         test_q, test_r, labels = \
             dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index)
 
         ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = valid_step(sess, lstm, step, train_op,
                                                                                       test_q, test_r,
-                                                                                      labels, merged, writer, dh, model)
+                                                                                      labels, merged, writer, dh, model,
+                                                                                      global_index)
         error_test_q_list.extend(error_test_q)
         error_test_pos_r_list.extend(error_test_pos_r)
         error_test_neg_r_list.extend(error_test_neg_r)
@@ -305,7 +320,7 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
         # else:
         ct.just_log2("test_error", valid_msg3)
     ct.just_log2("test_error", '--------------%d' % len(_1))
-    ct.print("==========%s"%model, "maybe_possible")
+    ct.print("==========%s" % model, "maybe_possible")
 
     # 再记录一次 出错问题的排序
     tp = ct.sort_dict(error_test_dict)
@@ -345,7 +360,7 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
                 maybe_tmp_dict['m1'] += 1
                 maybe_r_list = [x.relation for x in maybe_list]
                 msg = "%d\t%s" % (maybe_global_index_list[index], '\t'.join(maybe_r_list))
-                if maybe_global_index_list[index] != -1 and msg!='':
+                if maybe_global_index_list[index] != -1 and msg != '':
                     ct.print(msg, "maybe_possible")
         else:
             maybe_tmp_dict['e'] += 1
@@ -354,11 +369,10 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
         ct.print("\n", "maybe1")
         ct.print("\n", "maybe2")
 
-
     total = (maybe_tmp_dict['r'] + maybe_tmp_dict['e'])
     acc0 = maybe_tmp_dict['r'] / total
     maybe_canget = maybe_tmp_dict['m1'] / total
-    msg = "==== %s %f 正确答案数（%d）/总数(%d)：%f;候补(%d)/总数:%f "\
+    msg = "==== %s %f 正确答案数（%d）/总数(%d)：%f;候补(%d)/总数:%f " \
           % (model, acc, maybe_tmp_dict['r'], total, acc0, maybe_tmp_dict['m1'], maybe_canget)
     ct.print(msg, "maybe1")
     ct.print(msg, "maybe_possible")
@@ -502,7 +516,7 @@ def main():
                         valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
                                           dh, test_batchsize, dh.train_question_list_index,
                                           dh.train_relation_list_index,
-                                          model, dh.test_question_global_index)
+                                          model, dh.train_question_global_index )
 
                     msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
                     ct.print(msg)
