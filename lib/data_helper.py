@@ -662,7 +662,7 @@ class DataClass:
                 ct.print(e1, id)
         return exist
 
-    # --------------------生成batch
+    # --------------------生成batch 没用
     def batch_iter_wq(self, question_list_index, relation_list_index, batch_size=100):
         ct.print("enter:batch_iter_wq")
         x = question_list_index.copy()
@@ -736,7 +736,7 @@ class DataClass:
         return np.array(x_new), np.array(y_new), np.array(z_new)
 
     # -------------------测试生成同一批次的 debug 在测！！！
-    # todo: train data
+    # 在用
     def batch_iter_wq_debug(self, question_list_index, relation_list_index, batch_size=100):
         """
         web questions 的生成反例的办法。debug版本，
@@ -764,12 +764,20 @@ class DataClass:
         info1 = "q total:%d ; epohches-size:%s " % (total, len(self.q_neg_r_tuple_train) / batch_size)
         ct.print(info1, 'info')
 
+
+
+
         for list_index in range(total):
             # 获取q_neg_r_tuple里面打乱的下标的对应的 q_r 对
             q_neg_r = self.q_neg_r_tuple_train[shuffle_indices[list_index]]
             index = q_neg_r[0]  # 对应类里面的index
             name = q_neg_r[1]  # 问题
             r_neg = q_neg_r[2]  # 关系
+
+            ps_to_except1 = self.relation_list[index]
+            ps_to_except1 = [ps_to_except1]
+
+
             print(index)
             x_new.append(x[index])  # 添加问题
             y_new.append(y[index])  # 添加正确的关系
@@ -825,7 +833,7 @@ class DataClass:
                 z_new.clear()
                 yield x_return, y_return, z_return
 
-    # -- 老版本 纯随机
+    # -- 老版本 纯随机 不用
     def batch_iter_wq_debug_random(self, question_list_index, relation_list_index, batch_size=100):
         """
         web questions 的生成反例的办法。debug版本，

@@ -13,17 +13,17 @@ Y_SIZE = 2
 # 改成 2 位 ， 2分类
 
 
-x1 = []
-y1 = []
-
-for i in range(8):
-    t1 = float((i % 10 + 1) / 10)
-    x1.append(t1)
-    t2 = float(i % 2)
-    y1.append(t2)
-
-x1 = np.array(x1)
-y1 = np.array(y1)
+# x1 = []
+# y1 = []
+#
+# for i in range(8):
+#     t1 = float((i % 10 + 1) / 10)
+#     x1.append(t1)
+#     t2 = float(i % 2)
+#     y1.append(t2)
+#
+# x1 = np.array(x1)
+# y1 = np.array(y1)
 
 # mnist = mnist.input_data.read_data_sets('./data/mnist', one_hot=True)
 

@@ -23,20 +23,21 @@ class logistics_helper:
             index = int(str(item).split('_')[0])
             right = str(item).split('_')[1] == '1'
             if right:
-                right1 = [1,0]
+                right1 = [1, 0]
             else:
                 right1 = [0, 1]
             score = float(str(item).split('_')[2])
             relation = str(item).split('_')[3]
 
-            z_score = ct.get_zi_flag_score_ps(question,relation)
+            # z_score = ct.get_zi_flag_score_ps(question, relation)
+            z_score = ct.math2(question, relation)
 
-            t1 = (index, right1, score, relation,right,z_score)
+            t1 = (index, right1, score, relation, right, z_score)
             ts.append(t1)
         t1 = (global_index, question, ts, step, model)
         return t1
 
-    def __init__(self,f1='../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'):
+    def __init__(self, f1='../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'):
         self.all_datas = []
         # f1 = '../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'
         f1s = ct.file_read_all_lines_strip(f1)
@@ -65,12 +66,13 @@ class logistics_helper:
             for ts in data_current[2]:
                 x_new.append(data_current[1])
                 # t1 = (index, right1, score, relation,right,z_score)
-                y_new.append((ts[2],ts[5]))  # 继续遍历
+                y_new.append((ts[2], ts[5]))  # 继续遍历
                 z_new.append(ts[1])
                 # ts
-                # t1 = (index, right1, score, relation,right)
 
-
+                # 问题  Z分数 NN得分
+                msg = "%s\t%s\t%s\t%s\t%s" % (data_current[1], ts[5], ts[2], ts[3],ts[4])
+                ct.print(msg, 'debug1')
 
             if list_index % batch_size == 0 and list_index != 0:
                 x_return = x_new.copy()  # 问题
@@ -83,6 +85,7 @@ class logistics_helper:
 
     def c2(self):
         print(2)
+
 
 if __name__ == "__main__":
     batch_size = 2

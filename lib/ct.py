@@ -1011,6 +1011,15 @@ class ct:
         return count
 
     @staticmethod
+    def math2(line, p1):
+        count = 0
+        p1s = ct.all_gram(p1)
+        for p in p1s:
+            if p in line:
+                count += 1
+        return count/len(p1s)
+
+    @staticmethod
     def re_clean_question(str):
         # b = re.sub('\r\n','',a)
         re_list = []
