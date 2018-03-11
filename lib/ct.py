@@ -1126,20 +1126,20 @@ class ct:
         return result
 
     @staticmethod
-    def padding_int(str):
-        item = str.lower().replace(' ', '')
+    def padding_int(str1):
+        item = str1.lower().replace(' ', '')
         value = re.compile(r'^[-+]?[0-9]+\.[0-9]+$')
         result = value.match(item)
-        rt =str
+        rt =str1
         try:
             if item.isdigit():
                 rt = float(item)
             if result:
                 rt = float(item)
         except Exception as e1:
-            rt = str
-            ct.print("%s\t%s" % (str, e1))
-        return rt
+            rt = str1
+            ct.print("%s\t%s" % (str1, e1))
+        return str(rt)
 
     @staticmethod
     def padding_answer(str1):
