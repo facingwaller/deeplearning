@@ -745,7 +745,7 @@ class DataClass:
 
     # -------------------测试生成同一批次的 debug 在测！！！
     # 在用
-    def batch_iter_wq_debug(self, question_list_index, relation_list_index, answer_list_index,shuffle_indices, batch_size=100, train_part='relation' ):
+    def batch_iter_wq_debug(self, question_list_index, relation_list_index, shuffle_indices, batch_size, train_part ):
         """
         web questions 的生成反例的办法。debug版本，
         生成指定batch_size的数据。
@@ -759,17 +759,17 @@ class DataClass:
         ct.print("enter:batch_iter_wq_debug")
         x = question_list_index.copy()
         y = relation_list_index.copy()
-        y_a = answer_list_index.copy()
+        # y_a = answer_list_index.copy()
         x_new = []
         y_new = []
         z_new = []
-        z_a_new = []
+        # z_a_new = []
         # self.q_neg_r_tuple 这个地方需要筛选出仅有问题列表里面的数据
         # todo : bug here
 
         # 生成 0- len(question_list_index) 的随机数字
+        total = len(self.q_neg_r_tuple_train)
         if len(shuffle_indices)==0:
-            total = len(self.q_neg_r_tuple_train)
             shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
 
         info1 = "q total:%d ; epohches-size:%s " % (total, len(self.q_neg_r_tuple_train) / batch_size)
@@ -782,7 +782,7 @@ class DataClass:
             name = q_neg_r[1]  # 问题
             r_neg = q_neg_r[2]  # 关系
             a_neg = q_neg_r[3]  # 答案
-            train_part = ''
+
             if train_part == 'relation':
                 train_part = r_neg
             else:

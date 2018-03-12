@@ -18,19 +18,7 @@ tf.flags.DEFINE_string("word_model", "word2vec_train", "可选有|tf_embedding|w
 testid = "cc_test"
 # ==正常调参
 
-if testid == "wq_test":
-    epoches = 100 * 100 * 100  # 遍历多少轮
-    batch_size = 10  # 1个batch的大小
-    evaluate_every = 100
-    evaluate_batchsize = 100
-    questions_len_train = 800  # 应该设置大一点,2-10倍
-    questions_len_test = int(questions_len_train / 4)
-    wrong_relation_num = 99999  # 错误的关系，设置9999可以是全部的意思
-    stop_loss_zeor_count = 10000
-    rnn_size = 300
-    mode = "wq"
-    check = 999
-elif testid == "cc_test":
+if testid == "cc_test":
     # 极限情况下调,1个问题，全关系
     epoches = 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小 # 临时改了
@@ -56,33 +44,6 @@ elif testid == "cc_test":
     #####
     train_part = 'relation'  # 属性 relation |answer
 
-
-elif testid == "sq_debug":
-    # 极限情况下调,1个问题，全关系
-    epoches = 100  # 遍历多少轮
-    batch_size = 10  # 1个batch的大小
-    evaluate_every = 60  # 100训练X次验证一次
-    evaluate_batchsize = batch_size  # 验证一次的问题数目
-    questions_len_train = 10 * 2  # 所有问题数目
-    questions_len_test = questions_len_train
-    wrong_relation_num = 9999  # 错误的关系，设置9999可以是全部的意思
-    stop_loss_zeor_count = 2000
-    rnn_size = 100
-    mode = "sq"
-    check = 999
-elif testid == "sq_test":
-    # 极限情况下调,1个问题，全关系
-    epoches = 5  # 遍历多少轮
-    batch_size = 10  # 1个batch的大小
-    evaluate_every = 2  # 训练X次验证一次
-    evaluate_batchsize = 10  # 验证一次的问题数目
-    questions_len_train = 20000  # 所有问题数目
-    questions_len_test = 5000
-    wrong_relation_num = 9999  # 错误的关系，设置9999可以是全部的意思
-    stop_loss_zeor_count = 2000
-    rnn_size = 100
-    mode = "sq"
-    check = 999
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
@@ -145,6 +106,8 @@ cc_p = {
     'real_split_train_test_skip': 14610,
     'use_property':use_property,  # 记录进日志
     'train_part' : train_part,  # 属性 relation |answer
+    'combine':'../data/nlpcc2016/9-combine/step.txt',
+    'combine_test':'../data/nlpcc2016/9-combine/step_test.txt',
 
 }
 

@@ -242,7 +242,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 
 
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
-                      train_relation_list_index, model, test_question_global_index, train_part,id_list):
+                      train_relation_list_index, model, test_question_global_index, train_part, id_list):
     right = 0
     wrong = 0
     # 产生随机的index给debug那边去获得index
@@ -253,7 +253,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
     #     id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
 
     # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
-    
+
     error_test_q_list = []
     error_test_pos_r_list = []
     error_test_neg_r_list = []
@@ -383,7 +383,93 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
     return error_test_dict
 
 
-# --
+# --获取随机
+def get_shuffle_indices_train(total, step, train_part, model, train_step):
+    """
+
+    :param dh:
+    :param step:
+    :param train_part:
+    :param model: train valid test
+    :return:
+    """
+    if train_part == 'relation':
+        shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
+        shuffle_indices1 = [str(x) for x in list(shuffle_indices)]
+        # step  训练模式    训练部分
+        ct.just_log(config.cc_par('combine'),
+                    '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(shuffle_indices1)))
+    else:
+        f1s = ct.file_read_all_lines_strip(config.cc_par('combine'))
+        line = ''
+        exist = False
+        for l1 in f1s:
+            if str(l1).split('\t')[0] == train_step:
+                line = str(l1)
+                exist = True
+                break
+        if exist:
+            line_split = line.split('\t')
+            line_split = line_split[3:]
+            line_split = [int(x) for x in line_split]
+            shuffle_indices = np.array(line_split)
+        else:  # 不存在就自己写
+            shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
+
+            # step  训练模式    训练部分
+            # ct.file_wirte_list(config.cc_par('combine'),
+            #                    '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(shuffle_indices)))
+
+    return shuffle_indices
+
+
+def get_shuffle_indices_test(dh, step, train_part, model, train_step):
+    """
+
+    :param dh:
+    :param step:
+    :param train_part:
+    :param model: train valid test
+    :return:
+    """
+    if train_part == 'relation':
+        if model == "valid":
+            id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
+        else:
+            id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+
+        id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+
+        id_list2 = [str(x) for x in id_list]
+        # step  训练模式    训练部分
+        ct.just_log(config.cc_par('combine_test'),
+                           '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(id_list2)))
+    else:
+        f1s = ct.file_read_all_lines_strip(config.cc_par('combine_test'))
+        line = ''
+        exist = False
+        for l1 in f1s:
+            if str(l1).split('\t')[0] == train_step:
+                line = str(l1)
+                exist = True
+                break
+        if exist:
+            line_split = line.split('\t')
+            line_split = line_split[3:]
+            line_split = [int(x) for x in line_split]
+            shuffle_indices = np.array(line_split)
+        else:  # 不存在就自己写
+            if model == "valid":
+                id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
+            else:
+                id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+
+            id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+
+            shuffle_indices = [str(x) for x in id_list]
+
+    return id_list
+
 
 # ----------------------------------- checkpoint-----------------------------------
 def checkpoint(sess):
@@ -435,28 +521,11 @@ def main():
                               need_max_pooling=FLAGS.need_max_pooling,
                               word_model=FLAGS.word_model,
                               embedding_weight=embedding_weight)
-    lstm_answer = mynn.CustomNetwork(max_document_length=dh.max_document_length,  # timesteps
-                                     word_dimension=FLAGS.word_dimension,  # 一个单词的维度
-                                     vocab_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
-                                     rnn_size=FLAGS.rnn_size,  # 隐藏层大小
-                                     model=model,
-                                     need_cal_attention=FLAGS.need_cal_attention,
-                                     need_max_pooling=FLAGS.need_max_pooling,
-                                     word_model=FLAGS.word_model,
-                                     embedding_weight=embedding_weight)
+
     # 4 ----------------------------------- 设定loss-----------------------------------
     global_step = tf.Variable(0, name="globle_step", trainable=False)
     tvars = tf.trainable_variables()
     grads, _ = tf.clip_by_global_norm(tf.gradients(lstm.loss, tvars),
-                                      FLAGS.max_grad_norm)
-    optimizer = tf.train.GradientDescentOptimizer(1e-1)
-    optimizer.apply_gradients(zip(grads, tvars))
-    train_op = optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
-
-    # 再加一个
-    global_step = tf.Variable(0, name="globle_step", trainable=False)
-    tvars = tf.trainable_variables()
-    grads, _ = tf.clip_by_global_norm(tf.gradients(lstm_answer.loss, tvars),
                                       FLAGS.max_grad_norm)
     optimizer = tf.train.GradientDescentOptimizer(1e-1)
     optimizer.apply_gradients(zip(grads, tvars))
@@ -501,14 +570,16 @@ def main():
                 ct.log3(toogle_line)
                 ct.just_log2("info", toogle_line)
                 train_part = config.cc_par('train_part')
-
-                shuffle_indices = np.random.permutation(np.arange(len(dh.q_neg_r_tuple_train)))  # 打乱样本下标
+                model ='train'
+                # 属性就生成问题就读取
+                shuffle_indices = get_shuffle_indices_train(len(dh.q_neg_r_tuple_train), step, train_part, model,
+                                                            train_step)
 
                 if train_part == 'relation':
                     my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
                                                           shuffle_indices, FLAGS.batch_size, train_part)
                 else:
-                    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_answer_list_index,
+                    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index,
                                                           shuffle_indices, FLAGS.batch_size, train_part,
                                                           shuffle_indices)
             else:
@@ -549,18 +620,20 @@ def main():
                     else:
                         train_part_1 = dh.train_answer_list_index
 
-                    if model == "valid":
-                        id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
-                    else:
-                        id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+                    id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
 
-                    id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+                    # if model == "valid":
+                    #     id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
+                    # else:
+                    #     id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+
+                    # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
 
                     acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
                         valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
                                           dh, test_batchsize, dh.train_question_list_index,
                                           train_part_1,
-                                          model, dh.train_question_global_index, train_part,id_list)
+                                          model, dh.train_question_global_index, train_part, id_list)
 
                     msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
                     ct.print(msg)
@@ -577,10 +650,13 @@ def main():
                         train_part_1 = dh.test_relation_list_index
                     else:
                         train_part_1 = dh.test_answer_list_index
+
+                    id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
+
                     acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
                         valid_batch_debug(sess, lstm, step, train_op, merged, writer,
                                           dh, test_batchsize, dh.test_question_list_index,
-                                          train_part_1, model, dh.test_question_global_index, train_part)
+                                          train_part_1, model, dh.test_question_global_index, train_part, id_list)
                     # 测试 集合不做训练 但是将其记录下来
 
                     error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
