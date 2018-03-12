@@ -1255,10 +1255,12 @@ class baike_helper:
             ct.print(str(entity_id).replace(' ', '').lower()
                      , 'read_entity_and_get_all_neg_relations_cc')
         r1 = []
+        a1 = []
         for s1 in e_s:
             if s1[0] not in ps_to_except:
                 r1.append(s1[0])
-        return r1
+                a1.append(s1[1])
+        return r1,a1
 
     # 输入识别结果，输出匹配R2格式
     # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生

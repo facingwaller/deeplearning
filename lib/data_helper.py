@@ -104,6 +104,7 @@ class DataClass:
         :param mode:
         """
         # ---------------------初始化实体
+        self.answer_list_index = []
         self.question_global_index = []
         self.question_labels = []  # 训练还是测试集的标记
         self.q_neg_r_tuple_train = []  # train
@@ -149,7 +150,7 @@ class DataClass:
             self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'), type="zh-cn")
             if run_type == 'init':  # 初始化
                 return
-            msg = 'questions_len_train:%s\twrong_relation_num:%s\t' % (
+            msg = 'questions_len_train:%s\t wrong_relation_num:%s\t' % (
                 config.get_static_q_num_debug(), config.get_static_num_debug())
             ct.print(msg, 'debug')
 
@@ -191,11 +192,15 @@ class DataClass:
         # 把问题和关系变成array形式
         self.question_list_split = self.get_split_list_per_line(self.question_list)
         self.relation_list_split = self.get_split_list_per_line(self.relation_list)
+        self.answer_list_split = self.get_split_list_per_line(self.answer_list)
         for q_l_s in self.question_list_split:
             self.question_list_index.append(self.converter.text_to_arr_list(q_l_s))
         # self.relation_list_index = self.converter.text_to_arr(self.relation_list_split)
         for _ in self.relation_list_split:
             self.relation_list_index.append(self.converter.text_to_arr_list(_))
+        for _ in self.answer_list_split:
+            self.answer_list_index.append(self.converter.text_to_arr_list(_))
+
         # 第一版本先padding到max长度
         padding_num = self.get_padding_num()
         for index in range(0, len(self.question_list_index)):
@@ -204,9 +209,9 @@ class DataClass:
         for index in range(0, len(self.relation_list_index)):
             self.relation_list_index[index] = \
                 ct.padding_line(self.relation_list_index[index], self.max_document_length, padding_num)
-            # for s in self.relation_list_index:
-            #     s = ct.padding_line(s,self.max_document_length,padding_num)
-            # 截断
+        for index in range(0, len(self.answer_list_index)):
+            self.answer_list_index[index] = \
+                ct.padding_line(self.answer_list_index[index], self.max_document_length, padding_num)
 
     def division_data(self, rate=0.8, real_split_train_test=False):
         ct.print("division_data start! real_split_train_test %s " % real_split_train_test, 'debug')
@@ -227,22 +232,31 @@ class DataClass:
 
         self.question_list_index = self.question_list_index[0:max_q]
         self.relation_list_index = self.relation_list_index[0:max_q]
+        self.answer_list_index = self.answer_list_index[0:max_q]
 
         # self.question_global_index
         # self.train_question_global_index
 
         self.train_question_global_index = []
         self.test_question_global_index = []
+
         if real_split_train_test:
             skip = config.cc_par('real_split_train_test_skip')
             self.train_question_list_index, self.test_question_list_index, \
             self.train_question_global_index, self.test_question_global_index = \
                 ct.cap_nums_by_skip(self.question_list_index, self.question_labels,
                                     skip, self.question_global_index)
+
             self.train_relation_list_index, self.test_relation_list_index, \
             self.train_question_global_index, self.test_question_global_index = \
                 ct.cap_nums_by_skip(self.relation_list_index, self.question_labels,
                                     skip, self.question_global_index)
+
+            self.train_answer_list_index, self.test_answer_list_index, \
+            _1, _2 = \
+                ct.cap_nums_by_skip(self.answer_list_index, self.question_labels,
+                                    skip, self.question_global_index)
+
         else:
             self.train_question_list_index, self.test_question_list_index = \
                 ct.cap_nums(self.question_list_index, rate)
@@ -303,14 +317,14 @@ class DataClass:
         for l in range(len(self.train_question_list_index)):
             global_index = l
             ps_to_except1 = self.relation_path_clear_str_all[global_index]
-            rs = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
+            rs,a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
             for r in rs:
                 neg_r_train.add(r)
 
         for l in range(len(self.test_question_list_index)):
             global_index = l + self.padding
             ps_to_except1 = self.relation_path_clear_str_all[global_index]
-            rs = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
+            rs ,a_s= self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
             for r in rs:
                 neg_r_test.add(r)
 
@@ -517,28 +531,16 @@ class DataClass:
             self.entity_ner_list.append(entity_ner)
             self.answer_list.append(answer)
 
-            # todo:111
-            # 针对CC的排除关系 ，需要遍历找出其他的属性
-            # if entity1 == '对酒':
-            #     print(543535)
             rs1 = [relation1]
             vs = self.bh.kbqa.get(entity1, '')
             if vs != '':
                 for k, v in vs:
-                    # 这里需要对齐两边的数据
-                    # ct.print(v)
-                    # ct.print(answer)
-                    # v = str(v)
-                    # try:
-                        if ct.padding_answer(v) == ct.padding_answer(answer):
-                            if k not in rs1:
-                                rs1.append(k)
-                    # except Exception as ee1:
-                    #     ct.print(ee1)
+                    if ct.padding_answer(v) == ct.padding_answer(answer):
+                        if k not in rs1:
+                            rs1.append(k)
+                            # except Exception as ee1:
+                            #     ct.print(ee1)
             self.relation_path_clear_str_all.append(rs1)
-            # self.rdf_list.append([entity1, relation1, entity2])
-            # check it
-            # line_list.append(line)
 
             # 增加一个容器 标记所有的问题是否属于训练集合还是测试集合
             is_train = index > config.cc_par('real_split_train_test_skip')
@@ -743,7 +745,7 @@ class DataClass:
 
     # -------------------测试生成同一批次的 debug 在测！！！
     # 在用
-    def batch_iter_wq_debug(self, question_list_index, relation_list_index, batch_size=100):
+    def batch_iter_wq_debug(self, question_list_index, relation_list_index, batch_size=100, train_part='relation'):
         """
         web questions 的生成反例的办法。debug版本，
         生成指定batch_size的数据。
@@ -770,28 +772,26 @@ class DataClass:
         info1 = "q total:%d ; epohches-size:%s " % (total, len(self.q_neg_r_tuple_train) / batch_size)
         ct.print(info1, 'info')
 
-
-
-
         for list_index in range(total):
             # 获取q_neg_r_tuple里面打乱的下标的对应的 q_r 对
             q_neg_r = self.q_neg_r_tuple_train[shuffle_indices[list_index]]
             index = q_neg_r[0]  # 对应类里面的index
             name = q_neg_r[1]  # 问题
             r_neg = q_neg_r[2]  # 关系
+            a_neg = q_neg_r[3]  # 答案
+            train_part = ''
+            if train_part == 'relation':
+                train_part = r_neg
+            else:
+                train_part = a_neg
+            train_part = [train_part]
 
-            ## todo: 111111111111111
-            ps_to_except1 = self.relation_list[index]
-            ps_to_except1 = [ps_to_except1]
-
-
-            print(index)
             x_new.append(x[index])  # 添加问题
             y_new.append(y[index])  # 添加正确的关系
             ct.print(x[index], "debug_epoches")
             ct.print(y[index], "debug_epoches")
 
-            r1 = self.converter.text_to_arr_list(r_neg)  # 文字转数字
+            r1 = self.converter.text_to_arr_list(train_part)  # 文字转数字
             ct.print(r1, "debug_epoches")
             r1 = ct.padding_line(r1, self.max_document_length, self.get_padding_num())
             z_new.append(r1)  # 添加错误的关系
@@ -805,7 +805,7 @@ class DataClass:
             ct.just_log2("info", info1)
             msg = "qid=%d,neg r=%d  " % (index, list_index)
             ct.log3(msg)
-            msg_neg = "r-neg %d :%s       " % (list_index, r_neg)
+            msg_neg = "r-neg %d :%s       " % (list_index, train_part)
             ct.just_log2("info", msg_neg)
 
             if list_index % batch_size == 0 and list_index != 0:
@@ -1024,7 +1024,8 @@ class DataClass:
     #     return np.array(x_new), np.array(y_new), np.array(labels)
 
     # todo: test data
-    def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, model, index):
+    def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, model, index,
+                                     train_part='relation'):
         """
         web questions
         生成指定batch_size的数据
@@ -1036,6 +1037,7 @@ class DataClass:
         # y = relation_list_index.copy()
         x_new = []  # 问题集合
         y_new = []  # 关系集合
+        y_a_new = []  # 答案集合
         z_new = []  #
         labels = []  # 标签集合
 
@@ -1046,28 +1048,6 @@ class DataClass:
             # index=global_index
         else:
             raise Exception("MODEL 参数出错")
-
-        # shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
-        # ct.print("shuffle_indices", str(shuffle_indices))
-
-        # 使用这个问题的index作为测试的问题
-        # index = index
-
-        # index = self.shuffle_indices_debug
-        # 从debug的index集合里面随机挑选一个
-        # id_list = []
-        # if model == "valid":
-        #     id_list = ct.get_static_id_list_debug()
-        # elif model == "test":
-        #     id_list = ct.get_static_id_list_debug_test()
-        # else:
-        #     raise Exception("MODEL 参数出错")
-        # ct.print("这里暂时用的外面传进来的index")
-        # index = ct.random_get_one_from_list(id_list)
-        # index = shuffle_indices[0]
-        # 当前给一个
-        # x_new.append(x[index])
-        # y_new.append(y[index])
 
         # log
         ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
@@ -1097,14 +1077,17 @@ class DataClass:
             rs = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name,
                                                              ps_to_except=ps_to_except1, not_allow_repeat=True)
         if self.mode == "cc":
-            rs = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
+            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
 
         # rs = list(set(rs))
         # 加入正确的
         # if index >= len(x):
         #     print(3132131)
         x_new.append(self.question_list_index[global_index])
-        y_new.append(self.relation_list_index[global_index])
+        if train_part == 'relation':
+            y_new.append(self.relation_list_index[global_index])
+        else:
+            y_new.append(self.answer_list_index[global_index])
         labels.append(True)
         # ct.print("batch_iter_wq_test_one_debug ")
 
@@ -1121,6 +1104,10 @@ class DataClass:
 
         # 加入错误的
         # todo : total is get_static_num_debug
+        if train_part == 'relation':
+            rs = rs
+        else:
+            rs = a_s
         rs_len = len(rs)
         num = min(ct.get_static_num_debug(), rs_len)
         rs = rs[0:num]
@@ -1249,7 +1236,7 @@ class DataClass:
         # 组合所有的问题和错误关系放进一个tuple中
         # self.question_list
         # self.relation_path_clear_str_all 正确关系
-        build_version = 2
+        build_version = 1
         # 1.  扫一遍扫描测试集，收集完所有的属性(ps_set)，
         # self.question_labels
         neg_ps_set = set()
@@ -1300,7 +1287,9 @@ class DataClass:
                 r_all_neg = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name, ps_to_except=ps_to_except1)
             elif self.mode == "cc":
                 # todo: add answer to filter more
-                r_all_neg = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
+                r_all_neg, a_all_neg = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name,
+                                                                                        ps_to_except=ps_to_except1)
+
                 if build_version == 2:
                     _tmp_set = set()
                     for _p in ps_to_except1:
@@ -1318,8 +1307,10 @@ class DataClass:
                 #             , "%s\t%s" % (name, index))
 
             # print(len(r_all_neg))
-
+            index2 = -1
             for neg_r in r_all_neg:
+                index2 += 1
+                a1 = a_all_neg[index2]
                 q_r_tuple = (index, question, neg_r)
                 self.q_neg_r_tuple.append(q_r_tuple)
                 if is_record:
@@ -1330,7 +1321,7 @@ class DataClass:
                                     , "%s\t%s" % (question, neg_r))
                     if self.mode == "cc":
                         ct.just_log(config.cc_par('q_neg_r_tuple')
-                                    , "%s\t%s\t%s" % (index, question, neg_r))
+                                    , "%s\t%s\t%s\t%s" % (index, question, neg_r, a1))
         ct.print_t("build_all_q_r_tuple q_neg_r_tuple")
 
         # for index in range(questions_len_train):
@@ -1371,7 +1362,8 @@ class DataClass:
             index = int(str(l).split("\t")[0])
             question = str(l).split("\t")[1]
             neg_r = str(l).split("\t")[2].replace("\n", "")
-            q_r_tuple = (index, question, neg_r)
+            answer = str(l).split("\t")[3].replace("\n", "")
+            q_r_tuple = (index, question, neg_r,answer)
             # if index >questions_len_train:
             #     break # 只载入questions_len_train的问题
             self.q_neg_r_tuple.append(q_r_tuple)
@@ -1610,11 +1602,11 @@ def init_cc():
 
 if __name__ == "__main__":
     # CC 部分的测试-和构建代码
-    # init_cc()
+    #    init_cc()
 
     # test_random_choose_indexs_debug()
     # test_random_choose_indexs_debug()
-    test_cc()
+     test_cc()
 
     # 测试生成
 

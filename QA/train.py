@@ -242,7 +242,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 
 
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
-                      train_relation_list_index, model, test_question_global_index):
+                      train_relation_list_index, model, test_question_global_index,train_part):
     right = 0
     wrong = 0
     # 产生随机的index给debug那边去获得index
@@ -272,7 +272,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
             global_index = test_question_global_index[index]
         ct.print("valid_batch_debug:%s %d ,index = %d ;global_index=%d " % (model, i, index, global_index))
         test_q, test_r, labels = \
-            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index)
+            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index,train_part)
 
         ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = valid_step(sess, lstm, step, train_op,
                                                                                       test_q, test_r,
@@ -478,9 +478,13 @@ def main():
                 toogle_line = "\n------------------is_debug_few to train"
                 ct.log3(toogle_line)
                 ct.just_log2("info", toogle_line)
-                # train_q, train_cand, train_neg = \
-                my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
+                train_part = config.cc_par('train_part')
+                if train_part == 'relation':
+                    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
                                                       FLAGS.batch_size)
+                else:
+                    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_answer_list_index,
+                                                          FLAGS.batch_size)
             else:
                 train_q, train_cand, train_neg = \
                     dh.batch_iter_wq(dh.train_question_list_index, dh.train_relation_list_index,
@@ -512,11 +516,16 @@ def main():
                 test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
                 if (train_step + 1) % FLAGS.evaluate_every == 0:
                     model = "valid"
+                    train_part = config.cc_par('train_part')
+                    if train_part == 'relation':
+                        train_part_1 = dh.train_relation_list_index
+                    else:
+                        train_part_1 = dh.train_answer_list_index
                     acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
                         valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
                                           dh, test_batchsize, dh.train_question_list_index,
-                                          dh.train_relation_list_index,
-                                          model, dh.train_question_global_index )
+                                          train_part_1,
+                                          model, dh.train_question_global_index,train_part )
 
                     msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
                     ct.print(msg)
@@ -528,10 +537,15 @@ def main():
 
                 if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
                     model = "test"
+                    train_part = config.cc_par('train_part')
+                    if train_part == 'relation':
+                        train_part_1 = dh.test_relation_list_index
+                    else:
+                        train_part_1 = dh.test_answer_list_index
                     acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
                         valid_batch_debug(sess, lstm, step, train_op, merged, writer,
                                           dh, test_batchsize, dh.test_question_list_index,
-                                          dh.test_relation_list_index, model, dh.test_question_global_index)
+                                          train_part_1, model, dh.test_question_global_index,train_part)
                     # 测试 集合不做训练 但是将其记录下来
 
                     error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,

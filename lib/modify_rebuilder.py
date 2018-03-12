@@ -46,13 +46,13 @@ if __name__ == '__main__':  #
                             f2='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.txt')
     # 重写rdf_extract_property_origin
     # C1.2.1
-    if False:
-        cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.txt',
+    if True:
+        cf.extract_property(f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
                             f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                             f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
                             skip=0)
         print('重写q.rdf.ms.re.v1.filter.txt和rdf_extract_property_origin.txt')
-    if False:
+    if True:
         # 仅用于测试
         cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                             f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter_test.txt',
