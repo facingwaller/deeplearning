@@ -167,7 +167,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
             _tmp_right = 0
         # 训练的epoches步骤，R的index，得分，是否正确，关系，字表面特征
         score_list.append("%d_%d_%f_%s" % (st.index, _tmp_right, st.score, r1.replace('_', '-')))
-    _tmp_msg1 = "%d\t%s\t%d\t%s\t%s" % (step,model,global_index, question, '\t'.join(score_list))
+    _tmp_msg1 = "%d\t%s\t%d\t%s\t%s" % (step, model, global_index, question, '\t'.join(score_list))
     ct.just_log2("logistics", _tmp_msg1)
     # 记录到单独文件
 
@@ -242,17 +242,18 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 
 
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
-                      train_relation_list_index, model, test_question_global_index,train_part):
+                      train_relation_list_index, model, test_question_global_index, train_part,id_list):
     right = 0
     wrong = 0
     # 产生随机的index给debug那边去获得index
     # 仅供现在验证用
-    if model == "valid":
-        id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
-    else:
-        id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+    # if model == "valid":
+    #     id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
+    # else:
+    #     id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
 
-    id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+    # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+    
     error_test_q_list = []
     error_test_pos_r_list = []
     error_test_neg_r_list = []
@@ -272,7 +273,8 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
             global_index = test_question_global_index[index]
         ct.print("valid_batch_debug:%s %d ,index = %d ;global_index=%d " % (model, i, index, global_index))
         test_q, test_r, labels = \
-            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index,train_part)
+            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index,
+                                            train_part)
 
         ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = valid_step(sess, lstm, step, train_op,
                                                                                       test_q, test_r,
@@ -433,6 +435,15 @@ def main():
                               need_max_pooling=FLAGS.need_max_pooling,
                               word_model=FLAGS.word_model,
                               embedding_weight=embedding_weight)
+    lstm_answer = mynn.CustomNetwork(max_document_length=dh.max_document_length,  # timesteps
+                                     word_dimension=FLAGS.word_dimension,  # 一个单词的维度
+                                     vocab_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
+                                     rnn_size=FLAGS.rnn_size,  # 隐藏层大小
+                                     model=model,
+                                     need_cal_attention=FLAGS.need_cal_attention,
+                                     need_max_pooling=FLAGS.need_max_pooling,
+                                     word_model=FLAGS.word_model,
+                                     embedding_weight=embedding_weight)
     # 4 ----------------------------------- 设定loss-----------------------------------
     global_step = tf.Variable(0, name="globle_step", trainable=False)
     tvars = tf.trainable_variables()
@@ -441,6 +452,17 @@ def main():
     optimizer = tf.train.GradientDescentOptimizer(1e-1)
     optimizer.apply_gradients(zip(grads, tvars))
     train_op = optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
+
+    # 再加一个
+    global_step = tf.Variable(0, name="globle_step", trainable=False)
+    tvars = tf.trainable_variables()
+    grads, _ = tf.clip_by_global_norm(tf.gradients(lstm_answer.loss, tvars),
+                                      FLAGS.max_grad_norm)
+    optimizer = tf.train.GradientDescentOptimizer(1e-1)
+    optimizer.apply_gradients(zip(grads, tvars))
+    train_op = optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
+
+    # 初始化
     init = tf.global_variables_initializer()
     merged = tf.summary.merge_all()
 
@@ -479,13 +501,18 @@ def main():
                 ct.log3(toogle_line)
                 ct.just_log2("info", toogle_line)
                 train_part = config.cc_par('train_part')
+
+                shuffle_indices = np.random.permutation(np.arange(len(dh.q_neg_r_tuple_train)))  # 打乱样本下标
+
                 if train_part == 'relation':
                     my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
-                                                      FLAGS.batch_size)
+                                                          shuffle_indices, FLAGS.batch_size, train_part)
                 else:
                     my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_answer_list_index,
-                                                          FLAGS.batch_size)
+                                                          shuffle_indices, FLAGS.batch_size, train_part,
+                                                          shuffle_indices)
             else:
+                # 不用
                 train_q, train_cand, train_neg = \
                     dh.batch_iter_wq(dh.train_question_list_index, dh.train_relation_list_index,
                                      FLAGS.batch_size)
@@ -521,11 +548,19 @@ def main():
                         train_part_1 = dh.train_relation_list_index
                     else:
                         train_part_1 = dh.train_answer_list_index
+
+                    if model == "valid":
+                        id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
+                    else:
+                        id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+
+                    id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+
                     acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
                         valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
                                           dh, test_batchsize, dh.train_question_list_index,
                                           train_part_1,
-                                          model, dh.train_question_global_index,train_part )
+                                          model, dh.train_question_global_index, train_part,id_list)
 
                     msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
                     ct.print(msg)
@@ -545,7 +580,7 @@ def main():
                     acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
                         valid_batch_debug(sess, lstm, step, train_op, merged, writer,
                                           dh, test_batchsize, dh.test_question_list_index,
-                                          train_part_1, model, dh.test_question_global_index,train_part)
+                                          train_part_1, model, dh.test_question_global_index, train_part)
                     # 测试 集合不做训练 但是将其记录下来
 
                     error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,

@@ -54,7 +54,7 @@ elif testid == "cc_test":
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = False
     #####
-    train_part = 'answer'  # 属性 relation |answer
+    train_part = 'relation'  # 属性 relation |answer
 
 
 elif testid == "sq_debug":
@@ -143,8 +143,8 @@ cc_p = {
 
     'real_split_train_test': True,
     'real_split_train_test_skip': 14610,
-    'use_property':'special',  # 记录进日志
-    'train_part' : 'answer',  # 属性 relation |answer
+    'use_property':use_property,  # 记录进日志
+    'train_part' : train_part,  # 属性 relation |answer
 
 }
 
@@ -194,7 +194,7 @@ ms = ["train", "test"
 def get_config_msg():
     FLAGS._parse_flags()
     FLAGS_Parameters = "\nParameters:\n"
-    for attr, value in sorted(FLAGS.__flags.items()):
+    for attr, value in sorted             (FLAGS.__flags.items()):
         FLAGS_Parameters += "{}={}\n".format(attr.upper(), value)
     for item in cc_p:
         FLAGS_Parameters += '%s\n' % cc_p[item]
@@ -321,5 +321,5 @@ class config:
 
 
 if __name__ == "__main__":
-    print(config.par('sq_q_path'))
+    print(config.cc_par('train_part'))
     # config.test()
