@@ -42,7 +42,7 @@ if testid == "cc_test":
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = False
     #####
-    train_part = 'relation'  # 属性 relation |answer
+    train_part = 'answer'  # 属性 relation |answer
 
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮

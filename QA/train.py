@@ -415,7 +415,7 @@ def get_shuffle_indices_train(total, step, train_part, model, train_step):
             shuffle_indices = np.array(line_split)
         else:  # 不存在就自己写
             shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
-
+            ct.print('get_shuffle_indices_train not exist ','shuffle_indices_train')
             # step  训练模式    训练部分
             # ct.file_wirte_list(config.cc_par('combine'),
             #                    '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(shuffle_indices)))
@@ -465,8 +465,8 @@ def get_shuffle_indices_test(dh, step, train_part, model, train_step):
                 id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
 
             id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+            ct.print('get_shuffle_indices_test not exist ', 'shuffle_indices_test')
 
-            shuffle_indices = [str(x) for x in id_list]
 
     return id_list
 
@@ -579,9 +579,9 @@ def main():
                     my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
                                                           shuffle_indices, FLAGS.batch_size, train_part)
                 else:
-                    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index,
-                                                          shuffle_indices, FLAGS.batch_size, train_part,
-                                                          shuffle_indices)
+                    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index,dh.train_answer_list_index,
+                                                          shuffle_indices, FLAGS.batch_size, train_part
+                                                          )
             else:
                 # 不用
                 train_q, train_cand, train_neg = \
