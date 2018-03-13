@@ -1260,7 +1260,7 @@ class baike_helper:
             if s1[0] not in ps_to_except:
                 r1.append(s1[0])
                 a1.append(s1[1])
-        return r1,a1
+        return r1, a1
 
     # 输入识别结果，输出匹配R2格式
     # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
@@ -2259,12 +2259,12 @@ class classification:
                     #     continue
 
                     # 处理下 如果是 手工矫正的
-                    new_line = line.strip().replace('\xa0', '').replace('\r', '')\
-                        .replace('\n', '').replace(' ','').lower() # .replace('？','').replace('?','')
+                    new_line = line.strip().replace('\xa0', '').replace('\r', '') \
+                        .replace('\n', '').replace(' ', '').lower()  # .replace('？','').replace('?','')
                     # 去掉问句后面的吗
                     line_seg = new_line.split('\t')
-                    line_seg[6] = ct.do_some_clean( line_seg[6])
-                    line_seg[7] = ct.do_some_clean( line_seg[7])
+                    line_seg[6] = ct.do_some_clean(line_seg[6])
+                    line_seg[7] = ct.do_some_clean(line_seg[7])
                     new_line = '\t'.join(line_seg)
 
                     if line.__contains__('@@@@@@'):
@@ -2275,19 +2275,28 @@ class classification:
                         _tmp_l5 = list(set(line_seg[5]))
                         _tmp_q = line_seg[0]
                         for _word in _tmp_l5:
-                            _tmp_q = _tmp_q.replace(_word,'♠')
+                            _tmp_q = _tmp_q.replace(_word, '♠')
 
                         # _tt1 = re.sub('(♠.*♠)+', '♠', _tmp_q) 模糊全匹配
-                        _tt2 = re.sub('(♠)+', '♠', _tmp_q)   # 只去掉部分
+                        _tt2 = re.sub('(♠)+', '♠', _tmp_q)  # 只去掉部分
                         # if _tt1=='♠':
                         #     _tmp_q = _tt1
                         # else:
                         _tmp_q = _tt2
 
-                        line_seg[6] = _tmp_q # line_seg[0].replace(line_seg[5], '♠')
+                        line_seg[6] = _tmp_q  # line_seg[0].replace(line_seg[5], '♠')
                         line_seg[7] = line_seg[6].replace(line_seg[3], '♢')
                         new_line = '\t'.join(line_seg)
                         print(new_line)
+
+                    if new_line.__contains__('\t♠\t'): # 恢复是XX还是XX等
+                        _tmp_q = line_seg[0]
+                        _ms = line_seg[5]  # match s
+                        _tmp_q = _tmp_q.replace(_ms,'♠')
+                        line_seg[6] = _tmp_q  # line_seg[0].replace(line_seg[5], '♠')
+                        line_seg[7] = line_seg[6].replace(line_seg[3], '♢')
+                        new_line = '\t'.join(line_seg)
+
 
                     f1s_new.append(new_line)
             except Exception as e:
@@ -3036,7 +3045,7 @@ def extract_not_use_cx():
 if __name__ == '__main__':
     cf = classification()
     # C1.2.1
-    if True:
+    if False:
         cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.txt',
                             f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                             f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',

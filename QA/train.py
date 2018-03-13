@@ -231,8 +231,8 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         else:
             maybe_dict['e'] += 1
         acc0 = maybe_dict['r'] / (maybe_dict['r'] + maybe_dict['e'])
-        ct.print("%f pos_in_it  %s" % (acc0, pos_in_it), "maybe")
-        ct.print("\n", "maybe")
+        # ct.print("%f pos_in_it  %s" % (acc0, pos_in_it), "maybe")
+        # ct.print("\n", "maybe")
 
     time_elapsed = time.time() - start_time
     time_str = datetime.datetime.now().isoformat()
@@ -404,7 +404,7 @@ def get_shuffle_indices_train(total, step, train_part, model, train_step):
         line = ''
         exist = False
         for l1 in f1s:
-            if str(l1).split('\t')[0] == train_step:
+            if str(l1).split('\t')[0] == str(train_step):
                 line = str(l1)
                 exist = True
                 break
@@ -413,9 +413,10 @@ def get_shuffle_indices_train(total, step, train_part, model, train_step):
             line_split = line_split[3:]
             line_split = [int(x) for x in line_split]
             shuffle_indices = np.array(line_split)
+            ct.print('get_shuffle_indices_train   exist %s' % train_step, 'shuffle_indices_train')
         else:  # 不存在就自己写
             shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
-            ct.print('get_shuffle_indices_train not exist ','shuffle_indices_train')
+            ct.print('get_shuffle_indices_train   not exist %s' % train_step, 'shuffle_indices_train')
             # step  训练模式    训练部分
             # ct.file_wirte_list(config.cc_par('combine'),
             #                    '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(shuffle_indices)))
@@ -443,13 +444,14 @@ def get_shuffle_indices_test(dh, step, train_part, model, train_step):
         id_list2 = [str(x) for x in id_list]
         # step  训练模式    训练部分
         ct.just_log(config.cc_par('combine_test'),
-                           '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(id_list2)))
+                    '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(id_list2)))
     else:
         f1s = ct.file_read_all_lines_strip(config.cc_par('combine_test'))
         line = ''
         exist = False
         for l1 in f1s:
-            if str(l1).split('\t')[0] == train_step:
+            if str(l1).split('\t')[0] == str(train_step) \
+                    and str(l1).split('\t')[1] == model:
                 line = str(l1)
                 exist = True
                 break
@@ -457,7 +459,8 @@ def get_shuffle_indices_test(dh, step, train_part, model, train_step):
             line_split = line.split('\t')
             line_split = line_split[3:]
             line_split = [int(x) for x in line_split]
-            shuffle_indices = np.array(line_split)
+            id_list = np.array(line_split)
+            ct.print('get_shuffle_indices_test exist %s %s ' % (train_step, model), 'shuffle_indices_test')
         else:  # 不存在就自己写
             if model == "valid":
                 id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
@@ -465,8 +468,7 @@ def get_shuffle_indices_test(dh, step, train_part, model, train_step):
                 id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
 
             id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
-            ct.print('get_shuffle_indices_test not exist ', 'shuffle_indices_test')
-
+            ct.print('get_shuffle_indices_test not exist %s ' % train_step, 'shuffle_indices_test')
 
     return id_list
 
@@ -570,7 +572,7 @@ def main():
                 ct.log3(toogle_line)
                 ct.just_log2("info", toogle_line)
                 train_part = config.cc_par('train_part')
-                model ='train'
+                model = 'train'
                 # 属性就生成问题就读取
                 shuffle_indices = get_shuffle_indices_train(len(dh.q_neg_r_tuple_train), step, train_part, model,
                                                             train_step)
@@ -579,7 +581,7 @@ def main():
                     my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,
                                                           shuffle_indices, FLAGS.batch_size, train_part)
                 else:
-                    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index,dh.train_answer_list_index,
+                    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_answer_list_index,
                                                           shuffle_indices, FLAGS.batch_size, train_part
                                                           )
             else:

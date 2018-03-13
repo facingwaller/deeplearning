@@ -37,7 +37,8 @@ class logistics_helper:
         t1 = (global_index, question, ts, step, model)
         return t1
 
-    def __init__(self, f1='../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'):
+    def __init__(self, f1='../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt',
+                 f2= '../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'):
         self.all_datas = []
         # f1 = '../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'
         f1s = ct.file_read_all_lines_strip(f1)

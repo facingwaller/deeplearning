@@ -25,7 +25,7 @@ if __name__ == '__main__':  #
         # 暂时不理这边NER的问题
         num = 999
         bkt.try_test_acc_of_m1(
-            f1='../data/nlpcc2016/3-questions/q.rdf.txt',
+            f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
             f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt',
             # extract_entitys_v3                extract_entitys_all
             f2='../data/nlpcc2016/4-ner/q.rdf.txt.failed_v3_%d.txt' % num,
