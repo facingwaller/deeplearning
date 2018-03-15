@@ -777,7 +777,10 @@ class DataClass:
 
         for list_index in range(total):
             # 获取q_neg_r_tuple里面打乱的下标的对应的 q_r 对
-            q_neg_r = self.q_neg_r_tuple_train[shuffle_indices[list_index]]
+            try:
+                q_neg_r = self.q_neg_r_tuple_train[shuffle_indices[list_index]]
+            except Exception as e1:
+                print(e1)
             index = q_neg_r[0]  # 对应类里面的index
             name = q_neg_r[1]  # 问题
             r_neg = q_neg_r[2]  # 关系
@@ -1119,7 +1122,7 @@ class DataClass:
             r1 = self.converter.text_to_arr_list(r1_split)
             r1_text = self.converter.arr_to_text_no_unk(r1)
             # ct.log3(r1_text)
-            ct.just_log2("info", "r1_neg in test %s" % r1_text)
+            # ct.just_log2("info", "r1_neg in test %s" % r1_text)
             # ct.print(r1_text)
             # ct.just_log2("info","neg-r test:" + r1_text)
             r1 = ct.padding_line(r1, self.max_document_length, padding_num)

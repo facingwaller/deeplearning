@@ -328,7 +328,7 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
     tp = ct.sort_dict(error_test_dict)
     ct.just_log2('error_count', "\n\n")
     for t in tp:
-        ct.just_log2('error_count', "%s\t%s\n" % (t[0], t[1]))
+        ct.just_log2('error_count', "%s\t%s" % (t[0], t[1]))
 
     # 记录
     maybe_tmp_dict = dict()
@@ -345,10 +345,10 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
             if item.index == 0 and pos_in_it == False:
                 pos_in_it = True
 
-            ct.print(item.msg1, "maybe1")
-
-            if not pos_in_it:
-                ct.print(item.msg1, "maybe2")
+            # ct.print(item.msg1, "maybe1")
+            #
+            # if not pos_in_it:
+            #     ct.print(item.msg1, "maybe2")
 
                 # 记录那些在记录中 且不是 0 的
 

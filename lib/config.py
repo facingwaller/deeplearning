@@ -42,8 +42,32 @@ if testid == "cc_test":
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
     #####
-    train_part = 'answer'  # 属性 relation |answer
+    train_part = 'relation'  # 属性 relation |answer
+elif testid== 'cc_debug':
+    # 极限情况下调,1个问题，全关系
+    epoches = 100  # 遍历多少轮
+    batch_size = 10  # 1个batch的大小 # 临时改了
+    evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
+    evaluate_batchsize = 100  # 验证一次的问题数目
+    questions_len_train = 100  # 所有问题数目
+    questions_len_test = 100
+    wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
+    total_questions = 999999999999999
+    stop_loss_zeor_count = 2000
+    rnn_size = 100
+    mode = "cc"
+    check = 100000
 
+    use_property = 'maybe'
+    # 使用属性的模式做训练和测试
+    # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
+    skip_threshold = 0.02
+    t_relation_num = 4000
+    # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
+    # 而非模拟测试的。 之前是混合在一起
+    real_split_train_test = True
+    #####
+    train_part = 'relation'  # 属性 relation |answer
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
@@ -232,7 +256,7 @@ class config:
         # random.randint() 考虑改成随机的10个
         # a <= n <= b
         # min,max = 1,1000
-        for i in range(0, q_l_t ):
+        for i in range(0, q_l_t -1):
             a.append(i)
         return a
 
