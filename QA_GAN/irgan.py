@@ -151,6 +151,9 @@ def dev_step(sess, cnn, testList, dev_size=100):
         else:
             scoreList.append(0)
             # ZeroDivisionError: float division by zero
+    if len(scoreList) == 0:
+        print('eroror scoreList is nil')
+        return 0
     return sum(scoreList) * 1.0 / len(scoreList)
 
 
@@ -162,7 +165,7 @@ def evaluation(sess, model, log, num_epochs=0):
     else:
         model_type = "Gen"
 
-    precision_current = dev_step(sess, model, test1List, 1800)
+    precision_current = dev_step(sess, model, test1List, 20)
     line = "test1: %d epoch: precision %f" % (current_step, precision_current)
     print(line)
     print(model.save_model(sess, precision_current))

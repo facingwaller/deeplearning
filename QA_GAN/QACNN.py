@@ -120,5 +120,5 @@ class QACNN():
         filename = "model/" + self.model_type + str(precision_current) + "-" + timeStamp + ".model"
 
         param = sess.run([self.Embedding_W, self.kernels])
-        pickle.dump(param, open(filename, 'w'))
+        pickle.dump(param, open(filename, 'wb'))
         return filename
