@@ -159,6 +159,7 @@ tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
 tf.flags.DEFINE_integer("rnn_size", rnn_size, "LSTM 隐藏层的大小 ")
 tf.flags.DEFINE_integer("batch_size", batch_size, "batch_size")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "max_grad_norm")
+tf.flags.DEFINE_float("learning_rate", 0.05, "learning_rate (default: 0.1)")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
 
 tf.flags.DEFINE_integer("check", check, "Number of checkpoints to store (default: 5)")
@@ -168,6 +169,8 @@ tf.flags.DEFINE_integer("test_every", evaluate_every, "test_every ")
 tf.flags.DEFINE_integer("test_batchsize", evaluate_batchsize, "test_batchsize ")
 
 tf.flags.DEFINE_integer("stop_loss_zeor_count", stop_loss_zeor_count, "loss=0 停止的次数 ")
+tf.flags.DEFINE_integer("gan_k ", gan_k, "生成 FLAGS.gan_k个负例  ")
+
 ms = ["train", "test"
     , "debug"
     , "none"

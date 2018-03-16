@@ -4,6 +4,7 @@
 # 参考1 QA_LSTM_ATTENTION
 # 参考2 char_rnn
 # 参考3 PTB的例子 tensorflow_google/t_8/8-4-2.py
+# 参考4 引入IR-GAN
 
 import tensorflow as tf
 import lib.data_helper as data_helper
@@ -497,7 +498,7 @@ def main():
     now = "\n\n\n" + str(datetime.datetime.now().isoformat())
     # test 是完整的; small 是少量 ; debug 只是一次
     model = FLAGS.mode
-    ct.print("tf:%s model:%s " % (str(tf.__version__), model))  # 1.2.1
+    ct.print("tf:%s should be 1.2.1 model:%s " % (str(tf.__version__), model))  # 1.2.1
     ct.just_log2("info", now)
     ct.just_log2("valid", now)
     ct.just_log2("test", now)
@@ -522,7 +523,8 @@ def main():
                               need_cal_attention=FLAGS.need_cal_attention,
                               need_max_pooling=FLAGS.need_max_pooling,
                               word_model=FLAGS.word_model,
-                              embedding_weight=embedding_weight)
+                              embedding_weight=embedding_weight,
+                              need_gan=False)
 
     # 4 ----------------------------------- 设定loss-----------------------------------
     global_step = tf.Variable(0, name="globle_step", trainable=False)

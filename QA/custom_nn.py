@@ -5,7 +5,7 @@
 
 import tensorflow as tf
 from tensorflow.contrib import rnn
-from QA.bilstm import biLSTM, biLSTM2
+from QA.bilstm import biLSTM
 from QA.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature, cal_loss_and_acc_try
 
 
@@ -18,7 +18,7 @@ class CustomNetwork:
     #     print(1)
 
     def __init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
-                 need_cal_attention, need_max_pooling, word_model, embedding_weight):
+                 need_cal_attention, need_max_pooling, word_model, embedding_weight,need_gan=False):
         # ===================初始化参数
         self.timesteps = max_document_length  # 一句话的单词数目，也是跑一次模型的times step，时刻步数
         self.word_dimension = word_dimension  # 一个单次的维度
@@ -28,7 +28,7 @@ class CustomNetwork:
         # self.init_config(model)
         self.need_cal_attention = need_cal_attention
         self.need_max_pooling = need_max_pooling
-
+        self.need_gan = need_gan
         # ======================占位符
         self.build_inputs(word_model, embedding_weight)
         self.build_LSTM_network()
@@ -129,6 +129,15 @@ class CustomNetwork:
             # print("cal_attention")
 
     def cos_sim(self):
+        # 输出供计算
+        if self.need_gan:
+            self.score12 = feature2cos_sim(self.ori_q, self.cand_a)
+            self.score13 = feature2cos_sim(self.ori_q, self.neg_a)
+            self.positive = tf.reduce_mean(self.score12)
+            self.negative = tf.reduce_mean(self.score13)
+            print(1)
+
+        # 是否计算attention 看输入的是原始的ori_q还是经过注意力机制处理的ori_q_feat
         if self.need_cal_attention:
             self.ori_cand = feature2cos_sim(self.ori_q_feat, self.cand_q_feat)
             self.ori_neg = feature2cos_sim(self.ori_q_feat, self.neg_q_feat)

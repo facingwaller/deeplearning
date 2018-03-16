@@ -25,7 +25,7 @@ import gc
 from multiprocessing import Pool, Manager
 import math
 import heapq
-
+import random
 MAX_POOL_NUM = 5
 
 
@@ -880,6 +880,7 @@ class baike_helper:
         #     return
         ct.print_t('init_spo')
         self.kbqa = dict()
+        self.ps_set = set()
 
         index = 0
         if use_gzip:
@@ -903,6 +904,8 @@ class baike_helper:
             p = ct.clean_str_rel(ls[1])
             o1 = ls[2]
             t1 = (p, o1)
+            # 全部的P整理进来
+            self.ps_set.add(p)
             # del line
             if s in self.kbqa:
                 # try:
@@ -1260,8 +1263,46 @@ class baike_helper:
             if s1[0] not in ps_to_except:
                 r1.append(s1[0])
                 a1.append(s1[1])
+
         return r1, a1
 
+    # 读取实体所有的实体    返回所有的关系集合
+    def read_entity_and_get_all_neg_relations_cc_gan(self, entity_id, ps_to_except,total):
+        e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
+        if e_s == "":
+            print(entity_id)
+            # raise Exception('entity cant find')
+            ct.print(str(entity_id).replace(' ', '').lower()
+                     , 'read_entity_and_get_all_neg_relations_cc')
+        r1 = []
+        a1 = []
+        for s1 in e_s:
+            if s1[0] not in ps_to_except:
+                r1.append(s1[0])
+                a1.append(s1[1])
+
+        keys = self.kbqa.keys()
+        slice = random.sample(keys, total)
+        enough = False
+        for k in slice:
+            _e_s = self.kbqa.get(k, "")
+            for s1 in _e_s:
+                if s1[0] not in ps_to_except:
+                    if r1 not in r1: # 不取重复的
+                        r1.append(s1[0])
+                        a1.append(s1[1])
+                        if len(r1) == total:
+                            enough=True
+                            break
+            if enough:
+                break
+
+        #
+        # r1 = r1[0:total]
+        # a1 = a1[0:total]
+
+
+        return r1, a1
     # 输入识别结果，输出匹配R2格式
     # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
     # 机械设计基础         作者          杨可桢，程光蕴，李仲生

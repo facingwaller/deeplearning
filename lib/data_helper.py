@@ -19,7 +19,7 @@ from lib.baike_helper import baike_helper
 # from gensim import models
 
 # ======================================================================common
-
+import math
 
 
 
@@ -284,7 +284,7 @@ class DataClass:
             'debug')
 
         # 记录问题集合和测试集合 输出问句
-        ct.print('看看哪些neg关系是训练有','debug')
+        ct.print('看看哪些neg关系是训练有', 'debug')
         r_train = set()
         r_test = set()
         ct.print('train', 'train_test_q')
@@ -317,14 +317,14 @@ class DataClass:
         for l in range(len(self.train_question_list_index)):
             global_index = l
             ps_to_except1 = self.relation_path_clear_str_all[global_index]
-            rs,a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
+            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
             for r in rs:
                 neg_r_train.add(r)
 
         for l in range(len(self.test_question_list_index)):
             global_index = l + self.padding
             ps_to_except1 = self.relation_path_clear_str_all[global_index]
-            rs ,a_s= self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
+            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
             for r in rs:
                 neg_r_test.add(r)
 
@@ -745,7 +745,7 @@ class DataClass:
 
     # -------------------测试生成同一批次的 debug 在测！！！
     # 在用
-    def batch_iter_wq_debug(self, question_list_index, relation_list_index, shuffle_indices, batch_size, train_part ):
+    def batch_iter_wq_debug(self, question_list_index, relation_list_index, shuffle_indices, batch_size, train_part):
         """
         web questions 的生成反例的办法。debug版本，
         生成指定batch_size的数据。
@@ -769,7 +769,7 @@ class DataClass:
 
         # 生成 0- len(question_list_index) 的随机数字
         total = len(self.q_neg_r_tuple_train)
-        if len(shuffle_indices)==0:
+        if len(shuffle_indices) == 0:
             shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
 
         info1 = "q total:%d ; epohches-size:%s " % (total, len(self.q_neg_r_tuple_train) / batch_size)
@@ -1369,7 +1369,7 @@ class DataClass:
             question = str(l).split("\t")[1]
             neg_r = str(l).split("\t")[2].replace("\n", "")
             answer = str(l).split("\t")[3].replace("\n", "")
-            q_r_tuple = (index, question, neg_r,answer)
+            q_r_tuple = (index, question, neg_r, answer)
             # if index >questions_len_train:
             #     break # 只载入questions_len_train的问题
             self.q_neg_r_tuple.append(q_r_tuple)
@@ -1470,6 +1470,94 @@ class DataClass:
                 ct.just_log(config.par('cc_path') + 'kb_rdf_only_e.txt', msg)
                 # 重写
 
+    # ============== GAN
+
+    # -------------------测试生成同一批次的 debug 在测！！！
+    # 在用
+    def batch_iter_gan_train(self, question_list_index, relation_list_index, model, index,
+                             train_part='relation', total=100):
+        """
+        20180316 V1.0
+        获取NEG的部分改成从全局里面随机获取指定个数
+        :param question_list_index:
+        :param relation_list_index:
+        :param shuffle_indices:
+        :param batch_size:
+        :param train_part:
+        :return:
+        """
+        ct.print("enter:batch_iter_gan_train")
+
+        x_new = []  # 问题集合
+        y_pos = []  # 正确属性
+        y_neg = []  # 错误属性
+
+        if model == "valid" or model == "train":
+            global_index = index
+        elif model == "test":
+            global_index = index + self.padding
+            # index=global_index
+        else:
+            raise Exception("MODEL 参数出错")
+
+        # log
+        ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
+        msg = "model=%s,id=%s,global_index=%d;q_global_index=%d;" % (
+            model, index, global_index, self.question_global_index[global_index])
+        ct.print(msg)
+        ct.log3(msg)
+        ct.just_log2("info", msg)
+
+        if global_index >= len(self.entity1_list):
+            print(1111)
+        name = self.entity1_list[global_index]
+        # todo: index should not in
+        # ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
+        ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
+        # ps_to_except1 = [ps_to_except1]
+        padding_num = self.converter.vocab_size - 1
+
+        rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc_gan(entity_id=name, ps_to_except=ps_to_except1,
+                                                                       total=total)
+
+        ct.just_log2("info", "entity:%s " % name)
+
+        r1_text = self.converter.arr_to_text_no_unk(self.relation_list_index[global_index])
+        q1_text = self.converter.arr_to_text_no_unk(self.question_list_index[global_index])
+        r1_msg = "r-pos: %s \t answer:%s" % (r1_text, self.answer_list[global_index])
+        q1_msg = "q : %s" % q1_text
+        ct.just_log2("info", q1_msg)
+        ct.just_log2("info", r1_msg)
+
+        # 加入所有的
+        # todo : total is get_static_num_debug
+        if train_part == 'relation':
+            rs = rs
+        else:
+            rs = a_s
+        rs_len = len(rs)
+        num = min(config.get_static_num_debug(), rs_len)
+        rs = rs[0:num]
+        for r1 in rs:
+            r1_split = [r1]
+            r1 = self.converter.text_to_arr_list(r1_split)
+            # r1_text = self.converter.arr_to_text_no_unk(r1)
+            # ct.log3(r1_text)
+            # ct.just_log2("info", "r1_neg in test %s" % r1_text)
+            # ct.print(r1_text)
+            # ct.just_log2("info","neg-r test:" + r1_text)
+            r1 = ct.padding_line(r1, self.max_document_length, padding_num)
+            x_new.append(self.question_list_index[global_index])
+            y_pos.append(self.relation_list_index[global_index])
+            y_neg.append(r1)
+            # y_new.append(r1)  # neg
+            # labels.append(False)
+
+        # ct.print("show shuffle_indices")
+        ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
+        ct.print("leave:batch_iter_wq_test_one_debug")
+        return np.array(x_new), np.array(y_pos), np.array(y_neg)
+
 
 # ======================================================================= clear data
 
@@ -1564,7 +1652,7 @@ def test_sq():
 def test_cc():
     dh = DataClass("cc")
     shuffle_indices = np.random.permutation(np.arange(len(dh.q_neg_r_tuple_train)))  # 打乱样本下标
-    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index,shuffle_indices,
+    my_generator = dh.batch_iter_wq_debug(dh.train_question_list_index, dh.train_relation_list_index, shuffle_indices,
                                           batch_size=10)
     for gen in my_generator:
         train_q = gen[0]
@@ -1612,7 +1700,7 @@ if __name__ == "__main__":
 
     # test_random_choose_indexs_debug()
     # test_random_choose_indexs_debug()
-     test_cc()
+    test_cc()
 
     # 测试生成
 
