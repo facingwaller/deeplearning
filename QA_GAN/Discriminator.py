@@ -8,9 +8,9 @@ from QA.custom_nn import CustomNetwork as bilstm
 
 class Discriminator(bilstm):
     def __init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
-                 need_cal_attention, need_max_pooling, word_model, embedding_weight,need_gan):
+                 need_cal_attention, need_max_pooling, word_model, embedding_weight,need_gan,first):
         bilstm.__init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
-                 need_cal_attention, need_max_pooling, word_model, embedding_weight,need_gan)
+                 need_cal_attention, need_max_pooling, word_model, embedding_weight,need_gan,first)
         self.model_type = "Dis"
         self.learning_rate = 0.05
 
@@ -29,7 +29,17 @@ class Discriminator(bilstm):
         self.global_step = tf.Variable(0, name="global_step", trainable=False)
         optimizer = tf.train.AdamOptimizer(self.learning_rate)
         grads_and_vars = optimizer.compute_gradients(self.loss)
-        capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads_and_vars]
+        # capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads_and_vars]
+        capped_gvs = []
+        for grad, var in grads_and_vars:
+            if var != None and grad != None:
+                try:
+                    capped_gvs.append((tf.clip_by_value(grad, -1., 1.), var))
+                except Exception as e1:
+                    print(e1)
+
+            else:
+                print('None item')
         self.train_op = optimizer.apply_gradients(capped_gvs, global_step=self.global_step)
 
         # 当前的办法

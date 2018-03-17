@@ -31,10 +31,11 @@ print(np.array(predicteds) * sampled_temperature)
 
 print('--------------')
 print(np.sum(exp_rating))
+print('--------------prob')
 print(prob)
 # 可以从一个int数字或1维array里随机选取内容，并将选取结果放入n维array中返回
 tt1 = np.arange(len(predicteds))
-print("np.arange(len(predicteds)):\n%s" % tt1)
+print("--------------:\n%s" % tt1)
 neg_index = np.random.choice(tt1, size=5,
                              p=prob, replace=False)
 # numpy.random.choice(a, size=None, replace=True, p=None)

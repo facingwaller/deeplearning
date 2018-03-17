@@ -18,7 +18,7 @@ class CustomNetwork:
     #     print(1)
 
     def __init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
-                 need_cal_attention, need_max_pooling, word_model, embedding_weight,need_gan=False):
+                 need_cal_attention, need_max_pooling, word_model, embedding_weight,need_gan=False,first=True):
         # ===================初始化参数
         self.timesteps = max_document_length  # 一句话的单词数目，也是跑一次模型的times step，时刻步数
         self.word_dimension = word_dimension  # 一个单次的维度
@@ -29,6 +29,11 @@ class CustomNetwork:
         self.need_cal_attention = need_cal_attention
         self.need_max_pooling = need_max_pooling
         self.need_gan = need_gan
+        self.first = first
+        if self.first:
+            self.num = 1
+        else:
+            self.num = 2
         # ======================占位符
         self.build_inputs(word_model, embedding_weight)
         self.build_LSTM_network()
@@ -39,7 +44,8 @@ class CustomNetwork:
         self.cos_sim()
 
     def build_inputs(self, word_model, embedding_weight):
-        with tf.name_scope('inputs'):
+        with tf.name_scope('inputs_%d'%self.num):
+            # print(self.timesteps)
             self.ori_input_quests_tmp = tf.placeholder(tf.int32, [None, self.timesteps])  # 临时
             self.ori_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 问题
             self.cand_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 正确答案
@@ -74,11 +80,15 @@ class CustomNetwork:
 
     def build_LSTM_network(self):
         # print("build_LSTM_network>>>>>>>>>>>>>>>>>>")
-        with tf.variable_scope("LSTM_scope1", reuse=None) as scop1:
+
+        # 如果是首次D 进来初始化
+
+
+        with tf.variable_scope("LSTM_scope%d"%self.num, reuse=None) as scop1:
             dsadasda = 1  # 下面全部重用
             # self.ori_quests_tmp
             self.ori_q1 = biLSTM(self.ori_quests_tmp, self.rnn_size)  # embedding size 之前设定是300
-        with tf.variable_scope("LSTM_scope1", reuse=True) as scop2:
+        with tf.variable_scope("LSTM_scope%d"%self.num, reuse=True) as scop2:
             # self.ori_q = biLSTM(self.ori_quests, self.rnn_size)  # embedding size 之前设定是300
             self.ori_q = biLSTM(self.ori_quests, self.rnn_size)  # embedding size 之前设定是300
             self.cand_a = biLSTM(self.cand_quests, self.rnn_size)
@@ -129,13 +139,8 @@ class CustomNetwork:
             # print("cal_attention")
 
     def cos_sim(self):
-        # 输出供计算
-        if self.need_gan:
-            self.score12 = feature2cos_sim(self.ori_q, self.cand_a)
-            self.score13 = feature2cos_sim(self.ori_q, self.neg_a)
-            self.positive = tf.reduce_mean(self.score12)
-            self.negative = tf.reduce_mean(self.score13)
-            print(1)
+
+
 
         # 是否计算attention 看输入的是原始的ori_q还是经过注意力机制处理的ori_q_feat
         if self.need_cal_attention:
@@ -155,6 +160,14 @@ class CustomNetwork:
             self.loss, self.acc, self.loss_tmp = cal_loss_and_acc_try(self.ori_cand, self.ori_neg)
             # 计算问题和关系的相似度
             self.test_q_r = feature2cos_sim(self.test_q_out, self.test_r_out)
+
+        # 输出供计算
+        if self.need_gan:
+            self.score12 = self.ori_cand
+            self.score13 = self.ori_neg
+            self.gan_score1 = tf.subtract(self.ori_neg,self.ori_cand)
+            self.positive = tf.reduce_mean(self.score12)
+            self.negative = tf.reduce_mean(self.score13)
 
         tf.summary.histogram("loss", self.loss)  # 可视化观看变量
         tf.summary.histogram("acc", self.acc)  # 可视化观看变量

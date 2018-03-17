@@ -1502,8 +1502,11 @@ class DataClass:
 
         # log
         ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
-        msg = "model=%s,id=%s,global_index=%d;q_global_index=%d;" % (
-            model, index, global_index, self.question_global_index[global_index])
+        try:
+            msg = "model=%s,id=%s,global_index=%d;q_global_index=%d;" % (
+                model, index, global_index, self.question_global_index[global_index])
+        except Exception as e2:
+            print(e2)
         ct.print(msg)
         ct.log3(msg)
         ct.just_log2("info", msg)
@@ -1538,7 +1541,10 @@ class DataClass:
         rs_len = len(rs)
         num = min(config.get_static_num_debug(), rs_len)
         rs = rs[0:num]
+        _index = -1
         for r1 in rs:
+            _index += 1
+            r1_text = r1
             r1_split = [r1]
             r1 = self.converter.text_to_arr_list(r1_split)
             # r1_text = self.converter.arr_to_text_no_unk(r1)
@@ -1552,10 +1558,12 @@ class DataClass:
             y_neg.append(r1)
             # y_new.append(r1)  # neg
             # labels.append(False)
+            r1_msg = "r-neg: %s \t answer:%s" % (r1_text, a_s[_index])
+            ct.just_log2("info", r1_msg)
 
         # ct.print("show shuffle_indices")
         ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
-        ct.print("leave:batch_iter_wq_test_one_debug")
+        ct.print("leave:batch_iter_gan_train")
         return np.array(x_new), np.array(y_pos), np.array(y_neg)
 
 
@@ -1693,6 +1701,42 @@ def init_cc():
     dh.build_all_q_r_tuple(99999999999999,
                            99999999999999, is_record=True)
 
+def test_gan():
+    dh = DataClass("cc")
+    train_part = config.cc_par('train_part')
+    model = 'train'
+    step = 0
+    train_step = 0
+    batch_size = 100
+    shuffle_indices = np.random.permutation(np.arange(len(dh.train_question_list_index)))  # 打乱样本下标
+    shuffle_indices = [x for x in list(shuffle_indices)]
+    # 1 遍历raw
+    for index in shuffle_indices:
+        # 取出一个问题的相关数据
+        train_q, train_pos, train_neg = dh.batch_iter_gan_train(dh.train_question_list_index,
+                                                                dh.train_relation_list_index, model,
+                                                                index, train_part, batch_size)
+        question = ''
+        relations = []
+        for _ in train_q:
+            v_s_1 = dh.converter.arr_to_text_no_unk(_)
+            valid_msg = model + " test_q 1:" + v_s_1
+            ct.print( valid_msg,"debug")
+            question = v_s_1
+            break
+        for _ in train_pos:
+            v_s_1 = dh.converter.arr_to_text_no_unk(_)
+            valid_msg = model + " pos 1:" + v_s_1
+            ct.print( valid_msg,"debug")
+            relations.append(v_s_1)
+            break
+        for _ in train_neg:
+            v_s_1 = dh.converter.arr_to_text_no_unk(_)
+            valid_msg = model + " neg 1:" + v_s_1
+            ct.print( valid_msg,"debug")
+            relations.append(v_s_1)
+        break
+
 
 if __name__ == "__main__":
     # CC 部分的测试-和构建代码
@@ -1700,7 +1744,8 @@ if __name__ == "__main__":
 
     # test_random_choose_indexs_debug()
     # test_random_choose_indexs_debug()
-    test_cc()
+    # test_cc()
+    test_gan()
 
     # 测试生成
 

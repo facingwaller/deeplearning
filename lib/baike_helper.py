@@ -1282,7 +1282,10 @@ class baike_helper:
                 a1.append(s1[1])
 
         keys = self.kbqa.keys()
-        slice = random.sample(keys, total)
+        try:
+            slice = random.sample(keys, total)
+        except Exception as e1:
+            print(e1)
         enough = False
         for k in slice:
             _e_s = self.kbqa.get(k, "")

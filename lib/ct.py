@@ -1176,6 +1176,13 @@ class ct:
         str = re.sub('？$', '', str)
         return str
 
+    @staticmethod
+    def check_inf(predicteds):
+        for p1 in predicteds:
+            if p1 == 'inf':
+                raise ("float inf")
+
+
 
 
 
