@@ -19,9 +19,9 @@ tf.flags.DEFINE_string("word_model", "word2vec_train", "可选有|tf_embedding|w
 
 testid = "cc_test"
 if str(myaddr) == "192.168.31.194":
-    testid = "cc_test"
-else:
     testid = "cc_debug"
+else:
+    testid = "cc_test"
 print("%s\t%s"%(myaddr,testid))
 
 # ==正常调参
