@@ -9,6 +9,8 @@ import tensorflow as tf
 
 FLAGS = tf.flags.FLAGS
 
+myname = socket.getfqdn(socket.gethostname())
+myaddr = socket.gethostbyname(myname)
 # embedding
 tf.flags.DEFINE_integer("word_dimension", 100, "单词的维度 ")
 # tf_embedding tf自己训练
@@ -16,6 +18,12 @@ tf.flags.DEFINE_integer("word_dimension", 100, "单词的维度 ")
 tf.flags.DEFINE_string("word_model", "word2vec_train", "可选有|tf_embedding|word2vec_train|word2vec")
 
 testid = "cc_test"
+if str(myaddr) == "192.168.31.194":
+    testid = "cc_test"
+else:
+    testid = "cc_debug"
+print("%s\t%s"%(myaddr,testid))
+
 # ==正常调参
 
 if testid == "cc_test":
@@ -37,7 +45,7 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 10
+    t_relation_num = 2  # 这个指示了训练的个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -50,11 +58,11 @@ if testid == "cc_test":
 elif testid== 'cc_debug':
     # 极限情况下调,1个问题，全关系
     epoches = 100  # 遍历多少轮
-    batch_size = 10  # 1个batch的大小 # 临时改了
-    evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
-    evaluate_batchsize = 100  # 验证一次的问题数目
-    questions_len_train = 100  # 所有问题数目
-    questions_len_test = 100
+    batch_size = 100  # 1个batch的大小 # 临时改了
+    evaluate_every = 4000  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
+    evaluate_batchsize = 2000  # 验证一次的问题数目
+    questions_len_train = 4000  # 所有问题数目
+    questions_len_test = 4000
     wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
     total_questions = 999999999999999
     stop_loss_zeor_count = 2000
@@ -62,18 +70,19 @@ elif testid== 'cc_debug':
     mode = "cc"
     check = 100000
 
-    use_property = 'maybe'
+    use_property = 'special'
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 4000
+    t_relation_num = 100  # 这个指示了训练的个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
     #####
     train_part = 'relation'  # 属性 relation |answer
     ####
-    gan_k = 10
+    gan_k = 5
+    sampled_temperature = 20
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
@@ -201,8 +210,7 @@ def get_config_msg():
     return FLAGS_Parameters
 
 
-myname = socket.getfqdn(socket.gethostname())
-myaddr = socket.gethostbyname(myname)
+
 
 
 ## 配置根据机器、想运行的模式等决定
@@ -320,5 +328,6 @@ class config:
 
 
 if __name__ == "__main__":
+    # print(config.get_model())
     print(config.cc_par('train_part'))
     # config.test()

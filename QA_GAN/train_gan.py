@@ -476,14 +476,14 @@ def get_shuffle_indices_test(dh, step, train_part, model, train_step):
 
 
 # ----------------------------------- checkpoint-----------------------------------
-def checkpoint(sess):
+def checkpoint(sess,step):
     # Output directory for models and summaries
-    timestamp = str(int(time.time()))
-    out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
+
+    out_dir = ct.log_path_checkpoint(step)
     ct.print("Writing to {}\n".format(out_dir))
     # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
     checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
-    checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+    # checkpoint_prefix = os.path.join(checkpoint_dir, "model")
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
@@ -559,6 +559,7 @@ def elvation(train_step,dh,step,sess,discriminator,merged,writer,valid_test_dict
     # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
     # ct.log3(toogle_line)
     # ct.just_log2("info", toogle_line)
+    checkpoint(sess,step)
 
 # 主流程
 def main():
@@ -635,7 +636,7 @@ def main():
     merged = tf.summary.merge_all()
 
     with tf.Session().as_default() as sess:
-        writer = tf.summary.FileWriter("log/", sess.graph)
+        writer = tf.summary.FileWriter(ct.log_path()+"\\log\\", sess.graph)
         sess.run(init)
 
         use_error = False
@@ -650,7 +651,6 @@ def main():
             ct.log3(toogle_line)
             ct.just_log2("info", toogle_line)
 
-
             # -------------- D model 固定G
             if step > -1:
                 train_part = config.cc_par('train_part')
@@ -659,6 +659,7 @@ def main():
                 shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index), step, train_part, model,
                                                             train_step)
                 for index in shuffle_indices:
+                    train_step+=1
                     # 取出一个问题的相关数据
                     train_q, train_pos, train_neg = dh.batch_iter_gan_train(dh.train_question_list_index,
                                                                             dh.train_relation_list_index,model,
@@ -723,6 +724,7 @@ def main():
             shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index), step, train_part, model,
                                                         train_step)
             for index in shuffle_indices:
+                train_step+=1
                 # 取出一个问题的相关数据
                 train_q, train_pos, train_neg = dh.batch_iter_gan_train(dh.train_question_list_index,
                                                                         dh.train_relation_list_index,model,

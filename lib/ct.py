@@ -673,7 +673,12 @@ class ct:
 
     # ------------- 2. 日志
     @staticmethod
+    def log_path():
+        return log_path
+    @staticmethod
     def log_path_static():
+        # if out_dir!='':
+        #     return out_dir
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
         # print("Writing to {}\n".format(out_dir))
@@ -682,6 +687,11 @@ class ct:
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
         return out_dir
+
+    @staticmethod
+    def log_path_checkpoint(step):
+        # timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        return "%s\\checkpoints\\step_%s"%(ct.log_path(),step)
 
     @staticmethod
     def just_log(file_name, msg):
@@ -1188,7 +1198,10 @@ class ct:
 
 
 log_path = ct.log_path_static()
+
 if __name__ == "__main__":
+    aa1 = ct.log_path_static()
+    print(aa1+"\\log\\")
     # print(len('死亡日记1999年电影thevirginsuicides(1999film)'))
     # c1 = ct.re_clean_question('请问一下谁知道♠要打印多少张，请问下？')
     # c1 = re.sub('(♠)+','♠','11231♠♠♠1♠♠3♠')

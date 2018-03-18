@@ -12,13 +12,14 @@ class Generator(bilstm):
         bilstm.__init__(self,  max_document_length, word_dimension, vocab_size, rnn_size, model,
                  need_cal_attention, need_max_pooling, word_model, embedding_weight,need_gan,first)
         self.model_type = "Gen"
-        self.learning_rate = 0.01
+        self.learning_rate = 0.02
         self.reward = tf.placeholder(tf.float32, shape=[None], name='reward')
         self.neg_index = tf.placeholder(tf.int32, shape=[None], name='neg_index')
 
         # minize attention
         # self.gan_score = self.score13 - self.score12  # cosine(q,neg) - cosine(q,pos)
-        self.gan_score = self.gan_score1  # cosine(q,neg) - cosine(q,pos)
+        # tf.subtract(self.ori_neg,self.ori_cand)
+        self.gan_score = tf.subtract(self.score13,self.score12)  # cosine(q,neg) - cosine(q,pos)
         self.dns_score = self.score13
 
 
@@ -26,7 +27,7 @@ class Generator(bilstm):
         # 默认针对1阶张量进行运算,可以通过指定dim来针对1阶以上的张量进行运算,但不能对0阶张量进行运算。而tf.nn.sigmoid是针对0阶张量,
         # 这个只是将外面非TF的计算拿进TF计算
         # self.batch_scores = tf.nn.softmax(self.score13 - self.score12)  # ~~~~~
-        self.batch_scores = tf.nn.softmax(self.gan_score1)  # 改了下
+        self.batch_scores = tf.nn.softmax(tf.subtract(self.score13,self.score12))  # 改了下
         # self.all_logits =tf.nn.softmax( self.score13) #~~~~~
         self.prob = tf.gather(self.batch_scores, self.neg_index)
         # 取负数 平均值(    log(回归后的neg的概率) * （neg的奖励）  )
