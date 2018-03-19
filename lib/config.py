@@ -22,15 +22,15 @@ if str(myaddr) == "192.168.31.194":
     testid = "cc_debug"
 else:
     testid = "cc_test"
-print("%s\t%s"%(myaddr,testid))
+print("%s\t%s" % (myaddr, testid))
 
 # ==正常调参
 
 if testid == "cc_test":
     # 极限情况下调,1个问题，全关系
-    epoches = 100  # 遍历多少轮
-    batch_size = 100  # 1个batch的大小 # 临时改了
-    evaluate_every = 4000  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
+    epoches = 10  # 遍历多少轮
+    batch_size = 10  # 1个batch的大小 # 临时改了
+    evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
     evaluate_batchsize = 2000  # 验证一次的问题数目
     questions_len_train = 4000  # 所有问题数目
     questions_len_test = 4000
@@ -41,11 +41,11 @@ if testid == "cc_test":
     mode = "cc"
     check = 100000
 
-    use_property = 'special'
+    use_property = 'maybe'
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 2  # 这个指示了训练的个数
+    t_relation_num = 20  # 这个指示了训练的个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -55,7 +55,7 @@ if testid == "cc_test":
     gan_k = 5
     sampled_temperature = 20
 
-elif testid== 'cc_debug':
+elif testid == 'cc_debug':
     # 极限情况下调,1个问题，全关系
     epoches = 100  # 遍历多少轮
     batch_size = 100  # 1个batch的大小 # 临时改了
@@ -143,18 +143,18 @@ cc_p = {
 
     'real_split_train_test': True,
     'real_split_train_test_skip': 14610,
-    'use_property':use_property,  # 记录进日志
-    'train_part' : train_part,  # 属性 relation |answer
-    'combine':'../data/nlpcc2016/9-combine/step.txt',
-    'combine_test':'../data/nlpcc2016/9-combine/step_test.txt',
-    'test_ps':'../data/nlpcc2016/5-class/test_ps.txt',
-
+    'use_property': use_property,  # 记录进日志
+    'train_part': train_part,  # 属性 relation |answer
+    'combine': '../data/nlpcc2016/9-combine/step.txt',
+    'combine_test': '../data/nlpcc2016/9-combine/step_test.txt',
+    'test_ps': '../data/nlpcc2016/5-class/test_ps.txt',
+    'test_ps_result': '../data/nlpcc2016/5-class/test_ps_result.txt'
 
 }
 
 if questions_len_test < evaluate_batchsize:
     raise Exception("验证batch的size要大于总问题个数 %d <= %d"
-                    %(questions_len_test,evaluate_batchsize))
+                    % (questions_len_test, evaluate_batchsize))
 
 # 模型
 tf.flags.DEFINE_string("mode", mode, "是否增加attention机制 ")
@@ -189,7 +189,6 @@ tf.flags.DEFINE_integer("stop_loss_zeor_count", stop_loss_zeor_count, "loss=0 �
 tf.flags.DEFINE_integer("gan_k", gan_k, "生成 FLAGS.gan_k个负例  ")
 tf.flags.DEFINE_integer("sampled_temperature", sampled_temperature, "the temperature of sampling")
 
-
 ms = ["train", "test"
     , "debug"
     , "none"
@@ -204,15 +203,12 @@ ms = ["train", "test"
 def get_config_msg():
     FLAGS._parse_flags()
     FLAGS_Parameters = "\nParameters:\n"
-    for attr, value in sorted             (FLAGS.__flags.items()):
+    for attr, value in sorted(FLAGS.__flags.items()):
         FLAGS_Parameters += "{}={}\n".format(attr.upper(), value)
     for item in cc_p:
         FLAGS_Parameters += '%s\n' % cc_p[item]
 
     return FLAGS_Parameters
-
-
-
 
 
 ## 配置根据机器、想运行的模式等决定
@@ -277,7 +273,7 @@ class config:
         # random.randint() 考虑改成随机的10个
         # a <= n <= b
         # min,max = 1,1000
-        for i in range(0, q_l_t -1):
+        for i in range(0, q_l_t - 1):
             a.append(i)
         return a
 

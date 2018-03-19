@@ -1192,6 +1192,9 @@ class ct:
             if p1 == 'inf':
                 raise ("float inf")
 
+    @staticmethod
+    def reset_log_path_static( ):
+        log_path = ct.log_path_static()
 
 
 

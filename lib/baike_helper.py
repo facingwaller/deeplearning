@@ -2916,20 +2916,41 @@ class classification:
         # 遍历
         index = -1
         msg_list = []
+        tp_list = []
         for f1l in f1s:
             index += 1
             train = True
             if index <= skip:
                 continue
             # 开始检测
+            q1 = str(f1l).split('\t')[0]
             s1 = str(f1l).split('\t')[2]
+            p1 = str(f1l).split('\t')[3]
             vs = bkh.kbqa.get(s1, '')
             line_ps = []
+            # exist = False
+            exist = p1 in pos_set
             for po in vs:
                 if po[0] in pos_set:
                     line_ps.append(po[0])
-            msg = "%s" % ('\t'.join(line_ps))
-            msg_list.append(msg)
+
+            # msg = "%s\t%s\t%s\t%d\t%s" % (q1, p1, exist, index, '\t'.join(line_ps))
+            tp = (q1, p1, exist, index, '\t'.join(line_ps))
+            for i in range(len(tp_list)):
+                #for _tp in tp_list:
+                _tp = tp_list[i]
+                if _tp[4] == tp[4]:
+                    _tp_3 = "%s_%s"%(tp[3],_tp[3])
+                    tp_list[i] = (_tp[0],_tp[1],_tp[2],_tp_3,_tp[4]  ) # _tp
+                    break
+            # tp_list.remove(_tp)
+            # tp[3] = "%s_%s"%(tp[3],_tp[3])
+            # tp_list.append(_tp)
+
+
+            tp_list.append(tp)
+            # msg_list.append(msg)
+        msg_list = ["%s_%s_%s\t%s\t%s" % (x[0], x[1], x[2], x[3], x[4]) for x in tp_list]
         ct.file_wirte_list(f2, msg_list)
 
         # 00: 04:34: 22438   公司性质          公司口号         公司类型
@@ -3199,7 +3220,7 @@ if __name__ == '__main__':
     # bkh.core_question_extraction(f1='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.txt',
     #                              f2='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.filter.re.txt')
 
-    if True:
+    if False:
         bkh.repeat_alaysis(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                            f3='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.tj.txt')
 

@@ -260,6 +260,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
     error_test_neg_r_list = []
     maybe_list_list = []
     maybe_global_index_list = []  # 问题的全局index
+    questions_ok_dict = dict()
     if batchsize > len(id_list):
         batchsize = len(id_list)
         ct.print('batchsize too big ,now is %d' % batchsize, 'error')
@@ -290,9 +291,11 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
             right += 1
         else:
             wrong += 1
+
+        questions_ok_dict[global_index] = ok
     acc = right / (right + wrong)
     ct.print("right:%d wrong:%d" % (right, wrong), "debug")
-    return acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list
+    return acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list, questions_ok_dict
 
 
 def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc, maybe_global_index_list):
@@ -346,10 +349,10 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
             if item.index == 0 and pos_in_it == False:
                 pos_in_it = True
 
-            # ct.print(item.msg1, "maybe1")
-            #
-            # if not pos_in_it:
-            #     ct.print(item.msg1, "maybe2")
+                # ct.print(item.msg1, "maybe1")
+                #
+                # if not pos_in_it:
+                #     ct.print(item.msg1, "maybe2")
 
                 # 记录那些在记录中 且不是 0 的
 
@@ -475,7 +478,7 @@ def get_shuffle_indices_test(dh, step, train_part, model, train_step):
 
 
 # ----------------------------------- checkpoint-----------------------------------
-def checkpoint(sess,step):
+def checkpoint(sess, step):
     # Output directory for models and summaries
 
     out_dir = ct.log_path_checkpoint(step)
@@ -491,6 +494,7 @@ def checkpoint(sess,step):
     # 保存完加载一次试试看
     msg1 = "save_path:%s" % save_path
     ct.just_log2('model', msg1)
+
 
 # def checkpoint(sess):
 #     # Output directory for models and summaries
@@ -510,7 +514,8 @@ def checkpoint(sess,step):
 #     ct.just_log2('model', msg1)
 
 
-def valid_test_checkpoint(train_step,dh,step,sess, lstm, merged, writer,train_op,valid_test_dict,error_test_dict):
+def valid_test_checkpoint(train_step, dh, step, sess, lstm, merged, writer, train_op, valid_test_dict, error_test_dict,
+                          acc_max=0):
     test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
     # if (train_step + 1) % FLAGS.evaluate_every == 0:
     if True:
@@ -530,18 +535,19 @@ def valid_test_checkpoint(train_step,dh,step,sess, lstm, merged, writer,train_op
 
         # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
 
-        acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
+        acc_valid, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, \
+        maybe_global_index_list, questions_ok_dict = \
             valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
                               dh, test_batchsize, dh.train_question_list_index,
                               train_part_1,
                               model, dh.train_question_global_index, train_part, id_list)
 
-        msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
+        msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc_valid)
         ct.print(msg)
         ct.just_log2("valid", msg)
         valid_test_dict = log_error_questions(dh, model, error_test_q_list,
                                               error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
-                                              maybe_list_list, acc, maybe_global_index_list)
+                                              maybe_list_list, acc_valid, maybe_global_index_list)
         # ct.print("===========step=%d"%step, "maybe_possible")
 
     # if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
@@ -555,32 +561,51 @@ def valid_test_checkpoint(train_step,dh,step,sess, lstm, merged, writer,train_op
 
         id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
 
-        acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
+        acc_test, _1, _2, _3, maybe_list_list, maybe_global_index_list, questions_ok_dict = \
             valid_batch_debug(sess, lstm, step, train_op, merged, writer,
                               dh, test_batchsize, dh.test_question_list_index,
                               train_part_1, model, dh.test_question_global_index, train_part, id_list)
         # 测试 集合不做训练 但是将其记录下来
 
-        error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
+        error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc_test,
                                               maybe_global_index_list)
 
-        _1.clear()
-        _2.clear()
-        _3.clear()
+        # _1.clear()
+        # _2.clear()
+        # _3.clear()
         msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (
-            step, train_step, test_batchsize, acc)
+            step, train_step, test_batchsize, acc_test)
         ct.print(msg)
         ct.just_log2("test", msg)
         ct.print("===========step=%d" % step, "maybe_possible")
-        # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
-        # ct.log3(toogle_line)
-        # ct.just_log2("info", toogle_line)
-        return valid_test_dict,error_test_dict
 
-    checkpoint(sess,step)
+    checkpoint(sess, step)
+
+    # 输出记录
+    all_right = False
+    if acc_test >= acc_max:
+        msg_list = []
+        acc_max = acc_test
+        all_right = True
+        for index in dh.maybe_test_questions:
+            # try:
+            ok = questions_ok_dict[int(index)]
+            # except Exception as ee1:
+            #     print(ee1)
+            if not ok:
+                all_right = False
+            msg = "%s_%s" % (index, ok)
+            msg_list.append(msg)
+        acc_str = "%s_%s"%(acc_valid,acc_test)
+        ct.just_log(config.cc_par('test_ps_result'),
+                "%s\t%s\t%s\t%s" % (step, ct.log_path().split('runs\\')[1], acc_str, '\t'.join(msg_list)))
+
+    return valid_test_dict, error_test_dict, acc_max, all_right, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list
+
 
 # 主流程
 def main():
+    time.sleep(0.5) # 休息0.5 秒让之前的进程退出
     now = "\n\n\n" + str(datetime.datetime.now().isoformat())
     # test 是完整的; small 是少量 ; debug 只是一次
     model = FLAGS.mode
@@ -639,12 +664,14 @@ def main():
         # dh.build_train_test_q()
         #
         train_step = 0
+        max_acc = 0
         for step in range(FLAGS.epoches):
 
             toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (step, len(dh.q_neg_r_tuple))
             ct.log3(toogle_line)
             ct.just_log2("info", toogle_line)
 
+            # 数据准备
             my_generator = ''
             if FLAGS.fix_model and len(error_test_q_list) != 0:
                 my_generator = dh.batch_iter_wq_debug_fix_model(
@@ -682,6 +709,7 @@ def main():
             ct.just_log2("info", toogle_line)
             ct.log3(toogle_line)
 
+            # 训练数据
             for gen in my_generator:
                 toogle_line = "\n==============================train_step=%d\n" % train_step
                 ct.just_log2("info", toogle_line)
@@ -698,11 +726,18 @@ def main():
 
                 if use_error:
                     continue
-                # -------------------------test
-                # 1 源数据，训练数据OR验证数据OR测试数据
+                    # -------------------------test
+                    # 1 源数据，训练数据OR验证数据OR测试数据
 
-            valid_test_dict, error_test_dict = valid_test_checkpoint(train_step, dh, step, sess, lstm, merged, writer, train_op,
-                                                          valid_test_dict,error_test_dict)
+            # 验证
+            valid_test_dict, error_test_dict, max_acc, all_right,\
+                error_test_q_list, error_test_pos_r_list, error_test_neg_r_list \
+                = valid_test_checkpoint(train_step, dh, step, sess, lstm, merged, writer,
+                                        train_op,
+                                        valid_test_dict, error_test_dict, max_acc)
+            if all_right and step > 2:
+                return True
+
             if use_error:
                 error_test_q_list.clear()
                 error_test_pos_r_list.clear()
@@ -714,8 +749,12 @@ def main():
 
             ct.log3(toogle_line)
 
-        # 重启继续跑
+            # 重启继续跑
 
 
 if __name__ == '__main__':
+    # for i in range(9693):
     main()
+    cmd = r'C:\ProgramData\Anaconda2\envs\tensorflow\python.exe C:/Users/flow/PycharmProjects/tensorFlow1/QA/train.py'
+    os.system(cmd)
+    exit(1)

@@ -2,9 +2,6 @@ import tensorflow as tf
 from lib.ct import ct
 
 
-
-
-
 # ----------------------------- cal attention -------------------------------
 def feature2cos_sim(feat_q, feat_a):
     """
@@ -134,7 +131,7 @@ def cal_loss_and_acc_try(ori_cand, ori_neg):
     # 创建一个维度为dims，值为value的tensor对象．该操作会创建一个维度为dims的tensor对象，
     # 并将其值设置为value，该tensor对象中的值类型和value一致
     zero = tf.fill(tf.shape(ori_cand), 0.0)
-    margin = tf.fill(tf.shape(ori_cand), 0.2) # 0.2
+    margin = tf.fill(tf.shape(ori_cand), 0.2)  # 0.2
     with tf.name_scope("loss"):
         # tf.maximum(a,b),返回的是a,b之间的最大值
         loss_tmp = tf.subtract(ori_cand, ori_neg)
@@ -146,7 +143,7 @@ def cal_loss_and_acc_try(ori_cand, ori_neg):
     with tf.name_scope("acc"):
         correct = tf.equal(zero, losses)
         acc = tf.reduce_mean(tf.cast(correct, "float"), name="acc")
-    return loss, acc,loss_tmp
+    return loss, acc, loss_tmp
 
 
 def get_feature(input_q, input_a, att_W):
@@ -194,6 +191,3 @@ def get_feature(input_q, input_a, att_W):
     return tf.tanh(output_q), tf.tanh(output_a)
     # Tensor("att_weight/Tanh_2:0", shape=(?, 600), dtype=float32)
     # Tensor("att_weight/Tanh_1:0", shape=(?, 600), dtype=float32)
-
-
-

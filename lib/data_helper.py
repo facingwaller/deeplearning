@@ -477,8 +477,16 @@ class DataClass:
                 if str(f4s[i]).__contains__('===='):
                     continue
                 index = i
-                test_id = int(str(f4s[i]).split('\t')[1])
-                ct.print('test_id = %d' % test_id, 'train_test_q')
+                # test_id = int(str(f4s[i]).split('\t')[1])
+                test_ids = []
+                if str(f4s[i]).split('\t')[1].__contains__('_'):
+                    test_ids = [x for x in str(f4s[i]).split('\t')[1].split('_')]
+                    test_ids_str = '\t'.join(test_ids)
+                else:
+                    test_ids.append(int(str(f4s[i]).split('\t')[1]))
+                    test_ids_str = str(f4s[i]).split('\t')[1]
+                self.maybe_test_questions = test_ids
+                ct.print('test_id = %s' % test_ids_str, 'train_test_q')
                 f3s = str(f4s[i]).split('\t')[2:]
                 break
 
@@ -831,9 +839,13 @@ class DataClass:
         batch_size = min(batch_size, len(error_test_q_list))
         shuffle_indices = np.random.permutation(np.arange(len(error_test_q_list)))  # 打乱样本下标
         for list_index in range(len(shuffle_indices)):
-            x_new.append(error_test_q_list[shuffle_indices[list_index]])
-            y_new.append(error_test_pos_r_list[shuffle_indices[list_index]])
-            z_new.append(error_test_neg_r_list[shuffle_indices[list_index]])
+            try:
+                x_new.append(error_test_q_list[shuffle_indices[list_index]])
+                y_new.append(error_test_pos_r_list[shuffle_indices[list_index]])
+                z_new.append(error_test_neg_r_list[shuffle_indices[list_index]])
+            except Exception as e1:
+                print(e1)
+
             ct.print("list_index:" + str(list_index), "debug")
             # if list_index == 0: # 默认是大于0的一个size
             #     continue

@@ -76,6 +76,6 @@ if __name__ == '__main__':  #
     if True:
         #  读取问题
         cf.build_test_ps(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
-                      f2='../data/nlpcc2016/5-class/test_ps.v2.txt', skip=14610)
+                      f2='../data/nlpcc2016/5-class/test_ps.v4.txt', skip=14610)
 
 
