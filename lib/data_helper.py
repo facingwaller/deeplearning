@@ -485,11 +485,15 @@ class DataClass:
                 else:
                     test_ids.append(int(str(f4s[i]).split('\t')[1]))
                     test_ids_str = str(f4s[i]).split('\t')[1]
+                ct.print(str(f4s[i]),'debug')
                 self.maybe_test_questions = test_ids
+
                 ct.print('test_id = %s' % test_ids_str, 'train_test_q')
                 f3s = str(f4s[i]).split('\t')[2:]
                 break
-
+            if len(self.maybe_test_questions) == 0:
+                print()
+                raise ('maybe_test_questions 不能为空')
             ct.just_log(config.cc_par('rdf_maybe_property_index'), str(index + 1))
             # +1 然后处理下一个
 

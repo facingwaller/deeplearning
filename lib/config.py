@@ -59,9 +59,9 @@ if testid == "cc_test":
 
 elif testid == 'cc_debug':
     # 极限情况下调,1个问题，全关系
-    epoches = 100  # 遍历多少轮
-    batch_size = 100  # 1个batch的大小 # 临时改了
-    evaluate_every = 4000  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
+    epoches = 10  # 遍历多少轮
+    batch_size = 10  # 1个batch的大小 # 临时改了
+    evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
     evaluate_batchsize = 2000  # 验证一次的问题数目
     questions_len_train = 4000  # 所有问题数目
     questions_len_test = 4000
@@ -72,11 +72,11 @@ elif testid == 'cc_debug':
     mode = "cc"
     check = 100000
 
-    use_property = 'special'
+    use_property = 'maybe'
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 100  # 这个指示了训练的个数
+    t_relation_num = 20  # 这个指示了训练的个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True

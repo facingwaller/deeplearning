@@ -587,15 +587,19 @@ def valid_test_checkpoint(train_step, dh, step, sess, lstm, merged, writer, trai
         msg_list = []
         acc_max = acc_test
         all_right = True
-        for index in dh.maybe_test_questions:
-            # try:
-            ok = questions_ok_dict[int(index)]
-            # except Exception as ee1:
-            #     print(ee1)
-            if not ok:
-                all_right = False
-            msg = "%s_%s" % (index, ok)
-            msg_list.append(msg)
+        try:
+            print(dh.maybe_test_questions)
+            for index in dh.maybe_test_questions:
+                # try:
+                ok = questions_ok_dict[int(index)]
+                # except Exception as ee1:
+                #     print(ee1)
+                if not ok:
+                    all_right = False
+                msg = "%s_%s" % (index, ok)
+                msg_list.append(msg)
+        except Exception as e1:
+            print(e1)
         acc_str = "%s_%s"%(acc_valid,acc_test)
         ct.just_log(config.cc_par('test_ps_result'),
                 "%s\t%s\t%s\t%s" % (step, ct.log_path().split('runs\\')[1], acc_str, '\t'.join(msg_list)))
@@ -755,6 +759,5 @@ def main():
 if __name__ == '__main__':
     # for i in range(9693):
     main()
-    cmd = r'C:\ProgramData\Anaconda2\envs\tensorflow\python.exe C:/Users/flow/PycharmProjects/tensorFlow1/QA/train.py'
-    os.system(cmd)
+    os.system(config.cc_par('cmd_path'))
     exit(0)
