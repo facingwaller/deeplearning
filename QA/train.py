@@ -757,4 +757,4 @@ if __name__ == '__main__':
     main()
     cmd = r'C:\ProgramData\Anaconda2\envs\tensorflow\python.exe C:/Users/flow/PycharmProjects/tensorFlow1/QA/train.py'
     os.system(cmd)
-    exit(1)
+    exit(0)

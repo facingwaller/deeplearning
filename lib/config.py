@@ -20,8 +20,10 @@ tf.flags.DEFINE_string("word_model", "word2vec_train", "可选有|tf_embedding|w
 testid = "cc_test"
 if str(myaddr) == "192.168.31.194":
     testid = "cc_debug"
+    cmd_path = r'F:\ProgramData\Anaconda2\envs\tensorflow\python.exe F:/PycharmProjects/dl2/deeplearning/QA/train.py'
 else:
     testid = "cc_test"
+    cmd_path = r'C:\ProgramData\Anaconda2\envs\tensorflow\python.exe C:/Users/flow/PycharmProjects/tensorFlow1/QA/train.py'
 print("%s\t%s" % (myaddr, testid))
 
 # ==正常调参
@@ -148,7 +150,8 @@ cc_p = {
     'combine': '../data/nlpcc2016/9-combine/step.txt',
     'combine_test': '../data/nlpcc2016/9-combine/step_test.txt',
     'test_ps': '../data/nlpcc2016/5-class/test_ps.txt',
-    'test_ps_result': '../data/nlpcc2016/5-class/test_ps_result.txt'
+    'test_ps_result': '../data/nlpcc2016/5-class/test_ps_result.txt',
+    'cmd_path':cmd_path
 
 }
 
