@@ -475,14 +475,14 @@ def get_shuffle_indices_test(dh, step, train_part, model, train_step):
 
 
 # ----------------------------------- checkpoint-----------------------------------
-def checkpoint(sess):
+def checkpoint(sess,step):
     # Output directory for models and summaries
-    timestamp = str(int(time.time()))
-    out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
+
+    out_dir = ct.log_path_checkpoint(step)
     ct.print("Writing to {}\n".format(out_dir))
     # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
     checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
-    checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+    # checkpoint_prefix = os.path.join(checkpoint_dir, "model")
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
@@ -492,6 +492,92 @@ def checkpoint(sess):
     msg1 = "save_path:%s" % save_path
     ct.just_log2('model', msg1)
 
+# def checkpoint(sess):
+#     # Output directory for models and summaries
+#     timestamp = str(int(time.time()))
+#     out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
+#     ct.print("Writing to {}\n".format(out_dir))
+#     # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
+#     checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
+#     checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+#     if not os.path.exists(checkpoint_dir):
+#         os.makedirs(checkpoint_dir)
+#     saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
+#     save_path = saver.save(sess, os.path.join(out_dir, "model.ckpt"), 1)
+#     # load_path = saver.restore(sess, save_path)
+#     # 保存完加载一次试试看
+#     msg1 = "save_path:%s" % save_path
+#     ct.just_log2('model', msg1)
+
+
+def valid_test_checkpoint(train_step,dh,step,sess, lstm, merged, writer,train_op,valid_test_dict,error_test_dict):
+    test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
+    # if (train_step + 1) % FLAGS.evaluate_every == 0:
+    if True:
+        model = "valid"
+        train_part = config.cc_par('train_part')
+        if train_part == 'relation':
+            train_part_1 = dh.train_relation_list_index
+        else:
+            train_part_1 = dh.train_answer_list_index
+
+        id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
+
+        # if model == "valid":
+        #     id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
+        # else:
+        #     id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+
+        # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+
+        acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
+            valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
+                              dh, test_batchsize, dh.train_question_list_index,
+                              train_part_1,
+                              model, dh.train_question_global_index, train_part, id_list)
+
+        msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
+        ct.print(msg)
+        ct.just_log2("valid", msg)
+        valid_test_dict = log_error_questions(dh, model, error_test_q_list,
+                                              error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
+                                              maybe_list_list, acc, maybe_global_index_list)
+        # ct.print("===========step=%d"%step, "maybe_possible")
+
+    # if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
+    if True:
+        model = "test"
+        train_part = config.cc_par('train_part')
+        if train_part == 'relation':
+            train_part_1 = dh.test_relation_list_index
+        else:
+            train_part_1 = dh.test_answer_list_index
+
+        id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
+
+        acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
+            valid_batch_debug(sess, lstm, step, train_op, merged, writer,
+                              dh, test_batchsize, dh.test_question_list_index,
+                              train_part_1, model, dh.test_question_global_index, train_part, id_list)
+        # 测试 集合不做训练 但是将其记录下来
+
+        error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
+                                              maybe_global_index_list)
+
+        _1.clear()
+        _2.clear()
+        _3.clear()
+        msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (
+            step, train_step, test_batchsize, acc)
+        ct.print(msg)
+        ct.just_log2("test", msg)
+        ct.print("===========step=%d" % step, "maybe_possible")
+        # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
+        # ct.log3(toogle_line)
+        # ct.just_log2("info", toogle_line)
+        return valid_test_dict,error_test_dict
+
+    checkpoint(sess,step)
 
 # 主流程
 def main():
@@ -615,69 +701,8 @@ def main():
                 # -------------------------test
                 # 1 源数据，训练数据OR验证数据OR测试数据
 
-                test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
-                if (train_step + 1) % FLAGS.evaluate_every == 0:
-                    model = "valid"
-                    train_part = config.cc_par('train_part')
-                    if train_part == 'relation':
-                        train_part_1 = dh.train_relation_list_index
-                    else:
-                        train_part_1 = dh.train_answer_list_index
-
-                    id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
-
-                    # if model == "valid":
-                    #     id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
-                    # else:
-                    #     id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
-
-                    # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
-
-                    acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
-                        valid_batch_debug(sess, lstm, 0, train_op, merged, writer,
-                                          dh, test_batchsize, dh.train_question_list_index,
-                                          train_part_1,
-                                          model, dh.train_question_global_index, train_part, id_list)
-
-                    msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
-                    ct.print(msg)
-                    ct.just_log2("valid", msg)
-                    valid_test_dict = log_error_questions(dh, model, error_test_q_list,
-                                                          error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
-                                                          maybe_list_list, acc, maybe_global_index_list)
-                    # ct.print("===========step=%d"%step, "maybe_possible")
-
-                if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
-                    model = "test"
-                    train_part = config.cc_par('train_part')
-                    if train_part == 'relation':
-                        train_part_1 = dh.test_relation_list_index
-                    else:
-                        train_part_1 = dh.test_answer_list_index
-
-                    id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
-
-                    acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
-                        valid_batch_debug(sess, lstm, step, train_op, merged, writer,
-                                          dh, test_batchsize, dh.test_question_list_index,
-                                          train_part_1, model, dh.test_question_global_index, train_part, id_list)
-                    # 测试 集合不做训练 但是将其记录下来
-
-                    error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
-                                                          maybe_global_index_list)
-
-                    _1.clear()
-                    _2.clear()
-                    _3.clear()
-                    msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (
-                        step, train_step, test_batchsize, acc)
-                    ct.print(msg)
-                    ct.just_log2("test", msg)
-                    ct.print("===========step=%d" % step, "maybe_possible")
-                    # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
-                    # ct.log3(toogle_line)
-                    # ct.just_log2("info", toogle_line)
-
+            valid_test_dict, error_test_dict = valid_test_checkpoint(train_step, dh, step, sess, lstm, merged, writer, train_op,
+                                                          valid_test_dict,error_test_dict)
             if use_error:
                 error_test_q_list.clear()
                 error_test_pos_r_list.clear()
@@ -688,6 +713,8 @@ def main():
             ct.just_log2("info", toogle_line)
 
             ct.log3(toogle_line)
+
+        # 重启继续跑
 
 
 if __name__ == '__main__':

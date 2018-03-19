@@ -7,14 +7,14 @@ import logging
 
 def main():
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-    # f1 = "../data/word2vec/zh-cn/wiki_texts_seg_by_space.txt.bin"
-    f1 = "../data/word2vec/zh-cn/wiki_texts_seg.txt.bin"
+    f1 = "../data/word2vec/zh-cn/wiki_texts_seg_by_space.txt.bin"
+    # f1 = "../data/word2vec/zh-cn/wiki_texts_seg.txt.bin"
     model = models.Word2Vec.load(f1)
     # f1 = 'data/nlpcc2016/demo1/nlpcc2016.vocab'
 
     while True:
         try:
-            print(model["我们"])
+            print(model["我"])
             query = input()
             q_list = query.split()
 

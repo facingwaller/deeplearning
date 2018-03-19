@@ -26,6 +26,7 @@ from multiprocessing import Pool, Manager
 import math
 import heapq
 import random
+
 MAX_POOL_NUM = 5
 
 
@@ -1267,7 +1268,7 @@ class baike_helper:
         return r1, a1
 
     # 读取实体所有的实体    返回所有的关系集合
-    def read_entity_and_get_all_neg_relations_cc_gan(self, entity_id, ps_to_except,total):
+    def read_entity_and_get_all_neg_relations_cc_gan(self, entity_id, ps_to_except, total):
         e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
         if e_s == "":
             print(entity_id)
@@ -1291,11 +1292,11 @@ class baike_helper:
             _e_s = self.kbqa.get(k, "")
             for s1 in _e_s:
                 if s1[0] not in ps_to_except:
-                    if r1 not in r1: # 不取重复的
+                    if r1 not in r1:  # 不取重复的
                         r1.append(s1[0])
                         a1.append(s1[1])
                         if len(r1) == total:
-                            enough=True
+                            enough = True
                             break
             if enough:
                 break
@@ -1306,6 +1307,7 @@ class baike_helper:
 
 
         return r1, a1
+
     # 输入识别结果，输出匹配R2格式
     # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
     # 机械设计基础         作者          杨可桢，程光蕴，李仲生
@@ -2333,14 +2335,13 @@ class classification:
                         new_line = '\t'.join(line_seg)
                         print(new_line)
 
-                    if new_line.__contains__('\t♠\t'): # 恢复是XX还是XX等
+                    if new_line.__contains__('\t♠\t'):  # 恢复是XX还是XX等
                         _tmp_q = line_seg[0]
                         _ms = line_seg[5]  # match s
-                        _tmp_q = _tmp_q.replace(_ms,'♠')
+                        _tmp_q = _tmp_q.replace(_ms, '♠')
                         line_seg[6] = _tmp_q  # line_seg[0].replace(line_seg[5], '♠')
                         line_seg[7] = line_seg[6].replace(line_seg[3], '♢')
                         new_line = '\t'.join(line_seg)
-
 
                     f1s_new.append(new_line)
             except Exception as e:
@@ -2895,6 +2896,46 @@ class classification:
                         ct.just_log('../data/nlpcc2016/6-answer/sort_q_by_p.maybe.txt', f4_l)
                 ct.just_log('../data/nlpcc2016/6-answer/sort_q_by_p.maybe.txt',
                             "====\t====\t====\t====\t====\t====\t====")
+
+    def build_test_ps(self, f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                      f2='../data/nlpcc2016/5-class/test_ps.txt', skip=14610):
+        f1s = ct.file_read_all_lines_strip(f1)
+        bkh = baike_helper()
+        bkh.init_spo()
+        pos_set = set()
+        index = -1
+        for f1l in f1s:
+            index += 1
+            train = True
+            if index > skip:
+                train = False
+                break
+            if train:
+                pos = str(f1l).split('\t')[3]
+                pos_set.add(pos)
+        # 遍历
+        index = -1
+        msg_list = []
+        for f1l in f1s:
+            index += 1
+            train = True
+            if index <= skip:
+                continue
+            # 开始检测
+            s1 = str(f1l).split('\t')[2]
+            vs = bkh.kbqa.get(s1, '')
+            line_ps = []
+            for po in vs:
+                if po[0] in pos_set:
+                    line_ps.append(po[0])
+            msg = "%s" % ('\t'.join(line_ps))
+            msg_list.append(msg)
+        ct.file_wirte_list(f2, msg_list)
+
+        # 00: 04:34: 22438   公司性质          公司口号         公司类型
+
+
+        print(1)
 
 
 # F2.3 空格分割

@@ -147,6 +147,8 @@ cc_p = {
     'train_part' : train_part,  # 属性 relation |answer
     'combine':'../data/nlpcc2016/9-combine/step.txt',
     'combine_test':'../data/nlpcc2016/9-combine/step_test.txt',
+    'test_ps':'../data/nlpcc2016/5-class/test_ps.txt',
+
 
 }
 

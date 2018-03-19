@@ -46,13 +46,13 @@ if __name__ == '__main__':  #
                             f2='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.txt')
     # 重写rdf_extract_property_origin
     # C1.2.1
-    if True:
+    if False:
         cf.extract_property(f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
                             f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                             f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
                             skip=0)
         print('重写q.rdf.ms.re.v1.filter.txt和rdf_extract_property_origin.txt')
-    if True:
+    if False:
         # 仅用于测试
         cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                             f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter_test.txt',
@@ -67,8 +67,15 @@ if __name__ == '__main__':  #
                                 f3='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt')
         print('根据答案抽取出精简的KB kb-use.v2.txt')
     # 重写q.txt        # 3 生成新的训练文件
-    if True:
+    if False:
         dh = DataClass(mode="cc", run_type='init')
         dh.build_all_q_r_tuple(99999999999999,
                                99999999999999, is_record=True)
         print('重新生成训练文件q_neg_r_tuple.v1')
+    # 重生成所有测试集的候选属性
+    if True:
+        #  读取问题
+        cf.build_test_ps(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                      f2='../data/nlpcc2016/5-class/test_ps.v2.txt', skip=14610)
+
+
