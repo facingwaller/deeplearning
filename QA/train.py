@@ -583,23 +583,20 @@ def valid_test_checkpoint(train_step, dh, step, sess, lstm, merged, writer, trai
 
     # 输出记录
     all_right = False
-    if acc_test >= acc_max:
+    if acc_test >= acc_max and len(dh.maybe_test_questions)>0:
         msg_list = []
         acc_max = acc_test
         all_right = True
-        try:
-            print(dh.maybe_test_questions)
-            for index in dh.maybe_test_questions:
-                # try:
-                ok = questions_ok_dict[int(index)]
-                # except Exception as ee1:
-                #     print(ee1)
-                if not ok:
-                    all_right = False
-                msg = "%s_%s" % (index, ok)
-                msg_list.append(msg)
-        except Exception as e1:
-            print(e1)
+
+        for index in dh.maybe_test_questions:
+            # try:
+            ok = questions_ok_dict[int(index)]
+            # except Exception as ee1:
+            #     print(ee1)
+            if not ok:
+                all_right = False
+            msg = "%s_%s" % (index, ok)
+            msg_list.append(msg)
         acc_str = "%s_%s"%(acc_valid,acc_test)
         ct.just_log(config.cc_par('test_ps_result'),
                 "%s\t%s\t%s\t%s" % (step, ct.log_path().split('runs\\')[1], acc_str, '\t'.join(msg_list)))
@@ -739,7 +736,8 @@ def main():
                 = valid_test_checkpoint(train_step, dh, step, sess, lstm, merged, writer,
                                         train_op,
                                         valid_test_dict, error_test_dict, max_acc)
-            if all_right and step > 2:
+
+            if config.cc_par('keep_run') and all_right and step > 2:
                 return True
 
             if use_error:
@@ -759,5 +757,6 @@ def main():
 if __name__ == '__main__':
     # for i in range(9693):
     main()
-    os.system(config.cc_par('cmd_path'))
-    exit(0)
+    if config.cc_par('keep_run'):
+        os.system(config.cc_par('cmd_path'))
+

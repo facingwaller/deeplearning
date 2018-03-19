@@ -43,19 +43,22 @@ if testid == "cc_test":
     mode = "cc"
     check = 100000
 
-    use_property = 'maybe'
+    use_property = 'special'
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 20  # 这个指示了训练的个数
+    t_relation_num = 50  # 这个指示了训练的个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
     #####
     train_part = 'relation'  # 属性 relation |answer
     ####
-    gan_k = 5
+    gan_k = 15
     sampled_temperature = 20
+    ### maybe
+    keep_run = False
+
 
 elif testid == 'cc_debug':
     # 极限情况下调,1个问题，全关系
@@ -151,7 +154,8 @@ cc_p = {
     'combine_test': '../data/nlpcc2016/9-combine/step_test.txt',
     'test_ps': '../data/nlpcc2016/5-class/test_ps.txt',
     'test_ps_result': '../data/nlpcc2016/5-class/test_ps_result.txt',
-    'cmd_path':cmd_path
+    'cmd_path':cmd_path,
+    'keep_run':keep_run
 
 }
 
