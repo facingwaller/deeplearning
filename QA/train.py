@@ -22,6 +22,7 @@ from lib.ct import ct
 from lib.config import FLAGS, get_config_msg
 from lib.config import config
 import os
+import gc
 
 # -----------------------------------定义变量
 
@@ -738,6 +739,8 @@ def main():
                                         valid_test_dict, error_test_dict, max_acc)
 
             if config.cc_par('keep_run') and all_right and step > 2:
+                del lstm  # 清理资源
+                del sess
                 return True
 
             if use_error:
@@ -758,5 +761,6 @@ if __name__ == '__main__':
     # for i in range(9693):
     main()
     if config.cc_par('keep_run'):
+        gc.collect()
         os.system(config.cc_par('cmd_path'))
 

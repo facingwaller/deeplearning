@@ -88,6 +88,8 @@ elif testid == 'cc_debug':
     ####
     gan_k = 5
     sampled_temperature = 20
+    ### maybe
+    keep_run = False
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
@@ -335,4 +337,5 @@ class config:
 if __name__ == "__main__":
     # print(config.get_model())
     print(config.cc_par('train_part'))
+    print(use_property)
     # config.test()
