@@ -372,18 +372,18 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
         else:
             maybe_tmp_dict['e'] += 1
 
-        ct.print("pos_in_it  %s" % (pos_in_it), "maybe1")
-        ct.print("\n", "maybe1")
-        ct.print("\n", "maybe2")
+        # ct.print("pos_in_it  %s" % (pos_in_it), "maybe1")
+        # ct.print("\n", "maybe1")
+        # ct.print("\n", "maybe2")
 
     total = (maybe_tmp_dict['r'] + maybe_tmp_dict['e'])
     acc0 = maybe_tmp_dict['r'] / total
     maybe_canget = maybe_tmp_dict['m1'] / total
     msg = "==== %s %f 正确答案数（%d）/总数(%d)：%f;候补(%d)/总数:%f " \
           % (model, acc, maybe_tmp_dict['r'], total, acc0, maybe_tmp_dict['m1'], maybe_canget)
-    ct.print(msg, "maybe1")
+    # ct.print(msg, "maybe1")
     ct.print(msg, "maybe_possible")
-    ct.print("\n---------------------------", "maybe1")
+    # ct.print("\n---------------------------", "maybe1")
 
     return error_test_dict
 

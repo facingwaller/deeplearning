@@ -1487,7 +1487,7 @@ class DataClass:
     # -------------------测试生成同一批次的 debug 在测！！！
     # 在用
     def batch_iter_gan_train(self, question_list_index, relation_list_index, model, index,
-                             train_part='relation', total=100):
+                             train_part='relation', total=100,pool_mode='additional'):
         """
         20180316 V1.0
         获取NEG的部分改成从全局里面随机获取指定个数
@@ -1531,9 +1531,16 @@ class DataClass:
         ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
         # ps_to_except1 = [ps_to_except1]
         padding_num = self.converter.vocab_size - 1
-
-        rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc_gan(entity_id=name, ps_to_except=ps_to_except1,
-                                                                       total=total)
+        if pool_mode=='only_default':
+            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
+        else:
+            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc_gan(entity_id=name, ps_to_except=ps_to_except1,
+                                                                        total=total)
+        # 默认是additional
+        if pool_mode=='fixed_amount':
+            rs, a_s = rs[0:total],a_s[0:total]
+        ct.print("rs len: %s"%(len(rs)),'debug')
+        r_len = self.bh.read_entity_and_get_all_neg_relations_cc_len(name, ps_to_except1)
 
         ct.just_log2("info", "entity:%s " % name)
 
@@ -1576,7 +1583,7 @@ class DataClass:
         # ct.print("show shuffle_indices")
         ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
         ct.print("leave:batch_iter_gan_train")
-        return np.array(x_new), np.array(y_pos), np.array(y_neg)
+        return np.array(x_new), np.array(y_pos), np.array(y_neg),r_len
 
 
 # ======================================================================= clear data

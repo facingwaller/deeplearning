@@ -6,6 +6,13 @@ data:2018.1.22
 """
 import socket
 import tensorflow as tf
+from enum import Enum
+
+
+class optimizer_m(Enum):
+    lstm = 1
+    gan = 2
+
 
 FLAGS = tf.flags.FLAGS
 
@@ -27,37 +34,44 @@ else:
 print("%s\t%s" % (myaddr, testid))
 
 # ==正常调参
+mark = '20属性测试-无D；0.02LR;默认个数错误的R；'
 
 if testid == "cc_test":
     # 极限情况下调,1个问题，全关系
     epoches = 10  # 遍历多少轮
     batch_size = 10  # 1个batch的大小 # 临时改了
     evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
-    evaluate_batchsize = 2000  # 验证一次的问题数目
+    evaluate_batchsize = 2000  # 验证一次的问题数目,超过则使用最大的
     questions_len_train = 4000  # 所有问题数目
-    questions_len_test = 4000
+    questions_len_test = 4000   # 测试的问题数目，全部
     wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
     total_questions = 999999999999999
-    stop_loss_zeor_count = 2000
+    stop_loss_zeor_count = 2000 # 2000次则停下来
     rnn_size = 100
     mode = "cc"
     check = 100000
-
+    # 属性模式
     use_property = 'special'
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 50  # 这个指示了训练的个数
+    t_relation_num = 200  # 重要！这个指示了训练的关系个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
     #####
     train_part = 'relation'  # 属性 relation |answer
-    ####
-    gan_k = 15
+    #  IR-GAN
+    batch_size_gan = 100
+    gan_k = 10
     sampled_temperature = 20
-    ### maybe
-    keep_run = False
+    gan_learn_rate = 0.02
+    # optimizer_method = 'origin'  # origin , gan
+    #  maybe
+    keep_run = False # 指示是否持续跑maybe里面的属性
+    optimizer_method = optimizer_m.lstm  # 优化模式 gan | lstm
+    # only_default 默认|fixed_amount 固定 | additional 默认+额外
+    pool_mode = 'additional'
 
 
 elif testid == 'cc_debug':
@@ -85,10 +99,12 @@ elif testid == 'cc_debug':
     real_split_train_test = True
     #####
     train_part = 'relation'  # 属性 relation |answer
-    ####
-    gan_k = 5
+    # GAN
+    batch_size_gan = 100
+    gan_k = 15
     sampled_temperature = 20
-    ### maybe
+    gan_learn_rate = 0.01
+    # maybe
     keep_run = False
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
@@ -156,8 +172,12 @@ cc_p = {
     'combine_test': '../data/nlpcc2016/9-combine/step_test.txt',
     'test_ps': '../data/nlpcc2016/5-class/test_ps.txt',
     'test_ps_result': '../data/nlpcc2016/5-class/test_ps_result.txt',
-    'cmd_path':cmd_path,
-    'keep_run':keep_run
+    'cmd_path': cmd_path,
+    'keep_run': keep_run,
+    'optimizer_method':optimizer_method,
+    'mark':mark,
+    'gan_learn_rate':gan_learn_rate,
+    'pool_mode':pool_mode
 
 }
 
@@ -184,6 +204,7 @@ tf.flags.DEFINE_integer("epoches", epoches, "epoches")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
 tf.flags.DEFINE_integer("rnn_size", rnn_size, "LSTM 隐藏层的大小 ")
 tf.flags.DEFINE_integer("batch_size", batch_size, "batch_size")
+tf.flags.DEFINE_integer("batch_size_gan", batch_size_gan, "batch_size_gan")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "max_grad_norm")
 tf.flags.DEFINE_float("learning_rate", 0.05, "learning_rate (default: 0.1)")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
@@ -197,6 +218,8 @@ tf.flags.DEFINE_integer("test_batchsize", evaluate_batchsize, "test_batchsize ")
 tf.flags.DEFINE_integer("stop_loss_zeor_count", stop_loss_zeor_count, "loss=0 停止的次数 ")
 tf.flags.DEFINE_integer("gan_k", gan_k, "生成 FLAGS.gan_k个负例  ")
 tf.flags.DEFINE_integer("sampled_temperature", sampled_temperature, "the temperature of sampling")
+tf.flags.DEFINE_integer("gan_learn_rate", gan_learn_rate, "gan_learn_rate  ")
+
 
 ms = ["train", "test"
     , "debug"
@@ -338,4 +361,6 @@ if __name__ == "__main__":
     # print(config.get_model())
     print(config.cc_par('train_part'))
     print(use_property)
+
+
     # config.test()

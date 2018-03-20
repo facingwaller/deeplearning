@@ -1267,6 +1267,21 @@ class baike_helper:
 
         return r1, a1
 
+    def read_entity_and_get_all_neg_relations_cc_len(self, entity_id, ps_to_except):
+        e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
+        if e_s == "":
+            print(entity_id)
+            # raise Exception('entity cant find')
+            ct.print(str(entity_id).replace(' ', '').lower()
+                     , 'read_entity_and_get_all_neg_relations_cc')
+        r1 = []
+        a1 = []
+        for s1 in e_s:
+            if s1[0] not in ps_to_except:
+                r1.append(s1[0])
+                a1.append(s1[1])
+        default = len(r1)
+        return default
     # 读取实体所有的实体    返回所有的关系集合
     def read_entity_and_get_all_neg_relations_cc_gan(self, entity_id, ps_to_except, total):
         e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
@@ -1288,6 +1303,8 @@ class baike_helper:
         except Exception as e1:
             print(e1)
         enough = False
+        default = len(r1)
+        total += default
         for k in slice:
             _e_s = self.kbqa.get(k, "")
             for s1 in _e_s:
