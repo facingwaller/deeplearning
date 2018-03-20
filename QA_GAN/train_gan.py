@@ -521,7 +521,7 @@ def elvation(state,train_step, dh, step, sess, discriminator, merged, writer, va
                           train_part_1,
                           model, dh.train_question_global_index, train_part, id_list)
 
-    msg = "step:%d state:%s train_step %d %s_batchsize:%d  acc:%f " % (step,state, train_step,model, test_batchsize, acc)
+    msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (step,state, train_step,model, test_batchsize, acc)
     ct.print(msg)
     ct.just_log2("valid", msg)
     valid_test_dict = log_error_questions(dh, model, error_test_q_list,
@@ -555,7 +555,7 @@ def elvation(state,train_step, dh, step, sess, discriminator, merged, writer, va
     _1.clear()
     _2.clear()
     _3.clear()
-    msg = "step:%d state:%s train_step %d %s_batchsize:%d  acc:%f " % (
+    msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (
             step,state, train_step, model,test_batchsize, acc)
     ct.print(msg)
     ct.just_log2("test", msg)
@@ -733,6 +733,7 @@ def main():
             # --------------- G model
             for g_index in range(FLAGS.g_epoches):
                 state = "epoches:%s index=%d"%('g',g_index)
+                ct.print(state)
             # if False:
                 toogle_line = "G model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
                     step, len(dh.q_neg_r_tuple))
@@ -747,12 +748,12 @@ def main():
                 for index in shuffle_indices:
                     train_step += 1
                     # 取出一个问题的相关数据
-                    train_q, train_pos, train_neg = \
+                    train_q, train_pos, train_neg,r_len = \
                         dh.batch_iter_gan_train(dh.train_question_list_index,
                                                 dh.train_relation_list_index, model,
-                                                index=index, train_part=train_part,
-                                                total=FLAGS.batch_size_gan,
-                                                origin_size=config.cc_par('origin_error_rel_size'))
+                                                index, train_part,
+                                                FLAGS.batch_size_gan,
+                                                config.cc_par('pool_mode'))
 
                     # 2 随机取100个neg
                     feed_dict = {
