@@ -82,33 +82,39 @@ elif testid == 'cc_debug':
     epoches = 10  # 遍历多少轮
     batch_size = 10  # 1个batch的大小 # 临时改了
     evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
-    evaluate_batchsize = 2000  # 验证一次的问题数目
+    evaluate_batchsize = 2000  # 验证一次的问题数目,超过则使用最大的
     questions_len_train = 4000  # 所有问题数目
-    questions_len_test = 4000
+    questions_len_test = 4000  # 测试的问题数目，全部
     wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
     total_questions = 999999999999999
-    stop_loss_zeor_count = 2000
+    stop_loss_zeor_count = 2000  # 2000次则停下来
     rnn_size = 100
     mode = "cc"
     check = 100000
-
-    use_property = 'maybe'
+    # 属性模式
+    use_property = 'special'
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 20  # 这个指示了训练的个数
+    t_relation_num = 200  # 重要！这个指示了训练的关系个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
     #####
     train_part = 'relation'  # 属性 relation |answer
-    # GAN
+    #  IR-GAN
     batch_size_gan = 100
-    gan_k = 15
+    gan_k = 10
     sampled_temperature = 20
-    gan_learn_rate = 0.01
-    # maybe
-    keep_run = False
+    gan_learn_rate = 0.02
+	    g_epoches = 5
+    d_epoches = 2
+    # optimizer_method = 'origin'  # origin , gan
+    #  maybe
+    keep_run = False  # 指示是否持续跑maybe里面的属性
+    optimizer_method = optimizer_m.lstm  # 优化模式 gan | lstm
+    # only_default 默认|fixed_amount 固定 | additional 默认+额外
+    pool_mode = 'only_default'
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小

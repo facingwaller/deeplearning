@@ -693,10 +693,11 @@ def main():
 
                     pools = train_neg
                     gan_k = FLAGS.gan_k+r_len
-                    if FLAGS.gan_k > len(pools):
+                    if gan_k > len(pools):
                         # raise ('从pool中取出的item数目不能超过从pool中item的总数')
                         gan_k = len(pools)
-                        ct.print('FLAGS.gan_k > len(pools)','error')
+                        if config.cc_par('pool_mode')!='only_default':
+                            ct.print('only_default 除非否则报错。FLAGS.gan_k > len(pools) %d '%gan_k,'error')
                     neg_index = np.random.choice(np.arange(len(pools)), size=gan_k, p=prob,
                                                  replace=False)  # 生成 FLAGS.gan_k个负例
                     # 根据neg index 重新选
