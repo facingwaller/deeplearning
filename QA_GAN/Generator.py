@@ -43,7 +43,7 @@ class Generator(bilstm):
         else:
             self.global_step = tf.Variable(0, name="globle_step", trainable=False)
             tvars = tf.trainable_variables()
-            grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars),
+            grads, _ = tf.clip_by_global_norm(tf.gradients(self.gan_loss, tvars),
                                               FLAGS.max_grad_norm)
             optimizer = tf.train.GradientDescentOptimizer(1e-1)
             optimizer.apply_gradients(zip(grads, tvars))

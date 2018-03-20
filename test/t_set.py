@@ -1,3 +1,9 @@
+for i in range(0):
+    print(i)
+
+print(111111111)
+
+
 def get_score_for_sort(question, sp):
     # 实体在句子中 1000分 【必须在，否则不考虑？】
     # 完全属性在句子中100分
@@ -8,6 +14,7 @@ def get_score_for_sort(question, sp):
     if str(question).__contains__(sp[1]):
         score += 10
     return score
+
 
 s1 = set()
 
@@ -23,9 +30,9 @@ vs.add(t1)
 vs.add(t2)
 q1 = 'bcdbbbb'
 vs = sorted(vs, key=lambda k:
- q1.__contains__(k[0])*100 + q1.__contains__(k[1])*10
+q1.__contains__(k[0]) * 100 + q1.__contains__(k[1]) * 10
 
-           ,reverse=True )
+            , reverse=True)
 
-for _ in vs:
-    print(_)
+# for _ in vs:
+# print(_)

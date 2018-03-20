@@ -1219,36 +1219,36 @@ class baike_helper:
         tc = TextConverter(filename='../data/nlpcc2016/demo1/nlpcc2016.vocab')
         print(tc.vocab_size)
 
-    @staticmethod
-    def prodeuce_embedding_vec_file(filename):
-        from gensim import models
-        f1 = '../data/nlpcc2016/demo1/'
-        converter = TextConverter(filename='../data/nlpcc2016/demo1/nlpcc2016.vocab')
-        model = models.Word2Vec.load(filename)
-        # 遍历每个单词，查出word2vec然后输出
-        v_base = model['结']
-        ct.print(v_base)
-        for word in converter.vocab:
-            try:
-                # if word == ' ':
-                #     word = '结'
-                # w1 = word
-                # word = Converter('zh-hans').convert(word)
-                # if word != w1:
-                #     # print(w1)
-                #     ct.just_log(f1 + "wiki.vector3", w1)
-                v = model[word]
-            except Exception as e1:
-                msg1 = "%s : %s " % (word, e1)
-                ct.print(msg1)
-                ct.just_log(f1 + "wiki.vector2.log", msg1)
-                v = model['结']
-            m_v = ' '.join([str(x) for x in list(v)])
-            msg = "%s %s" % (word, str(m_v))
-            # ct.print(msg)
-            ct.just_log(f1 + "wiki.vector2", msg)
-            # msg = "%s %s" % ('end', str(v_base))
-            # ct.just_log(f1 + "wiki.vector2", msg)
+    # @staticmethod
+    # def prodeuce_embedding_vec_file(filename):
+    #     from gensim import models
+    #     f1 = '../data/nlpcc2016/demo1/'
+    #     converter = TextConverter(filename='../data/nlpcc2016/demo1/nlpcc2016.vocab')
+    #     model = models.Word2Vec.load(filename)
+    #     # 遍历每个单词，查出word2vec然后输出
+    #     v_base = model['结']
+    #     ct.print(v_base)
+    #     for word in converter.vocab:
+    #         try:
+    #             # if word == ' ':
+    #             #     word = '结'
+    #             # w1 = word
+    #             # word = Converter('zh-hans').convert(word)
+    #             # if word != w1:
+    #             #     # print(w1)
+    #             #     ct.just_log(f1 + "wiki.vector3", w1)
+    #             v = model[word]
+    #         except Exception as e1:
+    #             msg1 = "%s : %s " % (word, e1)
+    #             ct.print(msg1)
+    #             ct.just_log(f1 + "wiki.vector2.log", msg1)
+    #             v = model['结']
+    #         m_v = ' '.join([str(x) for x in list(v)])
+    #         msg = "%s %s" % (word, str(m_v))
+    #         # ct.print(msg)
+    #         ct.just_log(f1 + "wiki.vector2", msg)
+    #         # msg = "%s %s" % ('end', str(v_base))
+    #         # ct.just_log(f1 + "wiki.vector2", msg)
 
     # 读取实体所有的实体    返回所有的关系集合
     def read_entity_and_get_all_neg_relations_cc(self, entity_id, ps_to_except):
@@ -1282,6 +1282,7 @@ class baike_helper:
                 a1.append(s1[1])
         default = len(r1)
         return default
+
     # 读取实体所有的实体    返回所有的关系集合
     def read_entity_and_get_all_neg_relations_cc_gan(self, entity_id, ps_to_except, total):
         e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
@@ -1297,11 +1298,18 @@ class baike_helper:
                 r1.append(s1[0])
                 a1.append(s1[1])
 
-        keys = self.kbqa.keys()
-        try:
+        is_debug = True
+        if is_debug:
+
+            slice = ['韩娱守护力','夏想','李明(平安县委常委、县政府副县长)',
+                    '李军(工艺美术师)','三月三(汉族及多个少数民族传统节日)']  # self.kbqa.keys()
+
+        else:
+            keys = self.kbqa.keys()
+        # try:
             slice = random.sample(keys, total)
-        except Exception as e1:
-            print(e1)
+        # except Exception as e1:
+        #     print(e1)
         enough = False
         default = len(r1)
         total += default
@@ -2954,11 +2962,11 @@ class classification:
             # msg = "%s\t%s\t%s\t%d\t%s" % (q1, p1, exist, index, '\t'.join(line_ps))
             tp = (q1, p1, exist, index, '\t'.join(line_ps))
             for i in range(len(tp_list)):
-                #for _tp in tp_list:
+                # for _tp in tp_list:
                 _tp = tp_list[i]
                 if _tp[4] == tp[4]:
-                    _tp_3 = "%s_%s"%(tp[3],_tp[3])
-                    tp_list[i] = (_tp[0],_tp[1],_tp[2],_tp_3,_tp[4]  ) # _tp
+                    _tp_3 = "%s_%s" % (tp[3], _tp[3])
+                    tp_list[i] = (_tp[0], _tp[1], _tp[2], _tp_3, _tp[4])  # _tp
                     break
             # tp_list.remove(_tp)
             # tp[3] = "%s_%s"%(tp[3],_tp[3])

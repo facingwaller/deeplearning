@@ -15,12 +15,10 @@ from lib.config import config
 from lib.ct import ct, log_path
 from lib.baike_helper import baike_helper
 
-
 # from gensim import models
 
 # ======================================================================common
 import math
-
 
 
 class DataClass:
@@ -1487,7 +1485,7 @@ class DataClass:
     # -------------------测试生成同一批次的 debug 在测！！！
     # 在用
     def batch_iter_gan_train(self, question_list_index, relation_list_index, model, index,
-                             train_part='relation', total=100,pool_mode='additional'):
+                             train_part='relation', total=100, pool_mode='additional'):
         """
         20180316 V1.0
         获取NEG的部分改成从全局里面随机获取指定个数
@@ -1531,15 +1529,15 @@ class DataClass:
         ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
         # ps_to_except1 = [ps_to_except1]
         padding_num = self.converter.vocab_size - 1
-        if pool_mode=='only_default':
+        if pool_mode == 'only_default':
             rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
         else:
             rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc_gan(entity_id=name, ps_to_except=ps_to_except1,
-                                                                        total=total)
+                                                                           total=total)
         # 默认是additional
-        if pool_mode=='fixed_amount':
-            rs, a_s = rs[0:total],a_s[0:total]
-        ct.print("rs len: %s"%(len(rs)),'debug')
+        if pool_mode == 'fixed_amount':
+            rs, a_s = rs[0:total], a_s[0:total]
+        ct.print("rs len: %s" % (len(rs)), 'debug')
         r_len = self.bh.read_entity_and_get_all_neg_relations_cc_len(name, ps_to_except1)
 
         ct.just_log2("info", "entity:%s " % name)
@@ -1583,7 +1581,7 @@ class DataClass:
         # ct.print("show shuffle_indices")
         ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
         ct.print("leave:batch_iter_gan_train")
-        return np.array(x_new), np.array(y_pos), np.array(y_neg),r_len
+        return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
 
 
 # ======================================================================= clear data
@@ -1720,6 +1718,7 @@ def init_cc():
     dh.build_all_q_r_tuple(99999999999999,
                            99999999999999, is_record=True)
 
+
 def test_gan():
     dh = DataClass("cc")
     train_part = config.cc_par('train_part')
@@ -1732,27 +1731,27 @@ def test_gan():
     # 1 遍历raw
     for index in shuffle_indices:
         # 取出一个问题的相关数据
-        train_q, train_pos, train_neg = dh.batch_iter_gan_train(dh.train_question_list_index,
-                                                                dh.train_relation_list_index, model,
-                                                                index, train_part, batch_size)
+        train_q, train_pos, train_neg, r_len = dh.batch_iter_gan_train(dh.train_question_list_index,
+                                                                       dh.train_relation_list_index, model,
+                                                                       index, train_part, batch_size)
         question = ''
         relations = []
         for _ in train_q:
             v_s_1 = dh.converter.arr_to_text_no_unk(_)
             valid_msg = model + " test_q 1:" + v_s_1
-            ct.print( valid_msg,"debug")
+            ct.print(valid_msg, "debug")
             question = v_s_1
             break
         for _ in train_pos:
             v_s_1 = dh.converter.arr_to_text_no_unk(_)
             valid_msg = model + " pos 1:" + v_s_1
-            ct.print( valid_msg,"debug")
+            ct.print(valid_msg, "debug")
             relations.append(v_s_1)
             break
         for _ in train_neg:
             v_s_1 = dh.converter.arr_to_text_no_unk(_)
             valid_msg = model + " neg 1:" + v_s_1
-            ct.print( valid_msg,"debug")
+            ct.print(valid_msg, "debug")
             relations.append(v_s_1)
         break
 
