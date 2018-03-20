@@ -66,6 +66,9 @@ if testid == "cc_test":
     gan_k = 10
     sampled_temperature = 20
     gan_learn_rate = 0.02
+
+    g_epoches = 5
+    d_epoches = 2
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
     keep_run = False # 指示是否持续跑maybe里面的属性
@@ -199,6 +202,8 @@ tf.flags.DEFINE_integer("t_relation_num", t_relation_num, "t_relation_num 关系
 tf.flags.DEFINE_integer("total_questions", total_questions, "总共的问题数  ")
 # 训练-验证-测试
 tf.flags.DEFINE_integer("epoches", epoches, "epoches")
+tf.flags.DEFINE_integer("g_epoches", g_epoches, "g_epoches")
+tf.flags.DEFINE_integer("d_epoches", d_epoches, "d_epoches")
 # tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 # tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")

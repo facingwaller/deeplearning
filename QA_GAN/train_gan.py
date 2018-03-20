@@ -495,7 +495,7 @@ def checkpoint(sess, step):
     ct.just_log2('model', msg1)
 
 
-def elvation(train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict, error_test_dict):
+def elvation(state,train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict, error_test_dict):
     # 验证
     test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
     #   if (train_step + 1) % FLAGS.evaluate_every == 0:
@@ -521,7 +521,7 @@ def elvation(train_step, dh, step, sess, discriminator, merged, writer, valid_te
                           train_part_1,
                           model, dh.train_question_global_index, train_part, id_list)
 
-    msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (step, train_step, test_batchsize, acc)
+    msg = "step:%d state:%s train_step %d %s_batchsize:%d  acc:%f " % (step,state, train_step,model, test_batchsize, acc)
     ct.print(msg)
     ct.just_log2("valid", msg)
     valid_test_dict = log_error_questions(dh, model, error_test_q_list,
@@ -548,12 +548,15 @@ def elvation(train_step, dh, step, sess, discriminator, merged, writer, valid_te
 
     # error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
     #                                       maybe_global_index_list)
+    error_test_dict = log_error_questions(dh, model, error_test_q_list,
+                                          error_test_pos_r_list, error_test_neg_r_list, error_test_dict,
+                                          maybe_list_list, acc, maybe_global_index_list)
 
     _1.clear()
     _2.clear()
     _3.clear()
-    msg = "step:%d train_step %d valid_batchsize:%d  acc:%f " % (
-        step, train_step, test_batchsize, acc)
+    msg = "step:%d state:%s train_step %d %s_batchsize:%d  acc:%f " % (
+            step,state, train_step, model,test_batchsize, acc)
     ct.print(msg)
     ct.just_log2("test", msg)
     ct.print("===========step=%d" % step, "maybe_possible")
@@ -646,6 +649,7 @@ def main():
         error_test_neg_r_list = []
 
         train_step = 0
+        state = ''
         for step in range(FLAGS.epoches):
 
             toogle_line = "D model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
@@ -654,7 +658,10 @@ def main():
             ct.just_log2("info", toogle_line)
 
             # -------------- D model
-            if True:
+            #
+            for d_index in range(FLAGS.d_epoches):
+                state = "epoches:%s index=%d"%('d',d_index)
+            # if True:
                 train_part = config.cc_par('train_part')
                 model = 'train'
                 # 1 遍历raw
@@ -720,10 +727,12 @@ def main():
                     print(line)
 
                 # 验证 和测试
-                elvation(run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict, error_test_dict)
+                elvation(state,run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict, error_test_dict)
 
             # --------------- G model
-            if False:
+            for g_index in range(FLAGS.g_epoches):
+                state = "epoches:%s index=%d"%('g',g_index)
+            # if False:
                 toogle_line = "G model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
                     step, len(dh.q_neg_r_tuple))
                 ct.log3(toogle_line)
@@ -808,7 +817,7 @@ def main():
                     ct.print(line)
 
                 # 验证 和测试
-                elvation(train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict, error_test_dict)
+                elvation(state,train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict, error_test_dict)
 
                 #######################################
                 # my_generator = ''
