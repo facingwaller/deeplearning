@@ -1537,7 +1537,7 @@ class DataClass:
         # 默认是additional
         if pool_mode == 'fixed_amount':
             rs, a_s = rs[0:total], a_s[0:total]
-        ct.print("rs len: %s" % (len(rs)), 'debug')
+        # ct.print("rs len: %s" % (len(rs)))
         r_len = self.bh.read_entity_and_get_all_neg_relations_cc_len(name, ps_to_except1)
 
         ct.just_log2("info", "entity:%s " % name)
@@ -1579,7 +1579,7 @@ class DataClass:
             ct.just_log2("info", r1_msg)
 
         # ct.print("show shuffle_indices")
-        ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
+        # ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
         ct.print("leave:batch_iter_gan_train")
         return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
 

@@ -691,7 +691,7 @@ class ct:
     @staticmethod
     def log_path_checkpoint(step):
         # timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        return "%s\\checkpoints\\step_%s"%(ct.log_path(),step)
+        return "%s\\checkpoints\\%s"%(ct.log_path(),step)
 
     @staticmethod
     def just_log(file_name, msg):

@@ -55,7 +55,7 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 3000  # 重要！这个指示了训练的关系个数
+    t_relation_num = 5  # 重要！这个指示了训练的关系个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True

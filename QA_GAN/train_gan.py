@@ -97,7 +97,7 @@ def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_
 # test_r,关系
 # labels,标签,
 # 2018.2.26 把相近的分数也带回去
-def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model, global_index):
+def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model, global_index,state):
     start_time = time.time()
     feed_dict = {
         lstm.test_input_q: test_q,
@@ -166,7 +166,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
             _tmp_right = 0
         # 训练的epoches步骤，R的index，得分，是否正确，关系，字表面特征
         score_list.append("%d_%d_%f_%s" % (st.index, _tmp_right, st.score, r1.replace('_', '-')))
-    _tmp_msg1 = "%d\t%s\t%d\t%s\t%s" % (step, model, global_index, question, '\t'.join(score_list))
+    _tmp_msg1 = "%s\t%s\t%d\t%s\t%s" % (state, model, global_index, question, '\t'.join(score_list))
     ct.just_log2("logistics", _tmp_msg1)
     # 记录到单独文件
 
@@ -241,7 +241,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 
 
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
-                      train_relation_list_index, model, test_question_global_index, train_part, id_list):
+                      train_relation_list_index, model, test_question_global_index, train_part, id_list,state):
     right = 0
     wrong = 0
     # 产生随机的index给debug那边去获得index
@@ -278,7 +278,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
         ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = valid_step(sess, lstm, step, train_op,
                                                                                       test_q, test_r,
                                                                                       labels, merged, writer, dh, model,
-                                                                                      global_index)
+                                                                                      global_index,state)
         error_test_q_list.extend(error_test_q)
         error_test_pos_r_list.extend(error_test_pos_r)
         error_test_neg_r_list.extend(error_test_neg_r)
@@ -477,10 +477,10 @@ def get_shuffle_indices_test(dh, step, train_part, model, train_step):
 
 
 # ----------------------------------- checkpoint-----------------------------------
-def checkpoint(sess, step):
+def checkpoint(sess, state):
     # Output directory for models and summaries
 
-    out_dir = ct.log_path_checkpoint(step)
+    out_dir = ct.log_path_checkpoint(state)
     ct.print("Writing to {}\n".format(out_dir))
     # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
     checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
@@ -519,7 +519,7 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
         valid_batch_debug(sess, discriminator, 0, None, merged, writer,
                           dh, test_batchsize, dh.train_question_list_index,
                           train_part_1,
-                          model, dh.train_question_global_index, train_part, id_list)
+                          model, dh.train_question_global_index, train_part, id_list,state)
 
     msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (step, state, train_step, model, test_batchsize, acc)
     ct.print(msg)
@@ -543,7 +543,7 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
     acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
         valid_batch_debug(sess, discriminator, step, None, merged, writer,
                           dh, test_batchsize, dh.test_question_list_index,
-                          train_part_1, model, dh.test_question_global_index, train_part, id_list)
+                          train_part_1, model, dh.test_question_global_index, train_part, id_list,state)
     # 测试 集合不做训练 但是将其记录下来
 
     # error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
@@ -563,7 +563,8 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
     # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
     # ct.log3(toogle_line)
     # ct.just_log2("info", toogle_line)
-    checkpoint(sess, step)
+
+    checkpoint(sess, state)
 
 
 # 主流程
@@ -641,7 +642,7 @@ def main():
                         step, len(dh.q_neg_r_tuple))
                     ct.log3(toogle_line)
                     ct.just_log2("info", toogle_line)
-                    state = "epoches:%s index=%d" % ('d', d_index)
+                    state = "step=%d_epoches=%s_index=%d" % (step,'d', d_index)
                     # if True:
                     train_part = config.cc_par('train_part')
                     model = 'train'
@@ -715,7 +716,7 @@ def main():
 
                 # --------------- G model
                 for g_index in range(FLAGS.g_epoches):
-                    state = "epoches:%s index=%d" % ('g', g_index)
+                    state = "step=%d_epoches=%s_index=%d" % (step,'g', d_index)
                     ct.print(state)
                     # if False:
                     toogle_line = "G model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (

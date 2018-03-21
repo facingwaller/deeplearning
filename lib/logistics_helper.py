@@ -61,31 +61,40 @@ class logistics_helper:
         x_new = []
         y_new = []
         z_new = []
+        p_new = []
 
+        right_index = 0
         for list_index in range(total):
+            index = -1
             data_current = data[shuffle_indices[list_index]]
             for ts in data_current[2]:
+                index += 1
                 x_new.append(data_current[1])
                 # t1 = (index, right1, score, relation,right,z_score)
                 y_new.append((ts[2], ts[5]))  # 继续遍历
                 z_new.append(ts[1])
+                p_new.append(ts[3])
                 # ts
 
                 # 问题  Z分数 NN得分
+                if int(ts[1][0])==1:
+                    right_index = index
                 msg = "%s\t%s\t%s\t%s\t%s" % (data_current[1], ts[5], ts[2], ts[3],ts[4])
                 ct.print(msg, 'debug1')
 
-            if list_index % batch_size == 0 and list_index != 0:
-                x_return = x_new.copy()  # 问题
-                y_return = y_new.copy()  # 数据
-                z_return = z_new.copy()  # 标签
-                x_new.clear()
-                y_new.clear()
-                z_new.clear()
-                yield np.array(x_return), np.array(y_return), np.array(z_return)
+            # if list_index % batch_size == 0 and list_index != 0:
+            x_return = x_new.copy()  # 问题
+            y_return = y_new.copy()  # 数据
+            z_return = z_new.copy()  # 标签
+            p_return = p_new.copy()  # 属性
 
-    def c2(self):
-        print(2)
+            x_new.clear()
+            y_new.clear()
+            z_new.clear()
+            p_new.clear()
+            yield np.array(x_return), np.array(y_return), np.array(z_return),np.array(p_return),right_index
+
+
 
 
 if __name__ == "__main__":
