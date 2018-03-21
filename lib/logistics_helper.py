@@ -52,6 +52,23 @@ class logistics_helper:
 
         print('init ok')
 
+    def baseline(self,data):
+        total = len(data)
+        # shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
+        rith_answer = 0
+        right_index = 0
+        rith_answer = 0
+        right_index = 0
+        for list_index in range(total):
+            index = -1
+            data_current = data[list_index]
+            # for ts in data_current[2]:
+            #     index += 1
+                # 问题  Z分数 NN得分
+            if int(data_current[2][0][1][0]) == 1:
+                    rith_answer += 1
+
+        return rith_answer/total
     def batch_iter(self, data, batch_size):
         total = len(data)
         shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
@@ -63,6 +80,9 @@ class logistics_helper:
         z_new = []
         p_new = []
 
+
+
+        rith_answer = 0
         right_index = 0
         for list_index in range(total):
             index = -1
@@ -79,6 +99,7 @@ class logistics_helper:
                 # 问题  Z分数 NN得分
                 if int(ts[1][0])==1:
                     right_index = index
+                    rith_answer+=1
                 msg = "%s\t%s\t%s\t%s\t%s" % (data_current[1], ts[5], ts[2], ts[3],ts[4])
                 ct.print(msg, 'debug1')
 
@@ -100,12 +121,18 @@ class logistics_helper:
 if __name__ == "__main__":
     batch_size = 2
     lh = logistics_helper()
+
+    print(lh.baseline(lh.train_data))
+    print(lh.baseline(lh.test_data))
+
+
     gc1 = lh.batch_iter(lh.train_data, batch_size)
-    # for _ in range(n_batch):
-    for gc2 in gc1:
-        x1 = gc2[1]
-        y1 = gc2[2]
-        x1 = x1.reshape(-1, 2)
-        y1 = y1.reshape(-1, 2)
-        print(x1)
-        print(y1)
+    #
+    # for gc2 in gc1:
+    #     x1 = gc2[1]
+    #     y1 = gc2[2]
+    #     x1 = x1.reshape(-1, 2)
+    #     y1 = y1.reshape(-1, 2)
+    #     print(x1)
+    #     print(y1)
+
