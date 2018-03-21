@@ -572,7 +572,7 @@ def main():
         session_conf = tf.ConfigProto(allow_soft_placement=FLAGS.allow_soft_placement,
                                       log_device_placement=FLAGS.log_device_placement)
         sess = tf.Session(config=session_conf)
-        now = "\n\n\n" + str(datetime.datetime.now().isoformat())
+        now = str(datetime.datetime.now().isoformat())
         # test 是完整的; small 是少量 ; debug 只是一次
         model = FLAGS.mode
         ct.print("tf:%s should be 1.2.1 model:%s " % (str(tf.__version__), model))  # 1.2.1
@@ -634,17 +634,13 @@ def main():
             error_test_neg_r_list = []
 
             train_step = 0
-            state = ''
             for step in range(FLAGS.epoches):
-
-                toogle_line = "D model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
-                    step, len(dh.q_neg_r_tuple))
-                ct.log3(toogle_line)
-                ct.just_log2("info", toogle_line)
-
-                # -------------- D model
-                #
+                # --------------- D model
                 for d_index in range(FLAGS.d_epoches):
+                    toogle_line = "D model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
+                        step, len(dh.q_neg_r_tuple))
+                    ct.log3(toogle_line)
+                    ct.just_log2("info", toogle_line)
                     state = "epoches:%s index=%d" % ('d', d_index)
                     # if True:
                     train_part = config.cc_par('train_part')
