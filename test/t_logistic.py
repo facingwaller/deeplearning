@@ -16,8 +16,8 @@ Y_SIZE = 2
 lr = 0.01  # 0.001
 epochs = 100
 batch_size = 10
-# f1='../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'
-f1 = '../data/nlpcc2016/8-logistics/logistics-2018-03-20.txt_bak.txt'
+f1='../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'
+# f1 = '../data/nlpcc2016/8-logistics/logistics-2018-03-20.txt_bak.txt'
 #
 lh = logistics_helper(f1)
 

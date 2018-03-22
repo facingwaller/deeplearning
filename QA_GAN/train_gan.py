@@ -582,6 +582,7 @@ def main():
         ct.just_log2("valid", now)
         ct.just_log2("test", now)
         ct.just_log2("info", get_config_msg())
+        ct.print(get_config_msg(),"mark")
         ct.log3(now)
 
         embedding_weight = None
