@@ -1069,7 +1069,7 @@ class DataClass:
         ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
         msg = "model=%s,id=%s,global_index=%d;q_global_index=%d;" % (
             model, index, global_index, self.question_global_index[global_index])
-        ct.print(msg)
+        ct.print(msg, 'debug')
         ct.log3(msg)
         ct.just_log2("info", msg)
 
@@ -1496,7 +1496,7 @@ class DataClass:
         :param train_part:
         :return:
         """
-        ct.print("enter:batch_iter_gan_train")
+        # ct.print("enter:batch_iter_gan_train")
 
         x_new = []  # 问题集合
         y_pos = []  # 正确属性
@@ -1580,7 +1580,7 @@ class DataClass:
 
         # ct.print("show shuffle_indices")
         # ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
-        ct.print("leave:batch_iter_gan_train")
+        # ct.print("leave:batch_iter_gan_train")
         return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
 
 

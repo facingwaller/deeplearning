@@ -243,6 +243,7 @@ ms = ["train", "test"
     , "data"
     , "debug_epoches"
     , "bad"
+    ,"loss"
       ]
 
 

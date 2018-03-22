@@ -709,7 +709,7 @@ def main():
 
                         line = ("%s: DIS step %d, loss %f with acc %f " % (
                             datetime.datetime.now().isoformat(), run_step, current_loss, accuracy))
-                        print(line)
+                        ct.print(line,'loss')
 
                     # 验证 和测试
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
@@ -717,7 +717,7 @@ def main():
 
                 # --------------- G model
                 for g_index in range(FLAGS.g_epoches):
-                    state = "step=%d_epoches=%s_index=%d" % (step,'g', d_index)
+                    state = "step=%d_epoches=%s_index=%d" % (step,'g', g_index)
                     ct.print(state)
                     # if False:
                     toogle_line = "G model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
@@ -813,7 +813,7 @@ def main():
                         line = ("epoches %s: GEN step %d, loss %f  positive %f negative %f" % (
                             step, run_step, current_loss, positive, negative))
 
-                        ct.print(line)
+                        ct.print(line, 'loss')
 
                     # 验证 和测试
                     elvation(state, train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
