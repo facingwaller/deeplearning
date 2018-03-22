@@ -68,7 +68,7 @@ if testid == "cc_test":
     gan_learn_rate = 0.02
 
     g_epoches = 1
-    d_epoches = 1
+    d_epoches = 0
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
     keep_run = False # 指示是否持续跑maybe里面的属性

@@ -1072,6 +1072,7 @@ class DataClass:
         ct.print(msg, 'debug')
         ct.log3(msg)
         ct.just_log2("info", msg)
+        part1 = msg
 
         # 这个index应该要偏移出训练集
         # if self.converter.
@@ -1117,6 +1118,9 @@ class DataClass:
         q1_msg = "q : %s" % q1_text
         ct.just_log2("info", q1_msg)
         ct.just_log2("info", r1_msg)
+        part2 = q1_msg
+        part3 = r1_msg
+        ct.just_log3("test_check", "%s\t%s\t%s\t"%(part1,part2,part3))
 
         # 加入错误的
         # todo : total is get_static_num_debug

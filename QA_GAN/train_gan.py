@@ -149,6 +149,8 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 
     ct.just_log2("info", "\n ##3 score")
     score_list = []
+    test_check_msg_list = []
+    find_right = False
     for st in st_list_sort:
         # ct.print("index:%d ,score= %f " % (st.index, st.score))
         # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
@@ -160,6 +162,12 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         r1 = dh.converter.arr_to_text_no_unk(test_r[better_index])
         # ct.print(r1)
         ct.just_log2("info", "step:%d st.index:%d,score:%f,r:%s" % (step, st.index, st.score, r1))
+        if not find_right:
+            tcmsg = "%d,%f,%s" % (st.index, st.score, r1)
+            test_check_msg_list.append(tcmsg)
+        if st.index ==0:
+            find_right=True
+
         if st.index == 0:
             _tmp_right = 1
         else:
@@ -170,13 +178,16 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     ct.just_log2("logistics", _tmp_msg1)
     # 记录到单独文件
 
+    ct.just_log3("test_check", '\t'.join(test_check_msg_list))
     is_right = False
     msg = " win r =%d  " % st_list_sort[0].index
     ct.log3(msg)
     if st_list_sort[0].index == 0:
         ct.print("================================================================ok")
         is_right = True
+        ct.just_log3("test_check", "\t@@right@@\n")
     else:
+        ct.just_log3("test_check", "\t@@error@@\n")
         # todo: 在此记录该出错的题目和积分比pos高的neg关系
         # q,pos,neg
         # error_test_q.append()

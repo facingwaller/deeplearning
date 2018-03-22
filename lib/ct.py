@@ -706,6 +706,13 @@ class ct:
         f1_writer = codecs.open(file_name + '_bak.txt', mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
+    @staticmethod
+    def just_log3(file_name, msg):
+        time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
+        file_name = log_path + "/" + file_name + time_str + ".txt"
+        f1_writer = codecs.open(file_name + '_bak.txt', mode="a", encoding="utf-8")
+        f1_writer.write(msg )
+        f1_writer.close()
 
     @staticmethod
     def just_log4(file_name, msg):
