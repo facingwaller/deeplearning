@@ -1107,9 +1107,9 @@ class DataClass:
             y_new.append(self.answer_list_index[global_index])
         labels.append(True)
         # ct.print("batch_iter_wq_test_one_debug ")
-
+        entity_name_text = "entity:%s " % name
         ct.just_log2("info", "entity:%s " % name)
-        # ct.just_log2("info","relation:%s " % name)
+        part4 = "%s " % name
 
         # ct.print(y[index])
         r1_text = self.converter.arr_to_text_no_unk(self.relation_list_index[global_index])
@@ -1118,9 +1118,9 @@ class DataClass:
         q1_msg = "q : %s" % q1_text
         ct.just_log2("info", q1_msg)
         ct.just_log2("info", r1_msg)
-        part2 = q1_msg
-        part3 = r1_msg
-        ct.just_log3("test_check", "%s\t%s\t%s\t"%(part1,part2,part3))
+        part2 = q1_text
+        part3 = "%s\t%s" % (r1_text, self.answer_list[global_index])
+        ct.just_log3("test_check", "%s\t%s\t%s\t%s\t"%(part1,part2,part4,part3))
 
         # 加入错误的
         # todo : total is get_static_num_debug

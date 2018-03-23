@@ -52,7 +52,7 @@ f1s = ct.file_read_all_lines_strip('../data/nlpcc2016/3-questions/q.rdf.m_s.filt
             tp = ct.sort_dict(extract_dict, True)
             f5s = []
             for t in tp:
-                f5s.append("%s\t%s\n" % (t[0], t[1]))
+                f5s.append("%s\t%s" % (t[0], t[1]))
             ct.file_wirte_list('',f5s)
 
     # def __init__(self):

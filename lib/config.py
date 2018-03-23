@@ -43,10 +43,10 @@ if testid == "cc_test":
     evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
     evaluate_batchsize = 2000  # 验证一次的问题数目,超过则使用最大的
     questions_len_train = 4000  # 所有问题数目
-    questions_len_test = 4000   # 测试的问题数目，全部
+    questions_len_test = 4000  # 测试的问题数目，全部
     wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
     total_questions = 999999999999999
-    stop_loss_zeor_count = 2000 # 2000次则停下来
+    stop_loss_zeor_count = 2000  # 2000次则停下来
     rnn_size = 100
     mode = "cc"
     check = 100000
@@ -55,7 +55,7 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 5  # 重要！这个指示了训练的关系个数
+    t_relation_num = 50 # 重要！这个指示了训练的关系个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -71,10 +71,16 @@ if testid == "cc_test":
     d_epoches = 0
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
-    keep_run = False # 指示是否持续跑maybe里面的属性
+    keep_run = False  # 指示是否持续跑maybe里面的属性
     optimizer_method = optimizer_m.lstm  # 优化模式 gan | lstm
     # only_default 默认|fixed_amount 固定 | additional 默认+额外
     pool_mode = 'additional'
+
+    # 模型恢复
+    restore_model = True
+    restore_path = \
+        r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
+    #
 
 
 elif testid == 'cc_debug':
@@ -96,7 +102,7 @@ elif testid == 'cc_debug':
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 4358 # 重要！这个指示了训练的关系个数
+    t_relation_num = 4358  # 重要！这个指示了训练的关系个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -115,6 +121,12 @@ elif testid == 'cc_debug':
     optimizer_method = optimizer_m.lstm  # 优化模式 gan | lstm
     # only_default 默认|fixed_amount 固定 | additional 默认+额外
     pool_mode = 'additional'
+
+    # 模型恢复
+    restore_model = True
+    restore_path = \
+        r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
+    #
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
@@ -183,10 +195,12 @@ cc_p = {
     'test_ps_result': '../data/nlpcc2016/5-class/test_ps_result.txt',
     'cmd_path': cmd_path,
     'keep_run': keep_run,
-    'optimizer_method':optimizer_method,
-    'mark':mark,
-    'gan_learn_rate':gan_learn_rate,
-    'pool_mode':pool_mode
+    'optimizer_method': optimizer_method,
+    'mark': mark,
+    'gan_learn_rate': gan_learn_rate,
+    'pool_mode': pool_mode,
+    'restore_model': restore_model,
+    'restore_path': restore_path
 
 }
 
@@ -218,7 +232,7 @@ tf.flags.DEFINE_integer("batch_size", batch_size, "batch_size")
 tf.flags.DEFINE_integer("batch_size_gan", batch_size_gan, "batch_size_gan")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "max_grad_norm")
 tf.flags.DEFINE_float("learning_rate", 0.05, "learning_rate (default: 0.1)")
-tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
+tf.flags.DEFINE_integer("num_checkpoints", 2, "Number of checkpoints to store (default: 5)")
 
 tf.flags.DEFINE_integer("check", check, "Number of checkpoints to store (default: 5)")
 tf.flags.DEFINE_integer("evaluate_every", evaluate_every, "evaluate_every")
@@ -243,7 +257,7 @@ ms = ["train", "test"
     , "data"
     , "debug_epoches"
     , "bad"
-    ,"loss"
+    , "loss"
       ]
 
 
@@ -376,6 +390,3 @@ if __name__ == "__main__":
     # print(config.get_model())
     print(config.cc_par('train_part'))
     print(use_property)
-
-
-    # config.test()

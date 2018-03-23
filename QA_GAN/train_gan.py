@@ -97,7 +97,7 @@ def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_
 # test_r,关系
 # labels,标签,
 # 2018.2.26 把相近的分数也带回去
-def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model, global_index,state):
+def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model, global_index, state):
     start_time = time.time()
     feed_dict = {
         lstm.test_input_q: test_q,
@@ -165,8 +165,8 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         if not find_right:
             tcmsg = "%d,%f,%s" % (st.index, st.score, r1)
             test_check_msg_list.append(tcmsg)
-        if st.index ==0:
-            find_right=True
+        if st.index == 0:
+            find_right = True
 
         if st.index == 0:
             _tmp_right = 1
@@ -252,7 +252,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 
 
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
-                      train_relation_list_index, model, test_question_global_index, train_part, id_list,state):
+                      train_relation_list_index, model, test_question_global_index, train_part, id_list, state):
     right = 0
     wrong = 0
     # 产生随机的index给debug那边去获得index
@@ -289,7 +289,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
         ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = valid_step(sess, lstm, step, train_op,
                                                                                       test_q, test_r,
                                                                                       labels, merged, writer, dh, model,
-                                                                                      global_index,state)
+                                                                                      global_index, state)
         error_test_q_list.extend(error_test_q)
         error_test_pos_r_list.extend(error_test_pos_r)
         error_test_neg_r_list.extend(error_test_neg_r)
@@ -530,7 +530,7 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
         valid_batch_debug(sess, discriminator, 0, None, merged, writer,
                           dh, test_batchsize, dh.train_question_list_index,
                           train_part_1,
-                          model, dh.train_question_global_index, train_part, id_list,state)
+                          model, dh.train_question_global_index, train_part, id_list, state)
 
     msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (step, state, train_step, model, test_batchsize, acc)
     ct.print(msg)
@@ -554,7 +554,7 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
     acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
         valid_batch_debug(sess, discriminator, step, None, merged, writer,
                           dh, test_batchsize, dh.test_question_list_index,
-                          train_part_1, model, dh.test_question_global_index, train_part, id_list,state)
+                          train_part_1, model, dh.test_question_global_index, train_part, id_list, state)
     # 测试 集合不做训练 但是将其记录下来
 
     # error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
@@ -593,7 +593,8 @@ def main():
         ct.just_log2("valid", now)
         ct.just_log2("test", now)
         ct.just_log2("info", get_config_msg())
-        ct.print(get_config_msg(),"mark")
+        ct.print(get_config_msg(), "mark")
+        ct.just_log3("test_check", "ID\tquestion\tentity\tpos\tanswer\tr1\tr2\tr3\n")
         ct.log3(now)
 
         embedding_weight = None
@@ -646,15 +647,29 @@ def main():
             error_test_pos_r_list = []
             error_test_neg_r_list = []
 
+            # 如果需要恢复则恢复
+            if config.cc_par('restore_model'):
+                saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
+                save_path = config.cc_par('restore_path')
+                ct.print('restore:%s' % save_path, 'model')
+                saver.restore(sess, config.cc_par('restore_path'))
+                # 验证一下看看
+                state = 'restore_test'
+                run_step = -1
+                step = -1
+                elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                         error_test_dict)
+
             train_step = 0
             for step in range(FLAGS.epoches):
+
                 # --------------- D model
                 for d_index in range(FLAGS.d_epoches):
                     toogle_line = "D model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
                         step, len(dh.q_neg_r_tuple))
                     ct.log3(toogle_line)
                     ct.just_log2("info", toogle_line)
-                    state = "step=%d_epoches=%s_index=%d" % (step,'d', d_index)
+                    state = "step=%d_epoches=%s_index=%d" % (step, 'd', d_index)
                     # if True:
                     train_part = config.cc_par('train_part')
                     model = 'train'
@@ -720,7 +735,7 @@ def main():
 
                         line = ("%s: DIS step %d, loss %f with acc %f " % (
                             datetime.datetime.now().isoformat(), run_step, current_loss, accuracy))
-                        ct.print(line,'loss')
+                        ct.print(line, 'loss')
 
                     # 验证 和测试
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
@@ -728,7 +743,7 @@ def main():
 
                 # --------------- G model
                 for g_index in range(FLAGS.g_epoches):
-                    state = "step=%d_epoches=%s_index=%d" % (step,'g', g_index)
+                    state = "step=%d_epoches=%s_index=%d" % (step, 'g', g_index)
                     ct.print(state)
                     # if False:
                     toogle_line = "G model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
@@ -771,7 +786,6 @@ def main():
                         predicteds_list.sort()
                         rrr1 = '\t'.join([str(x) for x in predicteds_list])
                         ct.print("#%d#\t%s" % (index, rrr1), 'debug_predicteds_list')
-
 
                         pools = train_neg
                         gan_k = FLAGS.gan_k + r_len

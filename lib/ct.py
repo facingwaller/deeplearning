@@ -593,7 +593,7 @@ class ct:
 
     @staticmethod
     def clean_str_entity(string):
-        return str(string).strip().strip('\n').strip('\r').replace(' ', '').upper()
+        return str(string).strip().strip('\n').strip('\r').replace(' ', '').lower()
 
     @staticmethod
     def clean_str_rel(string):
@@ -1180,6 +1180,15 @@ class ct:
         str1 = ct.padding_date(str1)
 
         return str1
+
+    # 清理实体名
+    @staticmethod
+    def clean_str_s(string):
+
+        s1 = str(string).strip().strip('\n').strip('\r').replace(' ', '').lower()
+        s2 = ct.clean_str_zh2en(s1)  # 符号转换
+        return s2
+
 
 
     @staticmethod

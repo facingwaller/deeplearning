@@ -26,6 +26,7 @@ from multiprocessing import Pool, Manager
 import math
 import heapq
 import random
+from itertools import combinations
 
 MAX_POOL_NUM = 5
 
@@ -1301,12 +1302,12 @@ class baike_helper:
         is_debug = False
         if is_debug:
 
-            slice = ['韩娱守护力','夏想','李明(平安县委常委、县政府副县长)',
-                    '李军(工艺美术师)','三月三(汉族及多个少数民族传统节日)']  # self.kbqa.keys()
+            slice = ['韩娱守护力', '夏想', '李明(平安县委常委、县政府副县长)',
+                     '李军(工艺美术师)', '三月三(汉族及多个少数民族传统节日)']  # self.kbqa.keys()
 
         else:
             keys = self.kbqa.keys()
-        # try:
+            # try:
             slice = random.sample(keys, total)
         # except Exception as e1:
         #     print(e1)
@@ -2983,6 +2984,229 @@ class classification:
 
         print(1)
 
+    # 找到同实体不同属性名，但是属性值一样的
+    def class_p_by_o(self, f1='../data/nlpcc2016/2-kb/kb.v1.txt',
+                     f3='../data/nlpcc2016/5-class/demo1/same_o.txt',
+                     f4='../data/nlpcc2016/5-class/demo1/same_p.txt'):
+        # with open(f2, mode='w', encoding='utf-8') as o1:
+        index = -1
+        with open(f1, mode='r', encoding='utf-8') as rf:
+            last_s = ''
+            t_list = []
+            ps = []
+            os = []
+
+            f3s = []
+            f4s = []
+            for l1 in rf:
+                index += 1
+                if index % 10000 == 0:
+                    print(index / 10000)
+                l1_split = l1.split('\t')
+                s = ct.clean_str_s(l1_split[0])
+                p = ct.clean_str_rel(l1_split[1])
+                o = ct.clean_str_answer(l1_split[2])
+
+                output = []
+                if last_s != s:  # 新实体
+                    # 从检查之前的
+                    if len(ps) != len(set(ps)):  # PS有相同
+                        # 检查下合并P，O用\t来处理
+                        # 遍历p o 寻找出不同的
+                        d1 = dict()
+                        for i1 in range(len(ps)):
+                            for i2 in range(len(ps)):
+                                # 如果P相同则以P为KEY O为Vlue
+                                if i1 != i2 and ps[i1] == ps[i2]:
+                                    key = ps[i1]
+                                    value = os[i1]
+                                    if key in d1:
+                                        s1 = d1[key]
+                                        s1.add(value)
+                                        d1[key] = s1
+                                    else:
+                                        s1 = set()
+                                        s1.add(value)
+                                        d1[key] = s1
+                        #
+                        for k in d1.keys():
+                            msg = "%s\t%s\t%s" % (last_s, k, '\t'.join(d1[k]))
+                            f3s.append(msg)
+                            # ct.just_log('../data/nlpcc2016/5-class/demo1/same_o.txt',msg)
+                    d1 = dict()
+                    if len(os) != len(set(os)):  # os有相同
+                        for i1 in range(len(os)):
+                            for i2 in range(len(os)):
+                                # 如果O相同则以P为KEY
+                                if i1 != i2 and os[i1] == os[i2]:
+                                    key = os[i1]
+                                    value = ps[i1]
+                                    if key in d1:
+                                        s1 = d1[key]
+                                        s1.add(value)
+                                        d1[key] = s1
+                                    else:
+                                        s1 = set()
+                                        s1.add(value)
+                                        d1[key] = s1
+                                        # output.append(ps[i1])
+                        #
+                        for k in d1.keys():
+                            msg = "%s\t%s\t%s" % (last_s, k, '\t'.join(d1[k]))
+                            f4s.append(msg)
+                            # ct.just_log('../data/nlpcc2016/5-class/demo1/same_p.txt',msg)
+
+                            # 找出雷同的部分记录下来
+                    last_s = s
+                    t_list = []
+                    ps = []
+                    os = []
+
+                t1 = (p, o)
+                ps.append(p)
+                os.append(o)
+                t_list.append(t1)
+
+        ct.file_wirte_list(f3, f3s)
+        ct.file_wirte_list(f4, f4s)
+
+    # 找出非别名的部分
+    def class_p_by_o_select(self, f1='../data/nlpcc2016/5-class/demo1/same_p.txt'
+                            , f5='../data/nlpcc2016/5-class/demo1/same_p_tj.txt'):
+        import itertools
+
+        f1s = ct.file_read_all_lines_strip(f1)
+        f2s = []  # 非避别名的行
+        #
+        for l1 in f1s:
+            is_name = str(l1).split('\t')[0] == str(l1).split('\t')[1]
+            if is_name:
+                continue
+            f2s.append(l1)
+        # ct.file_wirte_list(f1+'.v1.txt',f2s)
+        # 统计每个P出现的次数并排序
+        # 考虑每个P对于KB中的每个知识，正确率是多少，
+        # 如果高则作为同义词组，
+        # 如果低则不进入同义词组
+        # 对于同一行中的多个P，两两组合看待。组合计算
+        ps = []
+        tp = (0, 0)
+        # s1 先简单统计下这里面的重复部分
+        d1 = dict()
+        for l2 in f2s:
+            l2s = str(l2).split('\t')
+            f2s = l2s[2:]  # 截取后面的相同属性的部分
+            f2s.sort()
+            k = '\t'.join(f2s)
+            if k in d1:
+                d1[k] += 1
+            else:
+                d1[k] = 1
+        tp = ct.sort_dict(d1, True) # 在这里排序下 使得后面好比较
+        f5s = []
+        for t in tp:
+            # f5s.append("%s\t%s" % (t[0], t[1]))
+            f5s.append("%s" % (t[0]))
+        ct.file_wirte_list(f5, f5s)
+        #
+
+    # 继续上面的
+    def class_p_by_o_select2(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.txt'):
+
+        f1s = ct.file_read_all_lines_strip(f1)
+        f2s = []  # 非别名的行
+        d1_pos = dict()
+        d1_neg = dict()
+        for l1 in f1s:
+            words = str(l1).split('\t')
+            for item in combinations(words, 2):
+                t1 = (item[0], item[1])
+                f2s.append(t1)
+                d1_pos[t1] = 0
+                d1_neg[t1] = 0
+        # 遍历KB然后逐个看看是否同时拥有组合中的属性，
+        # 如果有 且值一致 pos+1 否则neg+1
+        bh = baike_helper()
+        bh.init_spo(config.cc_par('kb-use'))  # kb
+        ks = bh.kbqa.keys()
+        for k in ks:
+            vs = bh.kbqa.get(k)
+            # _ps = []
+            # for _vs in vs:
+            #     _ps.append(_vs[0])
+            # 遍历所有的词组
+            for l2 in f2s:
+                k1 = l2[0]
+                k2 = l2[1]
+                v1 = ''
+                v2 = ''
+                for _vs in vs: ## P-O
+                    # _ps.append(_vs[0])
+                    if _vs[0] == k1:
+                        v1 = _vs[1]
+                    if _vs[0] == k2:
+                        v2 = _vs[1]
+                if v1 != '' or v2 != '':  # 其中1个匹配到了
+                    if v1 == v2:
+                        d1_pos[l2] += 1
+                    else:
+                        d1_neg[l2] += 1
+
+        # #
+        tp = ct.sort_dict(d1_pos, True)
+        f5s = []
+        for t in tp:
+            f5s.append("%s\t%s" % (t[0], t[1]))
+        ct.file_wirte_list('../data/nlpcc2016/5-class/demo1/same_p_tj_pos.txt', f5s)
+
+        tp = ct.sort_dict(d1_neg, True)
+        f5s = []
+        for t in tp:
+            f5s.append("%s\t%s" % (t[0], t[1]))
+        ct.file_wirte_list('../data/nlpcc2016/5-class/demo1/same_p_tj_neg.txt', f5s)
+
+        print(11)
+
+    # 合并计算
+    def class_p_by_o_select_combine(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.txt',
+                                    f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.txt',
+                                    f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.txt'):
+        f1s = ct.file_read_all_lines_strip(f1)
+        f2s = ct.file_read_all_lines_strip(f2)
+        f3s = []
+        index = 0
+        all = len(f1s) * len(f1s)
+        print(all)
+        d1 = dict()
+        d2 = dict()
+        for l1 in f1s:
+            key1 = l1.split('\t')[0]
+            v1 = int(l1.split('\t')[1])
+            d1[str(key1)] = v1
+        print(11111)
+        for l2 in f2s:
+            # index +=1
+            # if index/10000==0:
+            #     print(index/10000)
+
+            key2 = l2.split('\t')[0]
+            v2 = int(l2.split('\t')[1])
+            d2[str(key2)] = v2
+        print(22222)
+        for l1 in f1s:
+            key1 = l1.split('\t')[0]
+            v1 = int(l1.split('\t')[1])
+            v2 = int(d2[key1])
+            # if key1 == key2:
+            total = v1 + v2
+            if total == 0:
+                total = 1
+            msg = "%s\t%s\t%s\t%s" % (key1, v1, v2, v1 / total)
+            f3s.append(msg)
+
+        ct.file_wirte_list(f3, f3s)
+        print(1)
+
 
 # F2.3 空格分割
 def seg_m():
@@ -3218,6 +3442,15 @@ if __name__ == '__main__':
                       f4='../data/nlpcc2016/6-answer/q.rdf_all_choose.%s.txt' % mode,
                       mode=mode,
                       skip_special_p=False)
+
+    # 分析KB，根据答案抽取相同属性和合并答案
+    if True:
+        # cf.class_p_by_o()
+        # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p.txt'
+        #                        , f5='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
+        # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
+        # cf.class_p_by_o_select3(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
+        cf.class_p_by_o_select_combine()
 
 if __name__ == '__main__':
 
