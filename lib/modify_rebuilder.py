@@ -73,7 +73,7 @@ if __name__ == '__main__':  #
                                99999999999999, is_record=True)
         print('重新生成训练文件q_neg_r_tuple.v1')
     # 重生成所有测试集的候选属性
-    if True:
+    if False:
         #  读取问题
         cf.build_test_ps(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                       f2='../data/nlpcc2016/5-class/test_ps.v4.txt', skip=14610)

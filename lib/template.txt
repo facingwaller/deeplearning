@@ -55,6 +55,12 @@ f1s = ct.file_read_all_lines_strip('../data/nlpcc2016/3-questions/q.rdf.m_s.filt
                 f5s.append("%s\t%s" % (t[0], t[1]))
             ct.file_wirte_list('',f5s)
 
+
+            for k in d1.keys():
+                 msg = "%s\t%s\t%s" % (last_s, k, '\t'.join(d1[k]))
+                  f4s.append(msg)
+            ct.file_wirte_list('',f5s)
+
     # def __init__(self):
     #     # jieba.set_dictionary('../data/jieba_dict/dict.txt.big')
     #     # self.stopwordset = set()

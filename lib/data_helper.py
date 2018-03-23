@@ -1120,7 +1120,7 @@ class DataClass:
         ct.just_log2("info", r1_msg)
         part2 = q1_text
         part3 = "%s\t%s" % (r1_text, self.answer_list[global_index])
-        ct.just_log3("test_check", "%s\t%s\t%s\t%s\t"%(part1,part2,part4,part3))
+        ct.just_log3("test_check", "%s\t%s\t%s\t%s\t" % (part1, part2, part4, part3))
 
         # 加入错误的
         # todo : total is get_static_num_debug
@@ -1586,6 +1586,22 @@ class DataClass:
         # ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
         # ct.print("leave:batch_iter_gan_train")
         return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
+
+    # 同义词模块
+    def init_synonym(self, f1, f2):
+        f1s = ct.file_read_all_lines_strip(f1)
+        f2s = []
+        synonym_dict = dict()
+        for x in f1s:
+            k1 = x.split('\t')[0]
+            k2 = x.split('\t')[1]
+            synonym_dict = ct.dict_add(synonym_dict, k1, k2)
+            synonym_dict = ct.dict_add(synonym_dict, k2, k1)
+
+        for k in synonym_dict.keys():
+            msg = "%s\t%s" % (k, '\t'.join(synonym_dict[k]))
+            f2s.append(msg)
+        ct.file_wirte_list(f2, f2s)
 
 
 # ======================================================================= clear data

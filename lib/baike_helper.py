@@ -3073,8 +3073,6 @@ class classification:
     # 找出非别名的部分
     def class_p_by_o_select(self, f1='../data/nlpcc2016/5-class/demo1/same_p.txt'
                             , f5='../data/nlpcc2016/5-class/demo1/same_p_tj.txt'):
-        import itertools
-
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = []  # 非避别名的行
         #
@@ -3110,8 +3108,12 @@ class classification:
         ct.file_wirte_list(f5, f5s)
         #
 
-    # 继续上面的
-    def class_p_by_o_select2(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.txt'):
+    # 分别统计POS和NEG出现的次数
+    def class_p_by_o_select2(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.txt',
+                             f2= '../data/nlpcc2016/5-class/demo1/same_p_tj_pos.txt',
+                             f3 ='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.txt',
+                             kb='kb'
+                             ):
 
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = []  # 非别名的行
@@ -3127,9 +3129,13 @@ class classification:
         # 遍历KB然后逐个看看是否同时拥有组合中的属性，
         # 如果有 且值一致 pos+1 否则neg+1
         bh = baike_helper()
-        bh.init_spo(config.cc_par('kb-use'))  # kb
+        bh.init_spo(config.cc_par(kb))  # kb  kb-use
         ks = bh.kbqa.keys()
+        index= -1
         for k in ks:
+            index+=1
+            if index/10000 == 0:
+                print(index/10000)
             vs = bh.kbqa.get(k)
             # _ps = []
             # for _vs in vs:
@@ -3157,13 +3163,13 @@ class classification:
         f5s = []
         for t in tp:
             f5s.append("%s\t%s" % (t[0], t[1]))
-        ct.file_wirte_list('../data/nlpcc2016/5-class/demo1/same_p_tj_pos.txt', f5s)
+        ct.file_wirte_list(f2, f5s)
 
         tp = ct.sort_dict(d1_neg, True)
         f5s = []
         for t in tp:
             f5s.append("%s\t%s" % (t[0], t[1]))
-        ct.file_wirte_list('../data/nlpcc2016/5-class/demo1/same_p_tj_neg.txt', f5s)
+        ct.file_wirte_list(f3, f5s)
 
         print(11)
 
@@ -3174,9 +3180,9 @@ class classification:
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = ct.file_read_all_lines_strip(f2)
         f3s = []
-        index = 0
-        all = len(f1s) * len(f1s)
-        print(all)
+        # index = 0
+        # all = len(f1s) * len(f1s)
+        # print(all)
         d1 = dict()
         d2 = dict()
         for l1 in f1s:
@@ -3445,12 +3451,15 @@ if __name__ == '__main__':
 
     # 分析KB，根据答案抽取相同属性和合并答案
     if True:
+        # F2.6.4
         # cf.class_p_by_o()
-        # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p.txt'
-        #                        , f5='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
+        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.txt',
+                             f2= '../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
+                             f3 ='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
+                                kb='kb')
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
         # cf.class_p_by_o_select3(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
-        cf.class_p_by_o_select_combine()
+        # cf.class_p_by_o_select_combine()
 
 if __name__ == '__main__':
 

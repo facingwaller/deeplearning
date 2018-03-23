@@ -611,10 +611,10 @@ class ct:
     def clean_str_zh2en(string):
         return str(ct.strQ2B(string)) \
             .replace("（", "(").replace("）", ")") \
-            .replace("【", "[").replace("】", "]")  \
-            .replace("•", "·")  \
             .replace("【", "[").replace("】", "]") \
-            .replace('，', ',').replace("”", '"').replace('“','"') \
+            .replace("•", "·") \
+            .replace("【", "[").replace("】", "]") \
+            .replace('，', ',').replace("”", '"').replace('“', '"') \
             .replace('）', ')').replace('（', '(').replace('／', '/')
 
     @staticmethod
@@ -675,6 +675,7 @@ class ct:
     @staticmethod
     def log_path():
         return log_path
+
     @staticmethod
     def log_path_static():
         # if out_dir!='':
@@ -691,7 +692,7 @@ class ct:
     @staticmethod
     def log_path_checkpoint(step):
         # timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        return "%s\\checkpoints\\%s"%(ct.log_path(),step)
+        return "%s\\checkpoints\\%s" % (ct.log_path(), step)
 
     @staticmethod
     def just_log(file_name, msg):
@@ -706,12 +707,13 @@ class ct:
         f1_writer = codecs.open(file_name + '_bak.txt', mode="a", encoding="utf-8")
         f1_writer.write(msg + "\n")
         f1_writer.close()
+
     @staticmethod
     def just_log3(file_name, msg):
         time_str = time.strftime('-%Y-%m-%d', time.localtime(time.time()))
         file_name = log_path + "/" + file_name + time_str + ".txt"
         f1_writer = codecs.open(file_name + '_bak.txt', mode="a", encoding="utf-8")
-        f1_writer.write(msg )
+        f1_writer.write(msg)
         f1_writer.close()
 
     @staticmethod
@@ -1034,7 +1036,7 @@ class ct:
         for p in p1s:
             if p in line:
                 count += 1
-        return count/len(p1s)
+        return count / len(p1s)
 
     @staticmethod
     def re_clean_question(str):
@@ -1148,16 +1150,15 @@ class ct:
                 result = "%d年%d月%d日" % (y, m, d)
             except Exception as e1:
                 result = str
-                ct.print("%s\t%s"%(str,e1))
+                ct.print("%s\t%s" % (str, e1))
         return result
-
 
     @staticmethod
     def padding_int(str1):
         item = str1.lower().replace(' ', '')
         value = re.compile(r'^[-+]?[0-9]+\.[0-9]+$')
         result = value.match(item)
-        rt =str1
+        rt = str1
         try:
             if item.isdigit():
                 rt = float(item)
@@ -1171,7 +1172,7 @@ class ct:
     @staticmethod
     def padding_answer(str1):
         # 对齐带空格
-        str1 = str(str1).lower().replace(' ','')
+        str1 = str(str1).lower().replace(' ', '')
         # 对齐全角半角
         str1 = ct.clean_str_zh2en(str1)
         # 对齐整数
@@ -1189,16 +1190,14 @@ class ct:
         s2 = ct.clean_str_zh2en(s1)  # 符号转换
         return s2
 
-
-
     @staticmethod
     def do_some_clean(str):
-        str = re.sub('吗$', '',str)
+        str = re.sub('吗$', '', str)
         str = re.sub('^请说出', '', str)
         str = re.sub('^大家了解', '', str)
         str = re.sub('^你了解', '', str)
         str = re.sub('^你知道', '', str)
-        str = re.sub('\?$', '',str)
+        str = re.sub('\?$', '', str)
         str = re.sub('？$', '', str)
         return str
 
@@ -1209,18 +1208,26 @@ class ct:
                 raise ("float inf")
 
     @staticmethod
-    def reset_log_path_static( ):
+    def reset_log_path_static():
         log_path = ct.log_path_static()
 
-
-
+    @staticmethod
+    def dict_add(d1, k1, k2):
+        if k1 in d1:
+            s1 = d1[k1]
+            s1.add(k2)
+        else:
+            s1 = set()
+            s1.add(k2)
+            d1[k1] = s1
+        return d1
 
 
 log_path = ct.log_path_static()
 
 if __name__ == "__main__":
     aa1 = ct.log_path_static()
-    print(aa1+"\\log\\")
+    print(aa1 + "\\log\\")
     # print(len('死亡日记1999年电影thevirginsuicides(1999film)'))
     # c1 = ct.re_clean_question('请问一下谁知道♠要打印多少张，请问下？')
     # c1 = re.sub('(♠)+','♠','11231♠♠♠1♠♠3♠')
