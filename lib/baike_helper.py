@@ -3133,18 +3133,27 @@ class classification:
         index = -1
         for k in ks:
             index += 1
-            # if index % 1000 == 0:
-            print(index / 1000)
+            if index % 100 == 0:
+                print("%s/%s"%(index / 100,len(ks)/100))
             vs = bh.kbqa.get(k)
             # _ps = []
             # for _vs in vs:
             #     _ps.append(_vs[0])
             # 遍历所有的词组
+            vs_list = [x[0] for x in vs]
+            f2s_new = []
             for l2 in f2s:
+                k1 = l2[0]
+                k2 = l2[1]
+                if vs_list.__contains__(k1) and vs_list.__contains__(k2):
+                    f2s_new.append(l2)
+
+            for l2 in f2s_new:
                 k1 = l2[0]
                 k2 = l2[1]
                 v1 = ''
                 v2 = ''
+
                 for _vs in vs:  ## P-O
                     # _ps.append(_vs[0])
                     if _vs[0] == k1:
@@ -3185,8 +3194,10 @@ class classification:
         d1 = dict()
         d2 = dict()
         for l1 in f1s:
-            key1 = l1.split('\t')[0]
-            v1 = int(l1.split('\t')[1])
+            _ks = l1.split('\t')[0:2]
+            _ks.sort()
+            key1 = '\t'.join(_ks)
+            v1 = int(l1.split('\t')[2])
             d1[str(key1)] = v1
         print(11111)
         for l2 in f2s:
@@ -3194,13 +3205,18 @@ class classification:
             # if index/10000==0:
             #     print(index/10000)
 
-            key2 = l2.split('\t')[0]
-            v2 = int(l2.split('\t')[1])
+            _ks = l2.split('\t')[0:2]
+            _ks.sort()
+            key2 = '\t'.join(_ks)
+            v2 = int(l2.split('\t')[2])
             d2[str(key2)] = v2
         print(22222)
         for l1 in f1s:
-            key1 = l1.split('\t')[0]
-            v1 = int(l1.split('\t')[1])
+            _ks = l1.split('\t')[0:2]
+            _ks.sort()
+            key1 = '\t'.join(_ks)
+            v1 = int(l1.split('\t')[2])
+            d1[str(key1)] = v1
             v2 = int(d2[key1])
             # if key1 == key2:
             total = v1 + v2
@@ -3475,11 +3491,15 @@ if __name__ == '__main__':
         cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt',
                                 f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v4.txt',
                                 f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v4.txt',
-                                kb='kb')
+                                kb='kb-use')
+    if False:
+        cf.class_p_by_o_select_combine(f1='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v3.txt',
+                                    f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v3.txt',
+                                    f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.v3.txt')
     if False:
         cf.init_synonym()
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
-        # cf.class_p_by_o_select3(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
+
         # cf.class_p_by_o_select_combine()
 
 if __name__ == '__main__':
