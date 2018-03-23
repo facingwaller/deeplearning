@@ -3162,13 +3162,13 @@ class classification:
         tp = ct.sort_dict(d1_pos, True)
         f5s = []
         for t in tp:
-            f5s.append("%s\t%s" % (t[0], t[1]))
+            f5s.append("%s\t%s" % ('\t'.join(t[0]), t[1]))
         ct.file_wirte_list(f2, f5s)
 
         tp = ct.sort_dict(d1_neg, True)
         f5s = []
         for t in tp:
-            f5s.append("%s\t%s" % (t[0], t[1]))
+            f5s.append("%s\t%s" % ('\t'.join(t[0]), t[1]))
         ct.file_wirte_list(f3, f5s)
 
         print(11)
@@ -3212,6 +3212,26 @@ class classification:
 
         ct.file_wirte_list(f3, f3s)
         print(1)
+
+    def init_synonym(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.v3.txt',
+                     f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt'):
+        f1s = ct.file_read_all_lines_strip(f1)
+        f2s = []
+        synonym_dict = dict()
+        for x in f1s:
+            try:
+                k1 = x.split('\t')[0]
+                k2 = x.split('\t')[1]
+            except Exception as e1:
+                print(e1)
+
+            synonym_dict = ct.dict_add(synonym_dict, k1, k2)
+            synonym_dict = ct.dict_add(synonym_dict, k2, k1)
+
+        for k in synonym_dict.keys():
+            msg = "%s\t%s" % (k, '\t'.join(synonym_dict[k]))
+            f2s.append(msg)
+        ct.file_wirte_list(f2, f2s)
 
 
 # F2.3 空格分割
@@ -3453,10 +3473,12 @@ if __name__ == '__main__':
     if True:
         # F2.6.4
         # cf.class_p_by_o()
-        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.txt',
+        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.small.txt',
                              f2= '../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
                              f3 ='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
-                                kb='kb')
+                                kb='kb-use')
+    if True:
+        cf.init_synonym()
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
         # cf.class_p_by_o_select3(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
         # cf.class_p_by_o_select_combine()

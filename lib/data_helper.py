@@ -1588,7 +1588,8 @@ class DataClass:
         return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
 
     # 同义词模块
-    def init_synonym(self, f1, f2):
+    def init_synonym(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj_clear.txt',
+                     f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt'):
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = []
         synonym_dict = dict()
@@ -1775,6 +1776,9 @@ def test_gan():
             relations.append(v_s_1)
         break
 
+def test_tyc():
+    dh = DataClass("cc")
+    dh.init_synonym()
 
 if __name__ == "__main__":
     # CC 部分的测试-和构建代码
@@ -1783,7 +1787,7 @@ if __name__ == "__main__":
     # test_random_choose_indexs_debug()
     # test_random_choose_indexs_debug()
     # test_cc()
-    test_gan()
+    test_tyc()
 
     # 测试生成
 
