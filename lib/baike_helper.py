@@ -3100,7 +3100,7 @@ class classification:
                 d1[k] += 1
             else:
                 d1[k] = 1
-        tp = ct.sort_dict(d1, True) # 在这里排序下 使得后面好比较
+        tp = ct.sort_dict(d1, True)  # 在这里排序下 使得后面好比较
         f5s = []
         for t in tp:
             # f5s.append("%s\t%s" % (t[0], t[1]))
@@ -3110,10 +3110,9 @@ class classification:
 
     # 分别统计POS和NEG出现的次数
     def class_p_by_o_select2(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.txt',
-                             f2= '../data/nlpcc2016/5-class/demo1/same_p_tj_pos.txt',
-                             f3 ='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.txt',
-                             kb='kb'
-                             ):
+                             f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.txt',
+                             f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.txt',
+                             kb='kb-use'):
 
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = []  # 非别名的行
@@ -3131,11 +3130,11 @@ class classification:
         bh = baike_helper()
         bh.init_spo(config.cc_par(kb))  # kb  kb-use
         ks = bh.kbqa.keys()
-        index= -1
+        index = -1
         for k in ks:
-            index+=1
-            if index/10000 == 0:
-                print(index/10000)
+            index += 1
+            # if index % 1000 == 0:
+            print(index / 1000)
             vs = bh.kbqa.get(k)
             # _ps = []
             # for _vs in vs:
@@ -3146,7 +3145,7 @@ class classification:
                 k2 = l2[1]
                 v1 = ''
                 v2 = ''
-                for _vs in vs: ## P-O
+                for _vs in vs:  ## P-O
                     # _ps.append(_vs[0])
                     if _vs[0] == k1:
                         v1 = _vs[1]
@@ -3473,11 +3472,11 @@ if __name__ == '__main__':
     if True:
         # F2.6.4
         # cf.class_p_by_o()
-        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.small.txt',
-                             f2= '../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
-                             f3 ='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
-                                kb='kb-use')
-    if True:
+        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt',
+                                f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v4.txt',
+                                f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v4.txt',
+                                kb='kb')
+    if False:
         cf.init_synonym()
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
         # cf.class_p_by_o_select3(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
