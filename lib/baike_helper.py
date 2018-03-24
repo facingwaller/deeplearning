@@ -2985,7 +2985,7 @@ class classification:
         print(1)
 
     # 找到同实体不同属性名，但是属性值一样的
-    def class_p_by_o(self, f1='../data/nlpcc2016/2-kb/kb.v1.txt',
+    def class_p_by_o_kb(self, f1='../data/nlpcc2016/2-kb/kb.v1.txt',
                      f3='../data/nlpcc2016/5-class/demo1/same_o.txt',
                      f4='../data/nlpcc2016/5-class/demo1/same_p.txt'):
         # with open(f2, mode='w', encoding='utf-8') as o1:
@@ -3001,13 +3001,18 @@ class classification:
             for l1 in rf:
                 index += 1
                 if index % 10000 == 0:
-                    print("%s %s"%(index / 10000,4300))
+                    print("%s %s" % (index / 10000, 4300))
                 l1_split = l1.split('\t')
                 s = ct.clean_str_s(l1_split[0])
                 p = ct.clean_str_rel(l1_split[1])
                 o = ct.clean_str_answer(l1_split[2])
-                if p == o or  l1_split[1] ==l1_split[2] :
+                # 过滤掉P =0的
+                if p == o or l1_split[1] == l1_split[2]:
                     # ct.print("%s\t%s"%(p,o))
+                    continue
+                # 过滤掉 S=P的 或者S=O的
+                # e.g 林芷筠	林芷筠	safina 林芷筠	外文名	safina
+                if s == p or s == o:
                     continue
 
                 output = []
@@ -3075,7 +3080,7 @@ class classification:
 
     # 找出非别名的部分
     def class_p_by_o_select0(self, f1='../data/nlpcc2016/5-class/demo1/same_p.txt'
-                            , f5='../data/nlpcc2016/5-class/demo1/same_p_tj.txt'):
+                             , f5='../data/nlpcc2016/5-class/demo1/same_p_tj.txt'):
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = []  # 非避别名的行
         #
@@ -3526,28 +3531,28 @@ if __name__ == '__main__':
 
     # 分析KB，根据答案抽取相同属性和合并答案
     if False:
-        cf.class_p_by_o(f1='../data/nlpcc2016/2-kb/kb.v1.txt',
-                        f3='../data/nlpcc2016/5-class/demo1/same_o.v1.txt',
-                        f4='../data/nlpcc2016/5-class/demo1/same_p.v1.txt')
+        cf.class_p_by_o_kb(f1='../data/nlpcc2016/2-kb/kb.v1.txt',
+                        f3='../data/nlpcc2016/5-class/demo1/same_o.v2.txt',
+                        f4='../data/nlpcc2016/5-class/demo1/same_p.v2.txt')
     if False:
         # F2.6.4
-        cf.class_p_by_o_select0(f1='../data/nlpcc2016/5-class/demo1/same_p.v1.txt'
-                            , f5='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
+        cf.class_p_by_o_select0(f1='../data/nlpcc2016/5-class/demo1/same_p.v2.txt'
+                                , f5='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.v2.txt')
         # 属性组合去重
-    if True:
-        cf.class_p_by_o_select1(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt',
-                                f2='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v1.txt')
-    if True:
-        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v1.txt',
-                                f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v4.txt',
-                                f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v4.txt',
+    if False:
+        cf.class_p_by_o_select1(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.v2.txt',
+                                f2='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v2.txt')
+    if False:
+        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v2.txt',
+                                f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
+                                f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
                                 kb='kb-use')
     if False:
-        cf.class_p_by_o_select_combine(f1='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v3.txt',
-                                       f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v3.txt',
-                                       f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.v3.txt')
-    if False:
-        cf.init_synonym(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.v3.txt',
+        cf.class_p_by_o_select_combine(f1='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
+                                       f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
+                                       f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.v2.txt')
+    if True:
+        cf.init_synonym(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v2.txt',
                         f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt')
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
 
