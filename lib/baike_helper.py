@@ -3154,6 +3154,8 @@ class classification:
         d1_neg = dict()
         for l1 in f1s:
             words = str(l1).split('\t')
+            if len(words) != 2:
+                print(12222)
             words.sort()  # 保持唯一的顺序，不重复
             # for item in combinations(words, 2):
             t1 = (words[0], words[1])
@@ -3520,14 +3522,14 @@ if __name__ == '__main__':
                       skip_special_p=False)
 
     # 分析KB，根据答案抽取相同属性和合并答案
-    if True:
+    if False:
         # F2.6.4
         # cf.class_p_by_o()
         # 属性组合去重
         cf.class_p_by_o_select1(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt',
                                 f2='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v1.txt')
-    if False:
-        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt',
+    if True:
+        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.txt',
                                 f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v4.txt',
                                 f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v4.txt',
                                 kb='kb-use')
