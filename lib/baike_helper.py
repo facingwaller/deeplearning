@@ -3001,11 +3001,14 @@ class classification:
             for l1 in rf:
                 index += 1
                 if index % 10000 == 0:
-                    print(index / 10000)
+                    print("%s %s"%(index / 10000,4300))
                 l1_split = l1.split('\t')
                 s = ct.clean_str_s(l1_split[0])
                 p = ct.clean_str_rel(l1_split[1])
                 o = ct.clean_str_answer(l1_split[2])
+                if p == o or  l1_split[1] ==l1_split[2] :
+                    # ct.print("%s\t%s"%(p,o))
+                    continue
 
                 output = []
                 if last_s != s:  # 新实体
@@ -3071,7 +3074,7 @@ class classification:
         ct.file_wirte_list(f4, f4s)
 
     # 找出非别名的部分
-    def class_p_by_o_select(self, f1='../data/nlpcc2016/5-class/demo1/same_p.txt'
+    def class_p_by_o_select0(self, f1='../data/nlpcc2016/5-class/demo1/same_p.txt'
                             , f5='../data/nlpcc2016/5-class/demo1/same_p_tj.txt'):
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = []  # 非避别名的行
@@ -3523,13 +3526,19 @@ if __name__ == '__main__':
 
     # 分析KB，根据答案抽取相同属性和合并答案
     if False:
+        cf.class_p_by_o(f1='../data/nlpcc2016/2-kb/kb.v1.txt',
+                        f3='../data/nlpcc2016/5-class/demo1/same_o.v1.txt',
+                        f4='../data/nlpcc2016/5-class/demo1/same_p.v1.txt')
+    if False:
         # F2.6.4
-        # cf.class_p_by_o()
+        cf.class_p_by_o_select0(f1='../data/nlpcc2016/5-class/demo1/same_p.v1.txt'
+                            , f5='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
         # 属性组合去重
+    if True:
         cf.class_p_by_o_select1(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt',
                                 f2='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v1.txt')
     if True:
-        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.txt',
+        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v1.txt',
                                 f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v4.txt',
                                 f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v4.txt',
                                 kb='kb-use')
