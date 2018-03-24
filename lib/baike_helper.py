@@ -3109,6 +3109,40 @@ class classification:
         #
 
     # 分别统计POS和NEG出现的次数
+    def class_p_by_o_select1(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.txt',
+                             f2='../data/nlpcc2016/5-class/demo1/same_p_tj.txt',
+                             ):
+
+        f1s = ct.file_read_all_lines_strip(f1)
+        f2s = []  # 非别名的行
+        d1_pos = dict()
+        d1_neg = dict()
+        for l1 in f1s:
+            words = str(l1).split('\t')
+            words.sort()
+            for item in combinations(words, 2):
+                t1 = (item[0], item[1])
+                f2s.append(t1)
+                d1_pos[t1] = 0
+                d1_neg[t1] = 0
+        print(len(f2s))
+        f3s = list(set(f2s))
+
+        f2s = ["%s\t%s" % (x[0], x[1]) for x in list(set(f2s))]
+        print(len(f2s))
+        f3s = set()
+        f4s = []
+        for l2 in f2s:
+            r_l2 = "%s\t%s" % (l2.split('\t')[1], l2.split('\t')[0])
+            if l2 in f3s or r_l2 in f3s:
+                continue
+            f4s.append(l2)
+            f3s.add(l2)
+        print(len(f4s))
+
+        ct.file_wirte_list(f2, f4s)
+
+    # 分别统计POS和NEG出现的次数
     def class_p_by_o_select2(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.txt',
                              f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.txt',
                              f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.txt',
@@ -3120,11 +3154,12 @@ class classification:
         d1_neg = dict()
         for l1 in f1s:
             words = str(l1).split('\t')
-            for item in combinations(words, 2):
-                t1 = (item[0], item[1])
-                f2s.append(t1)
-                d1_pos[t1] = 0
-                d1_neg[t1] = 0
+            words.sort()  # 保持唯一的顺序，不重复
+            # for item in combinations(words, 2):
+            t1 = (words[0], words[1])
+            f2s.append(t1)
+            d1_pos[t1] = 0
+            d1_neg[t1] = 0
         # 遍历KB然后逐个看看是否同时拥有组合中的属性，
         # 如果有 且值一致 pos+1 否则neg+1
         bh = baike_helper()
@@ -3134,7 +3169,7 @@ class classification:
         for k in ks:
             index += 1
             if index % 100 == 0:
-                print("%s/%s"%(index / 100,len(ks)/100))
+                print("%s/%s" % (index / 100, len(ks) / 100))
             vs = bh.kbqa.get(k)
             # _ps = []
             # for _vs in vs:
@@ -3488,16 +3523,21 @@ if __name__ == '__main__':
     if True:
         # F2.6.4
         # cf.class_p_by_o()
+        # 属性组合去重
+        cf.class_p_by_o_select1(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt',
+                                f2='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v1.txt')
+    if False:
         cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt',
                                 f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v4.txt',
                                 f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v4.txt',
                                 kb='kb-use')
     if False:
         cf.class_p_by_o_select_combine(f1='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v3.txt',
-                                    f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v3.txt',
-                                    f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.v3.txt')
+                                       f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v3.txt',
+                                       f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.v3.txt')
     if False:
-        cf.init_synonym()
+        cf.init_synonym(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.v3.txt',
+                        f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt')
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
 
         # cf.class_p_by_o_select_combine()
