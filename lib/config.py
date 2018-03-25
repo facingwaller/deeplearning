@@ -55,7 +55,7 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 50 # 重要！这个指示了训练的关系个数
+    t_relation_num = 50  # 重要！这个指示了训练的关系个数
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -88,9 +88,9 @@ elif testid == 'cc_debug':
     epoches = 10  # 遍历多少轮
     batch_size = 10  # 1个batch的大小 # 临时改了
     evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
-    evaluate_batchsize = 2000  # 验证一次的问题数目,超过则使用最大的
-    questions_len_train = 4000  # 所有问题数目
-    questions_len_test = 4000  # 测试的问题数目，全部
+    evaluate_batchsize = 999999999999999  # 验证一次的问题数目,超过则使用最大的
+    questions_len_train = 999999999999999  # 所有问题数目
+    questions_len_test = 999999999999999  # 测试的问题数目，全部
     wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
     total_questions = 999999999999999
     stop_loss_zeor_count = 2000  # 2000次则停下来
@@ -123,10 +123,12 @@ elif testid == 'cc_debug':
     pool_mode = 'additional'
 
     # 模型恢复
-    restore_model = False
+    restore_model = True
     restore_path = \
         r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
-    #
+    # 模式
+    synonym_mode = 'ps_synonym'  # 属性同义词
+
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
@@ -200,7 +202,9 @@ cc_p = {
     'gan_learn_rate': gan_learn_rate,
     'pool_mode': pool_mode,
     'restore_model': restore_model,
-    'restore_path': restore_path
+    'restore_path': restore_path,
+    'synonym_mode': synonym_mode,
+    'synonym_words':'../data/nlpcc2016/5-class/demo1/same_p_tj_score.v2.1.txt'
 
 }
 

@@ -22,20 +22,12 @@ from QA_GAN.Generator import Generator
 from lib.ct import ct
 
 # -----------------------------------定义变量
-
-
-
-# 测试模型的有效性的一个配置办法
-# 1.    def is_debug_few() return True
-# 2.    get_static_id_list_debug 和 get_static_num_debug 设置id和错误关系的个数
-# 3.    放方便多机共享测试，已经迁移到config文件
 # ----------------------------------- execute train model ---------------------------------
 maybe_dict = dict()
 maybe_dict['r'] = 0
 maybe_dict['e'] = 0
 
 
-# ---在用
 def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_neg, merged, writer, dh, use_error):
     start_time = time.time()
     feed_dict = {
@@ -104,22 +96,22 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         lstm.test_input_r: test_r,
     }
     question = ''
-    relations = []
-    for _ in test_q:
-        v_s_1 = dh.converter.arr_to_text_no_unk(_)
-        valid_msg = model + " test_q 1:" + v_s_1
-        ct.just_log2("valid_step", valid_msg)
-        question = v_s_1
-    for _ in test_r:
-        v_s_1 = dh.converter.arr_to_text_no_unk(_)
-        valid_msg = model + " test_r 1:" + v_s_1
-        ct.just_log2("valid_step", valid_msg)
-        relations.append(v_s_1)
+    # relations = []
+    # for _ in test_q:
+    #     v_s_1 = dh.converter.arr_to_text_no_unk(_)
+    #     valid_msg = model + " test_q 1:" + v_s_1
+    #     ct.just_log2("valid_step", valid_msg)
+    #     question = v_s_1
+    # for _ in test_r:
+    #     v_s_1 = dh.converter.arr_to_text_no_unk(_)
+    #     valid_msg = model + " test_r 1:" + v_s_1
+    #     ct.just_log2("valid_step", valid_msg)
+    #     relations.append(v_s_1)
 
     error_test_q = []
     error_test_pos_r = []
     error_test_neg_r = []
-    fuzzy_boundary = []
+    # fuzzy_boundary = []
 
     test_q_r_cosin = sess.run(
         [lstm.test_q_r],
@@ -151,7 +143,14 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     score_list = []
     test_check_msg_list = []
     find_right = False
+    if config.cc_par('synonym_mode') == 'ps_synonym':
+        synonym_score = labels[1]
+        right_labels = labels[0]
+        # (r_pos, _ps_item,_v1,r_pos==_ps_item)
+    index = -1
+    is_correct = False
     for st in st_list_sort:
+        index += 1
         # ct.print("index:%d ,score= %f " % (st.index, st.score))
         # mylog.logger.info("index:%d ,score= %f " % (st.index, st.score))
         # 得到得分排序前X的index
@@ -163,15 +162,34 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         # ct.print(r1)
         ct.just_log2("info", "step:%d st.index:%d,score:%f,r:%s" % (step, st.index, st.score, r1))
         if not find_right:
-            tcmsg = "%d,%f,%s" % (st.index, st.score, r1)
+            # 在这里改下
+            if config.cc_par('synonym_mode') == 'ps_synonym':
+                # 增加一个synonym_score
+                # 原始属性，当前属性，当前属性得分，是否原本属性，该属性的字表面得分
+                tcmsg = "%d,%f,%s(%s)" % (st.index, st.score, r1, '_'.join(synonym_score[st.index]))
+            else:
+                tcmsg = "%d,%f,%s" % (st.index, st.score, r1)
             test_check_msg_list.append(tcmsg)
-        if st.index == 0:
-            find_right = True
 
-        if st.index == 0:
-            _tmp_right = 1
+            # 这改下
+        if config.cc_par('synonym_mode') == 'ps_synonym':
+            if right_labels[st.index]:
+                find_right = True
+                _tmp_right = 1
+                if index == 0:  # 如果第一个位置就是正确的 则该题答对
+                    is_correct = True
+            else:
+                _tmp_right = 0
+
         else:
-            _tmp_right = 0
+            if st.index == 0:
+                find_right = True
+                if index == 0:  # 如果第一个位置就是正确的 则该题答对
+                    is_correct = True
+            if st.index == 0:
+                _tmp_right = 1
+            else:
+                _tmp_right = 0
         # 训练的epoches步骤，R的index，得分，是否正确，关系，字表面特征
         score_list.append("%d_%d_%f_%s" % (st.index, _tmp_right, st.score, r1.replace('_', '-')))
     _tmp_msg1 = "%s\t%s\t%d\t%s\t%s" % (state, model, global_index, question, '\t'.join(score_list))
@@ -182,7 +200,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     is_right = False
     msg = " win r =%d  " % st_list_sort[0].index
     ct.log3(msg)
-    if st_list_sort[0].index == 0:
+    if is_correct:  # st_list_sort[0].index == 0:
         ct.print("================================================================ok")
         is_right = True
         ct.just_log3("test_check", "\t@@right@@\n")
@@ -207,7 +225,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     # 在这里增加跳变检查,通过一个文件动态判断是否执行
     # 实际是稳定的模型来执行
     run = False  # ct.file_read_all_lines_strip('config')[0] == '1'
-    ct.print("run %s " % run, 'info')
+    # ct.print("run %s " % run, 'info')
     maybe_list = []
     if run:
         st_list_sort = list(st_list_sort)
@@ -245,9 +263,8 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         # ct.print("\n", "maybe")
 
     time_elapsed = time.time() - start_time
-    time_str = datetime.datetime.now().isoformat()
-    ct.print("%s: step %s,  score %s, is_right %s, %6.7f secs/batch" % (
-        time_str, step, score, str(is_right), time_elapsed))
+    ct.print("step %s,  score %s, is_right %s, %6.7f secs/batch" % (
+        step, score, str(is_right), time_elapsed))
     return is_right, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list
 
 

@@ -102,6 +102,7 @@ class DataClass:
         :param mode:
         """
         # ---------------------初始化实体
+        self.synonym_dict = dict()
         self.answer_list_index = []
         self.question_global_index = []
         self.question_labels = []  # 训练还是测试集的标记
@@ -158,7 +159,8 @@ class DataClass:
             # 按比例分割训练和测试集
             self.division_data(0.8, config.cc_par('real_split_train_test'))
             self.build_embedding_weight(config.wiki_vector_path(mode))
-            #
+            # 加载
+            self.init_synonym(config.cc_par('synonym_words'))
             ct.print("load embedding ok!")
 
             return
@@ -938,108 +940,6 @@ class DataClass:
         ct.print("leave:batch_iter_wq_debug")
         return np.array(x_new), np.array(y_new), np.array(z_new)
 
-    # --第二版，使得每次产生的不重复
-    # --------------------生成batch
-    # def batch_iter_init(self):
-    #     length = len(self.question_list_index)
-    #     self.shuffle_indices = np.random.permutation(np.arange(length))  # 打乱样本
-    #     self.shuffle_index = 0  # 索引
-    #     ct.print(1)
-
-    # def can_batch_wq(self, batch_size):
-    #     if self.shuffle_index + batch_size > len(self.shuffle_indices):
-    #         return False
-    #     else:
-    #         return True
-
-    # --------------------生成test的batch
-    # --------------------生成batch 暂时不用
-    # def batch_iter_wq_test_one(self, question_list_index, relation_list_index, batch_size=100):
-    #     """
-    #     web questions
-    #     生成指定batch_size的数据
-    #     :param batch_size:
-    #     :return:
-    #     """
-    #
-    #     x = question_list_index.copy()
-    #     y = relation_list_index.copy()
-    #     x_new = []  # 问题集合
-    #     y_new = []  # 关系集合
-    #     z_new = []  #
-    #     labels = []  # 标签集合
-    #     shuffle_indices = np.random.permutation(np.arange(len(x)))  # 打乱样本
-    #     # ct.print("shuffle_indices", str(shuffle_indices))
-    #
-    #     total = 0
-    #     index = shuffle_indices[0]  # 选取第一个
-    #
-    #     msg = "test id=%s " % index
-    #     ct.print(msg)
-    #     ct.log3(msg)
-    #     ct.just_log2("info",msg)
-    #
-    #     name = self.entity1_list[index]
-    #
-    #     ps_to_except1 = self.relation_list[index]
-    #     ps_to_except1 = [ps_to_except1]
-    #     padding_num = self.get_padding_num()  # self.converter.vocab_size - 1
-    #     # r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
-    #     rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
-    #
-    #     rs = list(set(rs))
-    #     # 加入正确的
-    #     x_new.append(x[index])
-    #     y_new.append(y[index])
-    #     labels.append(True)
-    #
-    #     # log
-    #     r1_text = self.converter.arr_to_text_by_space(y[index])
-    #     ct.print("r-pos: %s" % r1_text)
-    #     ct.just_log2("info","r-pos: %s" % r1_text)
-    #
-    #     # 加入错误的,暂时加入控制免得太多
-    #     if ct.is_debug_few():
-    #         num = min(ct.get_static_num_debug(), len(rs))
-    #     else:
-    #         num = len(rs)
-    #     rs = rs[0:num]
-    #     for r1 in rs:
-    #         r1 = self.converter.text_to_arr_list(r1)
-    #         r1_text = self.converter.arr_to_text_by_space(r1)
-    #         r1 = ct.padding_line(r1, self.max_document_length, padding_num)
-    #         x_new.append(x[index])
-    #         y_new.append(r1)  # neg
-    #         labels.append(False)
-    #
-    #         # ct.log3(r1_text)
-    #         ct.just_log2("info","r1_neg in test %s" % r1_text)
-    #
-    #     # ct.print("11111111111111111111111111")
-    #     # ct.print(len(r1))
-    #     # z_new.append(r1)
-    #     #
-    #     # total += 1
-    #     # if total >= batch_size:
-    #     #         break
-    #     # ct.print("show shuffle_indices")
-    #     # ct.print(shuffle_indices[0:batch_size])
-    #     # 根据y 生成z，也就是错误的关系,当前先做1:1的比例
-    #     # rate = 1
-    #     # r_si = reversed(shuffle_indices)
-    #     # r_si = list(r_si)
-    #     # ct.print(r_si)
-    #     # total = 0
-    #     # for index in r_si:
-    #     #     z_new.append(y[index])
-    #     #     total += 1
-    #     #     if total >= batch_size:
-    #     #         break
-    #     ct.print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
-    #
-    #     return np.array(x_new), np.array(y_new), np.array(labels)
-
-    # todo: test data
     def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, model, index,
                                      train_part='relation'):
         """
@@ -1049,19 +949,18 @@ class DataClass:
         :return:
         """
         ct.print("enter:batch_iter_wq_test_one_debug")
-        # x = question_list_index.copy()
-        # y = relation_list_index.copy()
+
         x_new = []  # 问题集合
         y_new = []  # 关系集合
         y_a_new = []  # 答案集合
         z_new = []  #
         labels = []  # 标签集合
+        synonym_score = []  # 每个分数
 
         if model == "valid":
             global_index = index
         elif model == "test":
             global_index = index + self.padding
-            # index=global_index
         else:
             raise Exception("MODEL 参数出错")
 
@@ -1080,34 +979,60 @@ class DataClass:
         #         == self.question_list[global_index]:
         #     # 部分语句中有空格的会不相等，
         if global_index >= len(self.entity1_list):
-            print(1111)
+            ct.print('error ! ', 'error')
         name = self.entity1_list[global_index]
         # todo: index should not in
         # ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
         ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
-        # ps_to_except1 = [ps_to_except1]
-        padding_num = self.converter.vocab_size - 1
-        # r1 = ct.read_entity_and_get_neg_relation(entity_id=name, ps_to_except=ps_to_except1)
-        if self.mode == "wq":
-            rs = ct.read_entity_and_get_all_neg_relations(entity_id=name, ps_to_except=ps_to_except1)
-        if self.mode == "sq":
-            rs = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name,
-                                                             ps_to_except=ps_to_except1, not_allow_repeat=True)
-        if self.mode == "cc":
-            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
+        # ps_to_except1 数组组合
+        # padding_num = self.converter.vocab_size - 1
 
-        # rs = list(set(rs))
-        # 加入正确的
-        # if index >= len(x):
-        #     print(3132131)
-        x_new.append(self.question_list_index[global_index])
-        if train_part == 'relation':
-            y_new.append(self.relation_list_index[global_index])
+        rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
+
+        #  增加synonym模式
+        if config.cc_par('synonym_mode') == 'ps_synonym':
+            # 计算每个属性的可扩展范围
+            # 1 pos属性的
+            r_pos = self.relation_list[global_index]
+            r_neg_list = rs
+            r_all = []
+            r_all.append(r_pos)
+            r_all.extend(r_neg_list)
+
+            s_dict = ct.dict_get_synonym(self.synonym_dict, r_all)
+            # 校验
+            # for _ in r_all:
+            #     s1 = s_dict[_]
+            #     # ps_sorted = ct.sort_synonym_ps(s1, q, 5)
+            #     for _1 in s1:
+            #         print("%s\t%s" % (_1[0], _1[1]))
+            #     print('-----')
+
+            # 获取指定属性的扩展属性
+            r_pos = self.relation_list[global_index]
+            _ps = s_dict.get(r_pos)
+            # 对PS集合做一下过滤
+            q = self.question_list[global_index]
+            _ps = ct.sort_synonym_ps(_ps, q, r_pos)
+            for _ps_tuple in _ps:
+                _ps_item = _ps_tuple[0]
+                x_new.append(self.question_list_index[global_index])
+                y_new.append(self.convert_str_to_indexlist(_ps_item))
+                labels.append(True)
+                _k1 = "%s\t%s" % (r_pos, _ps_item)
+                _v1 = self.synonym_score_dict.get(_k1, '-1')
+                # 原始属性，当前属性，当前属性得分，是否原本属性，该属性的字表面得分
+                synonym_score.append(
+                    (r_pos, _ps_item, str(_v1), str(r_pos == _ps_item), str(_ps_tuple[1])))  # r_pos==_ps_item 表示是否自己
         else:
-            y_new.append(self.answer_list_index[global_index])
-        labels.append(True)
-        # ct.print("batch_iter_wq_test_one_debug ")
-        entity_name_text = "entity:%s " % name
+            x_new.append(self.question_list_index[global_index])
+            if train_part == 'relation':
+                y_new.append(self.relation_list_index[global_index])
+            else:
+                y_new.append(self.answer_list_index[global_index])
+            labels.append(True)
+
+        # entity_name_text = "entity:%s " % name
         ct.just_log2("info", "entity:%s " % name)
         part4 = "%s " % name
 
@@ -1122,8 +1047,6 @@ class DataClass:
         part3 = "%s\t%s" % (r1_text, self.answer_list[global_index])
         ct.just_log3("test_check", "%s\t%s\t%s\t%s\t" % (part1, part2, part4, part3))
 
-        # 加入错误的
-        # todo : total is get_static_num_debug
         if train_part == 'relation':
             rs = rs
         else:
@@ -1132,22 +1055,44 @@ class DataClass:
         num = min(ct.get_static_num_debug(), rs_len)
         rs = rs[0:num]
         for r1 in rs:
-            r1_split = r1.split(" ")
-            r1 = self.converter.text_to_arr_list(r1_split)
-            r1_text = self.converter.arr_to_text_no_unk(r1)
-            # ct.log3(r1_text)
-            # ct.just_log2("info", "r1_neg in test %s" % r1_text)
-            # ct.print(r1_text)
-            # ct.just_log2("info","neg-r test:" + r1_text)
-            r1 = ct.padding_line(r1, self.max_document_length, padding_num)
-            x_new.append(self.question_list_index[global_index])
-            y_new.append(r1)  # neg
-            labels.append(False)
+            # r1_split = [r1]  # .split(" ")
+            # r1 = self.converter.text_to_arr_list(r1_split)
+            # # r1_text = self.converter.arr_to_text_no_unk(r1)
+            # # ct.log3(r1_text)
+            # # ct.just_log2("info", "r1_neg in test %s" % r1_text)
+            # # ct.print(r1_text)
+            # # ct.just_log2("info","neg-r test:" + r1_text)
+            # r1 = ct.padding_line(r1, self.max_document_length, padding_num)
+            if config.cc_par('synonym_mode') == 'ps_synonym':
+                _rs = s_dict.get(r1)
+                # 对PS集合做一下过滤
+                q = self.question_list[global_index]
+                _rs = ct.sort_synonym_ps(_rs, q, r1)
+                for _ps_tuple in _rs:
+                    _ps_item = _ps_tuple[0]
+                    r1_index_list = self.convert_str_to_indexlist(_ps_item)
+                    x_new.append(self.question_list_index[global_index])
+                    y_new.append(r1_index_list)  # neg
+                    labels.append(False)
+                    _k1 = "%s\t%s" % (r1, _ps_item)
+                    _v1 = self.synonym_score_dict.get(_k1, '-1')
+                    # 原始属性，当前属性，当前属性得分，是否原本属性，该属性的字表面得分
+                    # synonym_score.append((_ps_item, _ps_item, _v1, str(r_pos == _ps_item),_ps_tuple[1]))
+                    synonym_score.append((r1, _ps_item, str(_v1), str(r1 == _ps_item), str(_ps_tuple[1])))
+            else:
+                r1_index_list = self.convert_str_to_indexlist(r1)
+                x_new.append(self.question_list_index[global_index])
+                y_new.append(r1_index_list)  # neg
+                labels.append(False)
 
         # ct.print("show shuffle_indices")
         ct.print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
         ct.print("leave:batch_iter_wq_test_one_debug")
-        return np.array(x_new), np.array(y_new), np.array(labels)
+
+        if config.cc_par('synonym_mode') == 'ps_synonym':
+            return np.array(x_new), np.array(y_new), [labels, synonym_score]
+        else:
+            return np.array(x_new), np.array(y_new), labels
 
     # --------------------按比例分割
     def cap_nums(self, y, rate=0.8):
@@ -1486,7 +1431,7 @@ class DataClass:
 
     # ============== GAN
 
-    # -------------------测试生成同一批次的 debug 在测！！！
+
     # 在用
     def batch_iter_gan_train(self, question_list_index, relation_list_index, model, index,
                              train_part='relation', total=100, pool_mode='additional'):
@@ -1588,21 +1533,40 @@ class DataClass:
         return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
 
     # 同义词模块
-    def init_synonym(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj_clear.txt',
+    def init_synonym(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.v3.txt',
                      f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt'):
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = []
         synonym_dict = dict()
+        synonym_score_dict = dict()
         for x in f1s:
-            k1 = x.split('\t')[0]
-            k2 = x.split('\t')[1]
+            try:
+                k1 = x.split('\t')[0]
+                k2 = x.split('\t')[1]
+            except Exception as e1:
+                print(e1)
             synonym_dict = ct.dict_add(synonym_dict, k1, k2)
             synonym_dict = ct.dict_add(synonym_dict, k2, k1)
 
-        for k in synonym_dict.keys():
-            msg = "%s\t%s" % (k, '\t'.join(synonym_dict[k]))
-            f2s.append(msg)
-        ct.file_wirte_list(f2, f2s)
+            synonym_score_dict["%s\t%s" % (k1, k2)] = x.split('\t')[4]
+        # for k in synonym_dict.keys():
+        #     msg = "%s\t%s" % (k, '\t'.join(synonym_dict[k]))
+        #     f2s.append(msg)
+        # ct.file_wirte_list(f2, f2s)
+        self.synonym_dict = synonym_dict
+        self.synonym_score_dict = synonym_score_dict
+
+    def convert_str_to_indexlist(self, r1):
+        padding_num = self.converter.vocab_size - 1
+        r1_split = [r1]  # .split(" ")
+        r1 = self.converter.text_to_arr_list(r1_split)
+        # r1_text = self.converter.arr_to_text_no_unk(r1)
+        # ct.log3(r1_text)
+        # ct.just_log2("info", "r1_neg in test %s" % r1_text)
+        # ct.print(r1_text)
+        # ct.just_log2("info","neg-r test:" + r1_text)
+        r1 = ct.padding_line(r1, self.max_document_length, padding_num)
+        return r1
 
 
 # ======================================================================= clear data
@@ -1776,9 +1740,11 @@ def test_gan():
             relations.append(v_s_1)
         break
 
+
 def test_tyc():
     dh = DataClass("cc")
     dh.init_synonym()
+
 
 if __name__ == "__main__":
     # CC 部分的测试-和构建代码

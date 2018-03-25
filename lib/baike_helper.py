@@ -2986,8 +2986,8 @@ class classification:
 
     # 找到同实体不同属性名，但是属性值一样的
     def class_p_by_o_kb(self, f1='../data/nlpcc2016/2-kb/kb.v1.txt',
-                     f3='../data/nlpcc2016/5-class/demo1/same_o.txt',
-                     f4='../data/nlpcc2016/5-class/demo1/same_p.txt'):
+                        f3='../data/nlpcc2016/5-class/demo1/same_o.txt',
+                        f4='../data/nlpcc2016/5-class/demo1/same_p.txt'):
         # with open(f2, mode='w', encoding='utf-8') as o1:
         index = -1
         with open(f1, mode='r', encoding='utf-8') as rf:
@@ -3227,9 +3227,10 @@ class classification:
         print(11)
 
     # 合并计算
-    def class_p_by_o_select_combine(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.txt',
-                                    f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.txt',
-                                    f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.txt'):
+    def class_p_by_o_select_combine(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
+                                    f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
+                                    f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.v2.1.txt',
+                                    min_value=0.1):
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = ct.file_read_all_lines_strip(f2)
         f3s = []
@@ -3239,6 +3240,7 @@ class classification:
         d1 = dict()
         d2 = dict()
         for l1 in f1s:
+
             _ks = l1.split('\t')[0:2]
             _ks.sort()
             key1 = '\t'.join(_ks)
@@ -3246,10 +3248,10 @@ class classification:
             d1[str(key1)] = v1
         print(11111)
         for l2 in f2s:
+
             # index +=1
             # if index/10000==0:
             #     print(index/10000)
-
             _ks = l2.split('\t')[0:2]
             _ks.sort()
             key2 = '\t'.join(_ks)
@@ -3267,6 +3269,8 @@ class classification:
             total = v1 + v2
             if total == 0:
                 total = 1
+            if v1 / total < min_value:
+                continue
             msg = "%s\t%s\t%s\t%s" % (key1, v1, v2, v1 / total)
             f3s.append(msg)
 
@@ -3274,7 +3278,8 @@ class classification:
         print(1)
 
     def init_synonym(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.v3.txt',
-                     f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt'):
+                     f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt',
+                     record=False):
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = []
         synonym_dict = dict()
@@ -3284,14 +3289,37 @@ class classification:
                 k2 = x.split('\t')[1]
             except Exception as e1:
                 print(e1)
-
             synonym_dict = ct.dict_add(synonym_dict, k1, k2)
             synonym_dict = ct.dict_add(synonym_dict, k2, k1)
+        if record:
+            for k in synonym_dict.keys():
+                msg = "%s\t%s" % (k, '\t'.join(synonym_dict[k]))
+                f2s.append(msg)
+            ct.file_wirte_list(f2, f2s)
+        # 计算每个属性的可扩展范围
+        # 1 pos属性的
+        r_pos = '成立'
+        # ^成立\t|^创始时间\t
+        r_neg = ['创始时间', '注册时间']
+        r_all = []
+        r_all.append(r_pos)
+        r_all.extend(r_neg)
 
-        for k in synonym_dict.keys():
-            msg = "%s\t%s" % (k, '\t'.join(synonym_dict[k]))
-            f2s.append(msg)
-        ct.file_wirte_list(f2, f2s)
+        s_dict = ct.dict_get_synonym(synonym_dict, r_all)
+        # 瞧瞧是啥
+        for _ in r_all:
+            s1 = s_dict[_]
+            print("%s:%d:\t%s" % (_, len(s1), '\t'.join(s1)))
+        # 过滤一下
+
+        #
+        q = '黑桃是啥时候创建的？啊啊？'
+        for _ in r_all:
+            s1 = s_dict[_]
+            ps_sorted = ct.sort_synonym_ps(s1, q, 5)
+            for _1 in ps_sorted:
+                print("%s\t%s" % (_1[0], _1[1]))
+            print('-----')
 
 
 # F2.3 空格分割
@@ -3532,8 +3560,8 @@ if __name__ == '__main__':
     # 分析KB，根据答案抽取相同属性和合并答案
     if False:
         cf.class_p_by_o_kb(f1='../data/nlpcc2016/2-kb/kb.v1.txt',
-                        f3='../data/nlpcc2016/5-class/demo1/same_o.v2.txt',
-                        f4='../data/nlpcc2016/5-class/demo1/same_p.v2.txt')
+                           f3='../data/nlpcc2016/5-class/demo1/same_o.v2.txt',
+                           f4='../data/nlpcc2016/5-class/demo1/same_p.v2.txt')
     if False:
         # F2.6.4
         cf.class_p_by_o_select0(f1='../data/nlpcc2016/5-class/demo1/same_p.v2.txt'
@@ -3547,11 +3575,12 @@ if __name__ == '__main__':
                                 f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
                                 f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
                                 kb='kb-use')
-    if False:
+    if True:
         cf.class_p_by_o_select_combine(f1='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
                                        f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
-                                       f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.v2.txt')
-    if True:
+                                       f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.v2.1.txt',
+                                       min_value=0.01)
+    if False:
         cf.init_synonym(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v2.txt',
                         f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt')
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
