@@ -1269,7 +1269,7 @@ class ct:
     def dict_get_synonym(synonym_dict,r_all):
         s_dict=dict()
         for r in r_all:
-            r_set = synonym_dict.get(r, set(r))
+            r_set = synonym_dict.get(r, set([r]))
             s_dict[str(r)] = r_set
         for _ in r_all:
              s1 = s_dict[_]

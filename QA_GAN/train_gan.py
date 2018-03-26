@@ -535,7 +535,7 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
         train_part_1 = dh.train_answer_list_index
 
     id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
-
+    ct.print("问题总数 %s "%len(id_list))
     # if model == "valid":
     #     id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
     # else:

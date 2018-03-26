@@ -3230,9 +3230,16 @@ class classification:
     def class_p_by_o_select_combine(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
                                     f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
                                     f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.v2.1.txt',
-                                    min_value=0.1):
+                                    min_value=0.1,
+                                    filter_word='名',
+                                    min_pos=2,
+                                    max_neg=999):
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = ct.file_read_all_lines_strip(f2)
+
+        f1s = list(filter(lambda x: not str(x).__contains__(filter_word), f1s))
+        f2s = list(filter(lambda x: not str(x).__contains__(filter_word), f2s))
+
         f3s = []
         # index = 0
         # all = len(f1s) * len(f1s)
@@ -3240,15 +3247,14 @@ class classification:
         d1 = dict()
         d2 = dict()
         for l1 in f1s:
-
             _ks = l1.split('\t')[0:2]
             _ks.sort()
             key1 = '\t'.join(_ks)
             v1 = int(l1.split('\t')[2])
+
             d1[str(key1)] = v1
         print(11111)
         for l2 in f2s:
-
             # index +=1
             # if index/10000==0:
             #     print(index/10000)
@@ -3257,6 +3263,7 @@ class classification:
             key2 = '\t'.join(_ks)
             v2 = int(l2.split('\t')[2])
             d2[str(key2)] = v2
+
         print(22222)
         for l1 in f1s:
             _ks = l1.split('\t')[0:2]
@@ -3266,10 +3273,13 @@ class classification:
             d1[str(key1)] = v1
             v2 = int(d2[key1])
             # if key1 == key2:
+
             total = v1 + v2
             if total == 0:
                 total = 1
             if v1 / total < min_value:
+                continue
+            if v1 < min_pos:  # 过滤正确数少于XX的
                 continue
             msg = "%s\t%s\t%s\t%s" % (key1, v1, v2, v1 / total)
             f3s.append(msg)
@@ -3320,6 +3330,41 @@ class classification:
             for _1 in ps_sorted:
                 print("%s\t%s" % (_1[0], _1[1]))
             print('-----')
+
+    # 根据问题模式分类属性
+    def class_p_by_q_model(self, f1='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',
+                           f5='../data/nlpcc2016/3-questions/demo2/class_p_by_q_model.txt'):
+        f1s = ct.file_read_all_lines_strip(f1)
+        p_set = set()
+        extract_dict = dict()
+        index = -1
+        for x in f1s:
+            index += 1
+            if index>config.cc_par('real_split_train_test_skip'):
+                break
+
+            p = ct.clean_str_rel(str(x).split('\t')[3])
+            p_set.add(p)
+            _q1 = str(x).split('\t')[0]
+            _m_s = str(x).split('\t')[5]
+            _ss = str(x).split('\t')[2]
+
+            _q1 = str(x).split('\t')[6]
+
+            # _q1  # 实体 .split('♠')[0]
+            p = str(x).split('\t')[3]  # 属性
+            ct.dict_add(extract_dict, _q1, p)
+            # if extract_start_str in extract_dict:
+            #     extract_dict[extract_start_str] += 1
+            # else:
+            #     extract_dict[extract_start_str] = 1
+        tp = ct.sort_dict(extract_dict, True)
+        f5s = []
+        for t in tp:
+            if len(t[1])<=1:
+                continue
+            f5s.append("%s\t%s" % (t[0], '\t'.join(t[1])))
+        ct.file_wirte_list(f5, f5s)
 
 
 # F2.3 空格分割
@@ -3571,22 +3616,29 @@ if __name__ == '__main__':
         cf.class_p_by_o_select1(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.v2.txt',
                                 f2='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v2.txt')
     if False:
-        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v2.txt',
-                                f2='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
-                                f3='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
-                                kb='kb-use')
-    if True:
-        cf.class_p_by_o_select_combine(f1='../data/nlpcc2016/5-class/demo1/same_p_tj_pos.v2.txt',
-                                       f2='../data/nlpcc2016/5-class/demo1/same_p_tj_neg.v2.txt',
-                                       f3='../data/nlpcc2016/5-class/demo1/same_p_tj_score.v2.1.txt',
-                                       min_value=0.01)
+        cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/synonym/same_p_tj.no_num.no_repeat.v1.txt',
+                                f2='../data/nlpcc2016/5-class/synonym/same_p_tj_pos.v1.txt',
+                                f3='../data/nlpcc2016/5-class/synonym/same_p_tj_neg.v1.txt',
+                                kb='kb')
     if False:
-        cf.init_synonym(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.no_repeat.v2.txt',
+        cf.class_p_by_o_select_combine(f1='../data/nlpcc2016/5-class/synonym/same_p_tj_pos.v2.txt',
+                                       f2='../data/nlpcc2016/5-class/synonym/same_p_tj_neg.v2.txt',
+                                       f3='../data/nlpcc2016/5-class/synonym/same_p_tj_score.v2.3.txt',
+                                       min_value=0.5,
+                                       filter_word='名',
+                                       min_pos=2,
+                                       max_neg=999)
+    if False:
+        cf.init_synonym(f1='../data/nlpcc2016/5-class/synonym/same_p_tj_score.v2.3.txt',
                         f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt')
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
 
         # cf.class_p_by_o_select_combine()
 
+    # 根据属性分类
+    if True:
+        cf.class_p_by_q_model( f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                           f5='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.txt')
 if __name__ == '__main__':
 
     bkt = baike_test()

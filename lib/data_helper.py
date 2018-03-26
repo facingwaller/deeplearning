@@ -160,7 +160,8 @@ class DataClass:
             self.division_data(0.8, config.cc_par('real_split_train_test'))
             self.build_embedding_weight(config.wiki_vector_path(mode))
             # 加载
-            self.init_synonym(config.cc_par('synonym_words'))
+            if config.cc_par('synonym_mode')=='ps_synonym':
+                self.init_synonym(config.cc_par('synonym_words'))
             ct.print("load embedding ok!")
 
             return
@@ -1462,7 +1463,7 @@ class DataClass:
         # log
         ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
         try:
-            msg = "model=%s,id=%s,global_index=%d;q_global_index=%d;" % (
+            msg = "model=%s\tid=%s\tglobal_index=%d\tq_global_index=%d" % (
                 model, index, global_index, self.question_global_index[global_index])
         except Exception as e2:
             print(e2)
