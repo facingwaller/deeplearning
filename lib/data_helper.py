@@ -1531,7 +1531,10 @@ class DataClass:
             y_neg.append(r1)
             # y_new.append(r1)  # neg
             # labels.append(False)
-            r1_msg = "r-neg: %s \t answer:%s" % (r1_text, a_s[_index])
+            if pool_mode == 'synonym_train_mode':
+                r1_msg = "r-neg: %s" % (r1_text)
+            else:
+                r1_msg = "r-neg: %s \t answer:%s" % (r1_text, a_s[_index])
             ct.just_log2("info", r1_msg)
 
         # ct.print("show shuffle_indices")

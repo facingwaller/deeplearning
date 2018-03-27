@@ -1356,7 +1356,7 @@ class baike_helper:
         else:
             # 在这里改成从同义词集合里面取 ,先全部取完，如果多的话随机取出100个，如果少再随机补齐
             rs = r1
-            r_neg_list = rs
+            r_neg_list = rs.copy()
             r_all = []
             r_all.append(r_pos)
             r_all.extend(r_neg_list)
@@ -1364,15 +1364,21 @@ class baike_helper:
             s_dict = ct.dict_get_synonym(synonym_dict, r_all)
 
             _ps = s_dict.get(r_pos)  # 获取属性的所有同义词属性，将pos的同义词属性加入ps_to_except
-            _ps = [x[0] for x in _ps]
-            ps_to_except.expand(_ps)
+            # _ps = [x[0] for x in _ps]
+            ps_to_except.extend(_ps)
 
             # 将更多的neg同义词加入r1
             for _r in r_neg_list:
                 _rs = s_dict.get(_r)
-                _rs = [x[0] for x in _rs] # 截出属性部分
+                # try:
+                #     _rs = [x for x in _rs] # 截出属性部分
+                # except Exception as e1:
+                #     print(1)
                 r1.extend(_rs)
+            r1 =list(set(r1))
             ct.print(len(r1),'test_ps_synonym_len')
+            ct.print("%s:\t%s"%(r_pos,'\t'.join(r1)),'test_ps_synonym_len')
+
             keys = self.kbqa.keys()
             # try:
             slice = random.sample(keys, total)
