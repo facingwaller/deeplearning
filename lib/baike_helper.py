@@ -3340,7 +3340,7 @@ class classification:
         index = -1
         for x in f1s:
             index += 1
-            if index>config.cc_par('real_split_train_test_skip'):
+            if index > config.cc_par('real_split_train_test_skip'):
                 break
 
             p = ct.clean_str_rel(str(x).split('\t')[3])
@@ -3361,10 +3361,100 @@ class classification:
         tp = ct.sort_dict(extract_dict, True)
         f5s = []
         for t in tp:
-            if len(t[1])<=1:
+            if len(t[1]) <= 1:
                 continue
             f5s.append("%s\t%s" % (t[0], '\t'.join(t[1])))
         ct.file_wirte_list(f5, f5s)
+
+    def check_if_exist_bad_p(self, f1='../data/nlpcc2016/3-questions/demo2/class_p_by_q_model.txt',
+                             f2='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.pos.txt',
+                             f3='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.neg.txt',
+                             f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                             f6='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.repeat.v1.txt'):
+        f4s = ct.file_read_all_lines_strip(f4)
+        f1s = ct.file_read_all_lines_strip(f1)
+        f1s = [str(x).split('\t')[1:] for x in f1s]
+        f2s = []  # 非别名的行
+        d1_pos = dict()
+        d1_neg = dict()
+        f6s = []
+        for l1 in f1s:
+            words = l1  # str(l1).split('\t')
+            # if len(words) != 2:
+            #     print(12222)
+            words.sort()  # 保持唯一的顺序，不重复
+            for item in combinations(words, 2):
+                t1 = (item[0], item[1])
+                f2s.append(t1)
+                d1_pos[t1] = 0
+                d1_neg[t1] = 0
+        # 重新构建
+        # 遍历
+        bh = baike_helper()
+        bh.init_spo(config.cc_par('kb-use'))  # kb  kb-use
+        ks = bh.kbqa.keys()
+        # 把这里替换成 所有的问答中的实体
+        ks = list([str(x).split('\t')[2] for x in f4s])
+        ps = list([str(x).split('\t')[3] for x in f4s])
+        index = -1
+        for k in ks:
+            index += 1
+            if index % 100 == 0:
+                print("%s/%s" % (index / 100, len(ks) / 100))
+            vs = bh.kbqa.get(k, '')
+            # _ps = []
+            # for _vs in vs:
+            #     _ps.append(_vs[0])
+            # 遍历所有的词组
+            if vs == '':
+                print(k)
+                continue
+            vs_list = [x[0] for x in vs]
+            f2s_new = []
+            # f2s 改成 这个问句对应的实体的属性
+            for l2 in f2s:
+                k1 = l2[0]
+                k2 = l2[1]
+                if k1 != ps[index] and k2 != ps[index]:
+                    continue
+                    # else:
+                    # print(ps[index])
+                if vs_list.__contains__(k1) and vs_list.__contains__(k2):
+                    f2s_new.append(l2)
+
+            for l2 in f2s_new:
+                k1 = l2[0]
+                k2 = l2[1]
+                v1 = ''
+                v2 = ''
+
+                for _vs in vs:  ## P-O
+                    # _ps.append(_vs[0])
+                    if _vs[0] == k1:
+                        v1 = _vs[1]
+                    if _vs[0] == k2:
+                        v2 = _vs[1]
+                if v1 != '' or v2 != '':  # 其中1个匹配到了
+                    if v1 == v2:
+                        d1_pos[l2] += 1
+                        # 输出
+                        ct.print("%s\t%s " % (k,ps[index]))
+                        f6s.append("%s\t%s " % (k,ps[index]))
+                    else:
+                        d1_neg[l2] += 1
+        print(1)
+        tp = ct.sort_dict(d1_pos, True)
+        f5s = []
+        for t in tp:
+            f5s.append("%s\t%s" % ('\t'.join(t[0]), t[1]))
+        ct.file_wirte_list(f2, f5s)
+
+        tp = ct.sort_dict(d1_neg, True)
+        f5s = []
+        for t in tp:
+            f5s.append("%s\t%s" % ('\t'.join(t[0]), t[1]))
+        ct.file_wirte_list(f3, f5s)
+        ct.file_wirte_list(f6, f6s)
 
 
 # F2.3 空格分割
@@ -3636,9 +3726,22 @@ if __name__ == '__main__':
         # cf.class_p_by_o_select_combine()
 
     # 根据属性分类
+    if False:
+        cf.class_p_by_q_model(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                              f5='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.txt')
+    # 检查是否存在歧义字段
     if True:
-        cf.class_p_by_q_model( f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
-                           f5='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.txt')
+        cf.check_if_exist_bad_p(f1='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.txt',
+                                f2='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.pos.txt',
+                                f3='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.neg.txt')
+    if True:
+        cf.class_p_by_o_select_combine(f3='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.score.txt',
+                                       f1='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.pos.txt',
+                                       f2='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.neg.txt',
+                                       min_value=0.0001,
+                                       filter_word='名',
+                                       min_pos=0,
+                                       max_neg=999)
 if __name__ == '__main__':
 
     bkt = baike_test()
