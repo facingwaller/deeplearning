@@ -55,7 +55,7 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 500  # 重要！这个指示了训练的关系个数4358
+    t_relation_num = 100  # 重要！这个指示了训练的关系个数4358
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -67,7 +67,7 @@ if testid == "cc_test":
     sampled_temperature = 20
     gan_learn_rate = 0.02
 
-    g_epoches = 1
+    g_epoches = 10
     d_epoches = 1
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
@@ -82,7 +82,7 @@ if testid == "cc_test":
     restore_path = \
         r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
     #
-    synonym_mode = 'ps_synonym'  # 属性同义词 ps_synonym| none
+    synonym_mode = 'none'  # 属性同义词 ps_synonym| none
     synonym_train_mode='synonym_train_mode' # 同义词的训练模式 synonym_train_mode|none
 
 
@@ -335,7 +335,7 @@ class config:
 
         q_l_t = min(max_length, questions_len_train)
         a = []
-        for i in range(0, q_l_t - 1):
+        for i in range(0, q_l_t ):
             a.append(i)
         return a
 
@@ -346,7 +346,7 @@ class config:
         # random.randint() 考虑改成随机的10个
         # a <= n <= b
         # min,max = 1,1000
-        for i in range(0, q_l_t - 1):
+        for i in range(0, q_l_t ):
             a.append(i)
         return a
 

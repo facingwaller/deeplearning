@@ -535,7 +535,7 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
         train_part_1 = dh.train_answer_list_index
 
     id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
-    ct.print("问题总数 %s "%len(id_list))
+    ct.print("问题总数 %s " % len(id_list))
     # if model == "valid":
     #     id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
     # else:
@@ -601,7 +601,7 @@ def main():
         session_conf = tf.ConfigProto(allow_soft_placement=FLAGS.allow_soft_placement,
                                       log_device_placement=FLAGS.log_device_placement)
         sess = tf.Session(config=session_conf)
-        now = str(datetime.datetime.now().isoformat())
+        now = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         # test 是完整的; small 是少量 ; debug 只是一次
         model = FLAGS.mode
         ct.print("tf:%s should be 1.2.1 model:%s " % (str(tf.__version__), model))  # 1.2.1
@@ -663,6 +663,10 @@ def main():
             error_test_q_list = []
             error_test_pos_r_list = []
             error_test_neg_r_list = []
+            loss_dict = dict()
+            loss_dict['loss'] = 0
+            loss_dict['pos'] = 0
+            loss_dict['neg'] = 0
 
             # 如果需要恢复则恢复
             if config.cc_par('restore_model'):
@@ -753,12 +757,21 @@ def main():
                         line = ("%s: DIS step %d, loss %f with acc %f " % (
                             datetime.datetime.now().isoformat(), run_step, current_loss, accuracy))
                         ct.print(line, 'loss')
+                        loss_dict['loss'] += current_loss
 
+                    # check
+                    total = len(shuffle_indices)
+                    msg = "%s\tloss=%s " % (state, loss_dict['loss'] / total)
+                    loss_dict['loss'] = 0
+                    loss_dict['pos'] = 0
+                    loss_dict['neg'] = 0
+                    ct.print(msg, 'debug_gan')
                     # 验证 和测试
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict)
 
                 # --------------- G model
+
                 for g_index in range(FLAGS.g_epoches):
                     state = "step=%d_epoches=%s_index=%d" % (step, 'g', g_index)
                     ct.print(state)
@@ -774,6 +787,7 @@ def main():
                     shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index), step, train_part,
                                                                 model,
                                                                 train_step)
+                    win, lose = 0, 0
                     for index in shuffle_indices:
                         train_step += 1
                         # 取出一个问题的相关数据
@@ -799,31 +813,53 @@ def main():
                         prob = exp_rating / np.sum(exp_rating)
                         #
                         ct.check_inf(predicteds)
-                        predicteds_list = [x for x in predicteds]
-                        predicteds_list.sort()
-                        rrr1 = '\t'.join([str(x) for x in predicteds_list])
-                        ct.print("#%d#\t%s" % (index, rrr1), 'debug_predicteds_list')
+                        # 遍历记录
+                        debug_gan2 = []
+                        for i in range(len(predicteds)):
+                            # debug_gan2.append("predicted_%d\t%s\t%s" %
+                            #               (i, dh.converter.arr_to_text_no_unk(train_neg[i]), prob[i]))
+                            ct.just_log2("info", "predicted_%d\t%s\t%s\t%s" %
+                                         (i, dh.converter.arr_to_text_no_unk(train_neg[i]), predicteds[i], prob[i]))
+                        # predicteds_list = [x for x in predicteds]
+                        # predicteds_list.sort()
+                        # rrr1 = '\t'.join([str(x) for x in predicteds_list])
+                        # ct.print("#%d#\t%s" % (index, rrr1), 'debug_predicteds_list')
 
                         pools = train_neg
                         gan_k = FLAGS.gan_k + r_len
-                        if FLAGS.gan_k > len(pools):
-                            # raise ('从pool中取出的item数目不能超过从pool中item的总数')
-                            gan_k = len(pools)
-                        try:
-                            neg_index = np.random.choice(np.arange(len(pools)), size=gan_k, p=prob,
-                                                         replace=False)  # 生成 FLAGS.gan_k个负例
+                        use_top_k = True
+                        if use_top_k:  # 直接去前X个
+                            ts = []
+                            for i in range(len(predicteds)):
+                                t1 = (i, predicteds[i])
+                                ts.append(t1)
+                            ts1 = sorted(ts, key=lambda x: x[1], reverse=True)
+                            ts1 = ts1[0:gan_k]
+                            neg_index = [x[0] for x in ts1]
 
-                        except Exception as e1:
-                            print(e1)
-                            raise (e1)
+                        else:
+                            if FLAGS.gan_k > len(pools):
+                                # raise ('从pool中取出的item数目不能超过从pool中item的总数')
+                                gan_k = len(pools)
+                            try:
+                                neg_index = np.random.choice(np.arange(len(pools)), size=gan_k, p=prob,
+                                                             replace=False)  # 生成 FLAGS.gan_k个负例
+                            except Exception as e1:
+                                print(e1)
+                                raise (e1)
                         # 根据neg index 重新选
                         train_q_gan_k = []
                         train_neg_gan_k = []
                         train_pos_gan_k = []
+                        debug_gan1 = []
                         for i in neg_index:
-                            train_neg_gan_k.append(train_neg[i])
+                            train_neg_gan_k.append(train_neg[i])  # 记录下来
                             train_q_gan_k.append(train_q[i])
                             train_pos_gan_k.append(train_pos[i])
+                            # 前X的neg是  index 文本 D给的得分 ,prob 回归后的概率
+                            # ct.just_log2("info", )
+                            debug_gan1.append("top_%d\t%s\t%s" %
+                                              (i, dh.converter.arr_to_text_no_unk(train_neg[i]), prob[i]))
 
                         # 取出这些负样本就拿去给D判别 score12 = q_pos   score13 = q_neg
                         feed_dict = {
@@ -835,10 +871,23 @@ def main():
                         reward = sess.run(discriminator.reward,
                                           feed_dict)  # reward= 2 * (tf.sigmoid( 0.05- (q_pos -q_neg) ) - 0.5)
                         # for _reward in reward:
-                        reward_list = [x for x in reward]
-                        reward_list.sort()
-                        rrr1 = '\t'.join([str(x) for x in reward_list])
-                        ct.print("#%d#\t%s" % (index, rrr1), 'debug_reward')
+                        neg_better_than_pos = False
+                        for x in reward:
+                            if x > 0:
+                                neg_better_than_pos = True
+                        if neg_better_than_pos:
+                            win += 1
+                        else:
+                            lose += 1
+                        # reward_list = [x for x in reward]
+                        # reward_list.sort()
+                        # rrr1 = '\t'.join([str(x) for x in reward_list])
+                        # ct.just_log2("info", "reward_list\t%d\t%s" % (index, rrr1))
+                        for i in range(len(reward)):
+                            debug_gan1[i] += "\t%s" % reward[i]
+                            ct.just_log2("info", "%s" % (debug_gan1[i]))
+                        # 记录每个属性对应的奖励
+
 
                         # 用reward训练G
                         feed_dict = {
@@ -854,12 +903,14 @@ def main():
                             feed_dict)  # self.gan_loss = -tf.reduce_mean(tf.log(self.prob) * self.reward)
                         line = ("epoches %s: GEN step %d, loss %f  positive %f negative %f" % (
                             step, run_step, current_loss, positive, negative))
-
+                        loss_dict['loss'] += current_loss
+                        loss_dict['pos'] += positive
+                        loss_dict['neg'] += negative
                         ct.print(line, 'loss')
 
                     # 验证 和测试
-                    elvation(state, train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
-                             error_test_dict)
+                    # elvation(state, train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                    #          error_test_dict)
 
                     #######################################
                     # my_generator = ''
@@ -928,6 +979,16 @@ def main():
                     # ct.just_log2("info", toogle_line)
                     #
                     # ct.log3(toogle_line)
+
+                    # check
+                    total = len(shuffle_indices)
+                    msg = "%s\tloss=%2.6f\tpos=%2.6f\tneg=%2.6f;win=%d\tacc=%s" % (state, loss_dict['loss'] / total,
+                                                                    loss_dict['pos'] / total, loss_dict['neg'] / total
+                                                                         ,lose,lose/total)
+                    ct.print(msg, 'debug_gan')
+                    loss_dict['loss'] = 0
+                    loss_dict['pos'] = 0
+                    loss_dict['neg'] = 0
 
             ct.print('finish epoches %d' % FLAGS.epoches)
 

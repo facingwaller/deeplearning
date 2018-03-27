@@ -172,7 +172,7 @@ def evaluation(sess, model, log, num_epochs=0):
 
 def main():
     with tf.Graph().as_default():
-        with tf.device("/cpu"):
+        with tf.device("/gpu"):
             session_conf = tf.ConfigProto(allow_soft_placement=FLAGS.allow_soft_placement,
                                           log_device_placement=FLAGS.log_device_placement)
             sess = tf.Session(config=session_conf)
