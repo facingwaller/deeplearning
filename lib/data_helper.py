@@ -1439,6 +1439,8 @@ class DataClass:
         """
         20180316 V1.0
         获取NEG的部分改成从全局里面随机获取指定个数
+        20180327 V2.0
+        获取NEG的部分改成优先从neg的同义词
         :param question_list_index:
         :param relation_list_index:
         :param shuffle_indices:
@@ -1481,10 +1483,14 @@ class DataClass:
         padding_num = self.converter.vocab_size - 1
         if pool_mode == 'only_default':
             rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
-        else:
+        elif pool_mode == 'synonym_train_mode':
+            r_pos1 = self.relation_list[global_index]
+            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc_gan_synonym(name, ps_to_except1,
+                                                                           total,r_pos1,self.synonym_dict)
+        else:  # 默认是additional
             rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc_gan(entity_id=name, ps_to_except=ps_to_except1,
                                                                            total=total)
-        # 默认是additional
+
         if pool_mode == 'fixed_amount':
             rs, a_s = rs[0:total], a_s[0:total]
         # ct.print("rs len: %s" % (len(rs)))

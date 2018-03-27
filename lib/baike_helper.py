@@ -1330,14 +1330,81 @@ class baike_helper:
         #
         # r1 = r1[0:total]
         # a1 = a1[0:total]
+        return r1, a1
+
+    # 读取实体所有的实体    返回所有的关系集合
+    def read_entity_and_get_all_neg_relations_cc_gan_synonym(self, entity_id, ps_to_except, total, r_pos, synonym_dict):
+        e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
+        if e_s == "":
+            print(entity_id)
+            # raise Exception('entity cant find')
+            ct.print(str(entity_id).replace(' ', '').lower()
+                     , 'read_entity_and_get_all_neg_relations_cc')
+        r1 = []
+        a1 = []
+        for s1 in e_s:
+            if s1[0] not in ps_to_except:
+                r1.append(s1[0])
+                a1.append(s1[1])
+
+        is_debug = False
+        if is_debug:
+
+            slice = ['韩娱守护力', '夏想', '李明(平安县委常委、县政府副县长)',
+                     '李军(工艺美术师)', '三月三(汉族及多个少数民族传统节日)']  # self.kbqa.keys()
+
+        else:
+            # 在这里改成从同义词集合里面取 ,先全部取完，如果多的话随机取出100个，如果少再随机补齐
+            rs = r1
+            r_neg_list = rs
+            r_all = []
+            r_all.append(r_pos)
+            r_all.extend(r_neg_list)
+
+            s_dict = ct.dict_get_synonym(synonym_dict, r_all)
+
+            _ps = s_dict.get(r_pos)  # 获取属性的所有同义词属性，将pos的同义词属性加入ps_to_except
+            _ps = [x[0] for x in _ps]
+            ps_to_except.expand(_ps)
+
+            # 将更多的neg同义词加入r1
+            for _r in r_neg_list:
+                _rs = s_dict.get(_r)
+                _rs = [x[0] for x in _rs] # 截出属性部分
+                r1.extend(_rs)
+            ct.print(len(r1),'test_ps_synonym_len')
+            keys = self.kbqa.keys()
+            # try:
+            slice = random.sample(keys, total)
+        # except Exception as e1:
+        #     print(e1)
+        enough = False
+        default = len(r1)
+        total += default
+
+        if len(r1) >= total:
+            enough = True
+
+        for k in slice:
+            _e_s = self.kbqa.get(k, "")
+            for s1 in _e_s:
+                if s1[0] not in ps_to_except:
+                    if s1[0] not in r1:  # 不取重复的
+                        r1.append(s1[0])
+                        a1.append(s1[1])
+                        if len(r1) == total:
+                            enough = True
+                            break
+            if enough:
+                break
+
+        #
+        # r1 = r1[0:total]
+        # a1 = a1[0:total]
 
 
         return r1, a1
 
-    # 输入识别结果，输出匹配R2格式
-    # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
-    # 机械设计基础         作者          杨可桢，程光蕴，李仲生
-    # 问题0 答案1 实体s-2 关系p-3 属性值o-4
     @staticmethod
     def rebulild_qa_rdf():
 
@@ -2347,7 +2414,8 @@ class classification:
                         _tmp_l5 = list(set(line_seg[5]))
                         _tmp_q = line_seg[0]
                         for _word in _tmp_l5:
-                            _tmp_q = _tmp_q.replace(_word, '♠')
+                            if _word not in list(set(line_seg[3])):  # 只去掉不包含属性的文字
+                                _tmp_q = _tmp_q.replace(_word, '♠')
 
                         # _tt1 = re.sub('(♠.*♠)+', '♠', _tmp_q) 模糊全匹配
                         _tt2 = re.sub('(♠)+', '♠', _tmp_q)  # 只去掉部分
@@ -3271,7 +3339,11 @@ class classification:
             key1 = '\t'.join(_ks)
             v1 = int(l1.split('\t')[2])
             d1[str(key1)] = v1
-            v2 = int(d2[key1])
+            try:
+                v2 = int(d2[key1])
+            except Exception as e1:
+                print(e1)
+                v2 = 0
             # if key1 == key2:
 
             total = v1 + v2
@@ -3438,10 +3510,13 @@ class classification:
                     if v1 == v2:
                         d1_pos[l2] += 1
                         # 输出
-                        ct.print("%s\t%s " % (k,ps[index]))
-                        f6s.append("%s\t%s " % (k,ps[index]))
+                        ct.print("%s\t%s\t%s\t%s " % (k, ps[index], k1, k2))
+                        f6s.append("%s\t%s\t%s\t%s " % (k, ps[index], k1, k2))
                     else:
                         d1_neg[l2] += 1
+                        # 输出
+                        ct.print("diff@@\t%s\t%s\t%s\t%s " % (k, ps[index], k1, k2))
+                        f6s.append("diff@@\t%s\t%s\t%s\t%s " % (k, ps[index], k1, k2))
         print(1)
         tp = ct.sort_dict(d1_pos, True)
         f5s = []
@@ -3710,14 +3785,14 @@ if __name__ == '__main__':
                                 f2='../data/nlpcc2016/5-class/synonym/same_p_tj_pos.v1.txt',
                                 f3='../data/nlpcc2016/5-class/synonym/same_p_tj_neg.v1.txt',
                                 kb='kb')
-    if False:
-        cf.class_p_by_o_select_combine(f1='../data/nlpcc2016/5-class/synonym/same_p_tj_pos.v2.txt',
-                                       f2='../data/nlpcc2016/5-class/synonym/same_p_tj_neg.v2.txt',
-                                       f3='../data/nlpcc2016/5-class/synonym/same_p_tj_score.v2.3.txt',
+    if True:
+        cf.class_p_by_o_select_combine(f1='../data/nlpcc2016/5-class/synonym/all/same_p_tj_pos.txt',
+                                       f2='../data/nlpcc2016/5-class/synonym/all/same_p_tj_neg.txt',
+                                       f3='../data/nlpcc2016/5-class/synonym/all/same_p_tj_score.txt',
                                        min_value=0.5,
                                        filter_word='名',
                                        min_pos=2,
-                                       max_neg=999)
+                                       max_neg=9999999999)
     if False:
         cf.init_synonym(f1='../data/nlpcc2016/5-class/synonym/same_p_tj_score.v2.3.txt',
                         f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt')
@@ -3730,11 +3805,14 @@ if __name__ == '__main__':
         cf.class_p_by_q_model(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                               f5='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.txt')
     # 检查是否存在歧义字段
-    if True:
+    if False:
         cf.check_if_exist_bad_p(f1='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.txt',
                                 f2='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.pos.txt',
-                                f3='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.neg.txt')
-    if True:
+                                f3='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.neg.txt',
+                                f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                                f6='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.repeat.v2-diff.txt'
+                                )
+    if False:
         cf.class_p_by_o_select_combine(f3='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.score.txt',
                                        f1='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.pos.txt',
                                        f2='../data/nlpcc2016/5-class/demo2/class_p_by_q_model.neg.txt',
