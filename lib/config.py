@@ -108,7 +108,7 @@ elif testid == 'cc_debug':
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 500  # 重要！这个指示了训练的关系个数 4358
+    t_relation_num = 4358  # 重要！这个指示了训练的关系个数 4358
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -119,23 +119,25 @@ elif testid == 'cc_debug':
     gan_k = 10
     sampled_temperature = 20
     gan_learn_rate = 0.02
-    g_epoches = 1
-    d_epoches = 1
+    g_epoches = 0
+    d_epoches = 0
+    s_epoches = 1
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
     keep_run = False  # 指示是否持续跑maybe里面的属性
     optimizer_method = optimizer_m.lstm  # 优化模式 gan | lstm
     # only_default 默认|fixed_amount 固定 | additional 默认+额外
-    pool_mode = 'synonym_train_mode'
+    pool_mode = 'additional'
 
     # 模型恢复
-    restore_model = False
+    restore_model = True
     restore_path = \
         r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
     # 模式
-    synonym_mode = 'ps_synonym'  # 属性同义词 | none
-    synonym_train_mode = 'synonym_train_mode'  # 同义词的训练模式 synonym_train_mode|none
-
+    synonym_mode = 'none'  # 属性同义词 | none
+    synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
+    # synonym S_model
+    S_model = 'S_model'  #S_model | none
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小

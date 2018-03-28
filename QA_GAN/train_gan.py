@@ -678,8 +678,8 @@ def main():
                 state = 'restore_test'
                 run_step = -1
                 step = -1
-                elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
-                         error_test_dict)
+                # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                #          error_test_dict)
 
             train_step = 0
             for step in range(FLAGS.epoches):
