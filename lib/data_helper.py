@@ -1625,7 +1625,7 @@ class DataClass:
             train_cand.append(v1)
             neg1 = self.convert_str_to_indexlist(neg_data[i])
             train_neg.append(neg1)
-            msg = "%s\t%s\t%s" % (self.synonym_train_keys[index], td[i], neg_data[i])
+            msg = "%d\t%s\t%s\t%s" % (index,self.synonym_train_keys[index], td[i], neg_data[i])
             ct.print(msg, 'debug_batch_iter_s_model')
         ct.print('----', 'debug_batch_iter_s_model')
         return np.array(train_q), np.array(train_cand), np.array(train_neg)

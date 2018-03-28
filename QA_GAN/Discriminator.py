@@ -26,7 +26,7 @@ class Discriminator(bilstm):
 
             self.correct = tf.equal(0.0, self.losses)
             self.accuracy = tf.reduce_mean(tf.cast(self.correct, "float"), name="accuracy")
-            if config.cc_par('optimizer_method') == optimizer_m.gan:
+        if config.cc_par('optimizer_method') == optimizer_m.gan:
                 self.global_step = tf.Variable(0, name="global_step", trainable=False)
                 optimizer = tf.train.AdamOptimizer(self.learning_rate) # 使用Adam 算法的Optimizer
                 grads_and_vars = optimizer.compute_gradients(self.loss)
@@ -43,7 +43,7 @@ class Discriminator(bilstm):
                 #         print('None item')
                 capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads_and_vars if grad is not None]
                 self.train_op = optimizer.apply_gradients(capped_gvs, global_step=self.global_step)
-            else:  # origin
+        else:  # origin
                 self.global_step = tf.Variable(0, name="globle_step", trainable=False)
                 tvars = tf.trainable_variables()
                 grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars),

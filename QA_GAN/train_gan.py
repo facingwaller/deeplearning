@@ -995,6 +995,7 @@ def main():
                         step, len(dh.q_neg_r_tuple))
                     ct.log3(toogle_line)
                     ct.just_log2("info", toogle_line)
+                    ct.print('toogle_line', 'debug_batch_iter_s_model')
                     # run_step= -1
                     # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                     #           error_test_dict)

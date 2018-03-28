@@ -1257,6 +1257,8 @@ class classification:
             #
             if str(l1).split('\t')[0] in f3s or str(l1).split('\t')[1] in f3s:
                 f2s.append(l1)
+            else:
+                ct.print("skip\t%s"%l1)
         ct.file_wirte_list(f2, f2s)
 
 
@@ -1332,7 +1334,7 @@ if __name__ == '__main__':
                                 f3='../data/nlpcc2016/5-class/synonym/same_p_tj_neg.v1.txt',
                                 kb='kb-use')
         # 将统计的POS和NEG打分
-    if True:
+    if False:
         # v0 附带 最小得分等要求
         # V1 无条件 最多的数量
         # V2 去掉重复的
@@ -1356,7 +1358,7 @@ if __name__ == '__main__':
                             f3='../data/nlpcc2016/5-class/synonym/all/r_in_qa.txt',
                             min_rate=0.01, min_sim=0.271, min_pos=1)
     if True:
-        cf.init_synonym(f1='../data/nlpcc2016/5-class/synonym/all/same_p_tj_score.synonyms.filter.v1.txt',
+        cf.init_synonym(f1='../data/nlpcc2016/5-class/synonym/all/same_p_tj_score.synonyms.filter.v2.txt',
                         f2='../data/nlpcc2016/5-class/synonym/all/same_p_tj_clear_dict.txt',
                         record=True)
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')

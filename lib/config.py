@@ -214,7 +214,8 @@ cc_p = {
     'restore_path': restore_path,
     'synonym_mode': synonym_mode,
     'synonym_words': '../data/nlpcc2016/5-class/synonym/same_p_tj_score.v2.3.txt',
-    'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/same_p_tj_clear_dict.txt',
+    # 'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/same_p_tj_clear_dict.txt',
+    'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/tongyici_dict_1.txt',
     'synonym_train_mode': synonym_train_mode,
     'S_model':S_model
 
