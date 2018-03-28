@@ -26,28 +26,30 @@ class Discriminator(bilstm):
 
             self.correct = tf.equal(0.0, self.losses)
             self.accuracy = tf.reduce_mean(tf.cast(self.correct, "float"), name="accuracy")
-        if config.cc_par('optimizer_method') == optimizer_m.gan:
-            self.global_step = tf.Variable(0, name="global_step", trainable=False)
-            optimizer = tf.train.AdamOptimizer(self.learning_rate) # 使用Adam 算法的Optimizer
-            grads_and_vars = optimizer.compute_gradients(self.loss)
-            # capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads_and_vars]
-            # capped_gvs = []
-            # for grad, var in grads_and_vars:
-            #     if var != None and grad != None:
-            #         try:
-            #             capped_gvs.append((tf.clip_by_value(grad, -1., 1.), var))
-            #         except Exception as e1:
-            #             print(e1)
-            #
-            #     else:
-            #         print('None item')
-            capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads_and_vars if grad is not None]
-            self.train_op = optimizer.apply_gradients(capped_gvs, global_step=self.global_step)
-        else:  # origin
-            self.global_step = tf.Variable(0, name="globle_step", trainable=False)
-            tvars = tf.trainable_variables()
-            grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars),
-                                              FLAGS.max_grad_norm)
-            optimizer = tf.train.GradientDescentOptimizer(1e-1)
-            optimizer.apply_gradients(zip(grads, tvars))
-            self.train_op = optimizer.apply_gradients(zip(grads, tvars), global_step=self.global_step)
+            if config.cc_par('optimizer_method') == optimizer_m.gan:
+                self.global_step = tf.Variable(0, name="global_step", trainable=False)
+                optimizer = tf.train.AdamOptimizer(self.learning_rate) # 使用Adam 算法的Optimizer
+                grads_and_vars = optimizer.compute_gradients(self.loss)
+                # capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads_and_vars]
+                # capped_gvs = []
+                # for grad, var in grads_and_vars:
+                #     if var != None and grad != None:
+                #         try:
+                #             capped_gvs.append((tf.clip_by_value(grad, -1., 1.), var))
+                #         except Exception as e1:
+                #             print(e1)
+                #
+                #     else:
+                #         print('None item')
+                capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads_and_vars if grad is not None]
+                self.train_op = optimizer.apply_gradients(capped_gvs, global_step=self.global_step)
+            else:  # origin
+                self.global_step = tf.Variable(0, name="globle_step", trainable=False)
+                tvars = tf.trainable_variables()
+                grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars),
+                                                  FLAGS.max_grad_norm)
+                optimizer = tf.train.GradientDescentOptimizer(1e-1)
+                optimizer.apply_gradients(zip(grads, tvars))
+                self.train_op = optimizer.apply_gradients(zip(grads, tvars), global_step=self.global_step)
+
+            # 构造同义词相关的计算

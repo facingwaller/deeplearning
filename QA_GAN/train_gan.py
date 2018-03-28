@@ -415,7 +415,7 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
 
 
 # --获取随机
-def get_shuffle_indices_train(total, step, train_part, model, train_step):
+def get_shuffle_indices_train(total):
     """
 
     :param dh:
@@ -424,33 +424,33 @@ def get_shuffle_indices_train(total, step, train_part, model, train_step):
     :param model: train valid test
     :return:
     """
-    if train_part == 'relation':
-        shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
-        shuffle_indices1 = [str(x) for x in list(shuffle_indices)]
-        # step  训练模式    训练部分
-        ct.just_log(config.cc_par('combine'),
-                    '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(shuffle_indices1)))
-    else:
-        f1s = ct.file_read_all_lines_strip(config.cc_par('combine'))
-        line = ''
-        exist = False
-        for l1 in f1s:
-            if str(l1).split('\t')[0] == str(train_step):
-                line = str(l1)
-                exist = True
-                break
-        if exist:
-            line_split = line.split('\t')
-            line_split = line_split[3:]
-            line_split = [int(x) for x in line_split]
-            shuffle_indices = np.array(line_split)
-            ct.print('get_shuffle_indices_train   exist %s' % train_step, 'shuffle_indices_train')
-        else:  # 不存在就自己写
-            shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
-            ct.print('get_shuffle_indices_train   not exist %s' % train_step, 'shuffle_indices_train')
-            # step  训练模式    训练部分
-            # ct.file_wirte_list(config.cc_par('combine'),
-            #                    '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(shuffle_indices)))
+    # if train_part == 'relation':
+    shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
+    shuffle_indices1 = [str(x) for x in list(shuffle_indices)]
+    # step  训练模式    训练部分
+    # ct.just_log(config.cc_par('combine'),
+    #             '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(shuffle_indices1)))
+    # else:
+    #     f1s = ct.file_read_all_lines_strip(config.cc_par('combine'))
+    #     line = ''
+    #     exist = False
+    #     for l1 in f1s:
+    #         if str(l1).split('\t')[0] == str(train_step):
+    #             line = str(l1)
+    #             exist = True
+    #             break
+    #     if exist:
+    #         line_split = line.split('\t')
+    #         line_split = line_split[3:]
+    #         line_split = [int(x) for x in line_split]
+    #         shuffle_indices = np.array(line_split)
+    #         ct.print('get_shuffle_indices_train   exist %s' % train_step, 'shuffle_indices_train')
+    #     else:  # 不存在就自己写
+    #         shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
+    #         ct.print('get_shuffle_indices_train   not exist %s' % train_step, 'shuffle_indices_train')
+    #         # step  训练模式    训练部分
+    #         # ct.file_wirte_list(config.cc_par('combine'),
+    #         #                    '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(shuffle_indices)))
 
     return shuffle_indices
 
@@ -695,9 +695,7 @@ def main():
                     train_part = config.cc_par('train_part')
                     model = 'train'
                     # 1 遍历raw
-                    shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index), step, train_part,
-                                                                model,
-                                                                train_step)
+                    shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index))
                     for index in shuffle_indices:
                         train_step += 1
                         # 取出一个问题的相关数据
@@ -784,9 +782,7 @@ def main():
                     train_part = config.cc_par('train_part')
                     model = 'train'
                     # 1 遍历raw
-                    shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index), step, train_part,
-                                                                model,
-                                                                train_step)
+                    shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index))
                     win, lose = 0, 0
                     for index in shuffle_indices:
                         train_step += 1
@@ -983,12 +979,46 @@ def main():
                     # check
                     total = len(shuffle_indices)
                     msg = "%s\tloss=%2.6f\tpos=%2.6f\tneg=%2.6f;win=%d\tacc=%s" % (state, loss_dict['loss'] / total,
-                                                                    loss_dict['pos'] / total, loss_dict['neg'] / total
-                                                                         ,lose,lose/total)
+                                                                                   loss_dict['pos'] / total,
+                                                                                   loss_dict['neg'] / total
+                                                                                   , lose, lose / total)
                     ct.print(msg, 'debug_gan')
                     loss_dict['loss'] = 0
                     loss_dict['pos'] = 0
                     loss_dict['neg'] = 0
+
+                # --------------- S model
+                for s_index in range(FLAGS.s_epoches):
+                    state = "step=%d_epoches=%s_index=%d" % (step, 's', s_index)
+                    ct.print(state)
+                    toogle_line = "G model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
+                        step, len(dh.q_neg_r_tuple))
+                    ct.log3(toogle_line)
+                    ct.just_log2("info", toogle_line)
+                    # run_step= -1
+                    # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                    #           error_test_dict)
+                    shuffle_indices = get_shuffle_indices_train(total=len(dh.synonym_train_keys))
+                    for index in shuffle_indices:
+                        train_step += 1
+                        train_q, train_cand, train_neg = dh.batch_iter_s_model(index)
+                        # 构建feed_dict
+                        feed_dict = {
+                            discriminator.ori_input_quests: train_q,  # KEY
+                            discriminator.cand_input_quests: train_cand,  # KEY的value
+                            discriminator.neg_input_quests: train_neg  # 其他随机KEY的value
+                        }
+                        _, run_step, current_loss, accuracy = sess.run(
+                            [discriminator.train_op, discriminator.global_step, discriminator.loss,
+                             discriminator.accuracy],
+                            feed_dict)
+                        line = ("%s: Synonym step %d, loss %f with acc %f " % (
+                            datetime.datetime.now().isoformat(), run_step, current_loss, accuracy))
+                        ct.print(line, 'loss')
+
+                        # 验证
+                    elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                             error_test_dict)
 
             ct.print('finish epoches %d' % FLAGS.epoches)
 

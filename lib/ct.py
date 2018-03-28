@@ -601,7 +601,10 @@ class ct:
             .replace(" ", "").replace("•", "").replace("-", "") \
             .replace("【", "").replace("】", "") \
             .replace("[", "").replace("]", "").replace('，', '') \
-            .replace("”", '').replace('）', '').replace('（', '').replace('／', '')
+            .replace("”", '').replace('）', '').replace('（', '').replace('／', '') \
+            .replace('\u200B', '').replace('↙', '').replace('。', '') \
+            .replace('"', '').replace(':', '').replace('*', '').replace(',', '') \
+            .replace('?', '').replace('&amp;', '&')
 
     @staticmethod
     def clean_str_answer(string):
@@ -1039,7 +1042,7 @@ class ct:
         return count / len(p1s)
 
     @staticmethod
-    def re_clean_question(str,skipweather=True):
+    def re_clean_question(str, skipweather=True):
         # b = re.sub('\r\n','',a)
         re_list = []
         re_list.append('(啊|呀|(你知道)？吗|呢)？(？|\?)*$')
@@ -1147,6 +1150,7 @@ class ct:
                 zi_flag_score -= 5
 
         return zi_flag_score
+
     # 字表面特征 P
     @staticmethod
     def get_zi_flag_score_ps(q1, _p):
@@ -1164,7 +1168,6 @@ class ct:
 
         return zi_flag_score
 
-
     # 字表面特征 P,用于同义词集合计算
     @staticmethod
     def get_zi_flag_score_ps2(q1, _p):
@@ -1176,9 +1179,9 @@ class ct:
         if p_len == 0:
             ct.print("%s\t%s" % (q1, _p), 'error')
             p_len = 100
-        zi_flag_score = zi_flag_total / p_len # overlap/总数
+        zi_flag_score = zi_flag_total / p_len  # overlap/总数
 
-        zi_flag_score +=  1/p_len
+        zi_flag_score += 1 / p_len
 
         return zi_flag_score
 
@@ -1267,14 +1270,14 @@ class ct:
 
     # 同义词
     @staticmethod
-    def dict_get_synonym(synonym_dict,r_all):
-        s_dict=dict()
+    def dict_get_synonym(synonym_dict, r_all):
+        s_dict = dict()
         for r in r_all:
             r_set = synonym_dict.get(r, set([r]))
             s_dict[str(r)] = r_set
         for _ in r_all:
-             s1 = s_dict[_]
-             ct.print("%s:%d:\t%s"%(_,len(s1),'\t'.join(s1)),'debug_synonym_dict')
+            s1 = s_dict[_]
+            ct.print("%s:%d:\t%s" % (_, len(s1), '\t'.join(s1)), 'debug_synonym_dict')
         # print('================')
         for r1 in r_all:
             for r2 in r_all:
@@ -1291,29 +1294,54 @@ class ct:
                     s_dict[r1] = r1_set
                     s_dict[r2] = r2_set
         for _ in r_all:
-             s1 = s_dict[_]
-             ct.print("%s:%d:\t%s"%(_,len(s1),'\t'.join(s1)),'debug_synonym_dict')
+            s1 = s_dict[_]
+            ct.print("%s:%d:\t%s" % (_, len(s1), '\t'.join(s1)), 'debug_synonym_dict')
         return s_dict
 
     @staticmethod
-    def sort_synonym_ps(s1,q,r_origin,num=5,):
+    def sort_synonym_ps(s1, q, r_origin, num=5, ):
         ps_score_tuples = []
         for _ps in s1:
-            if _ps ==r_origin:
-                t1 = (_ps, ct.get_zi_flag_score_ps2(q, _ps)+100)
+            if _ps == r_origin:
+                t1 = (_ps, ct.get_zi_flag_score_ps2(q, _ps) + 100)
             else:
                 t1 = (_ps, ct.get_zi_flag_score_ps2(q, _ps))
             ps_score_tuples.append(t1)
         ps_sorted = sorted(ps_score_tuples, key=lambda x: x[1], reverse=True)
         # for _1 in ps_sorted:
-        ct.print("%s :\t%s" % (r_origin,'\t'.join([x[0] for x in ps_sorted])),'sort_synonym_ps')
-        num =min(num,len(ps_sorted))
+        ct.print("%s :\t%s" % (r_origin, '\t'.join([x[0] for x in ps_sorted])), 'sort_synonym_ps')
+        num = min(num, len(ps_sorted))
         ps_sorted = ps_sorted[0:num]
         # ps_new = []
         # for  _ in ps_sorted:
         #      ps_new.append(_[0])
-        ct.print("%s :\t%s" % (r_origin,'\t'.join([x[0] for x in ps_sorted])),'sort_synonym_ps')
+        ct.print("%s :\t%s" % (r_origin, '\t'.join([x[0] for x in ps_sorted])), 'sort_synonym_ps')
         return ps_sorted
+
+    @staticmethod
+    def synonym_random_get(synonym_train_keys, synonym_train, td, num):
+        enough = False
+        ret_data = []
+        for __1 in range(9999):
+            neg_index = random.randint(0, len(synonym_train_keys)-1)
+            continue_find = False
+            for x in synonym_train[neg_index]:
+                # for _td in td:
+                if str(x) in td:
+                    continue_find = True
+                    break
+            if continue_find:
+                continue
+            else:
+                # 持续加
+                for x in synonym_train[neg_index]:
+                    ret_data.append(x)
+                    if len(ret_data) >= num:
+                        enough =True
+                        break
+                if enough:
+                    break
+        return ret_data
 
 
 log_path = ct.log_path_static()

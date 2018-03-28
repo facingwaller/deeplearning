@@ -1,8 +1,9 @@
+import codecs
 import gzip
 import json
-import codecs
-from lib.data_hander import read_rdf_from_gzip, find_id_ps_json_from_file, just_log
+
 from lib.ct import ct
+from lib.sq_wq.data_hander import read_rdf_from_gzip, find_id_ps_json_from_file, just_log
 
 
 def is_in_list_case(list, arg):

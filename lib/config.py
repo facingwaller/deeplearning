@@ -55,7 +55,7 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 100  # 重要！这个指示了训练的关系个数4358
+    t_relation_num = 1000  # 重要！这个指示了训练的关系个数4358
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -67,8 +67,9 @@ if testid == "cc_test":
     sampled_temperature = 20
     gan_learn_rate = 0.02
 
-    g_epoches = 10
-    d_epoches = 1
+    g_epoches = 0
+    d_epoches = 0
+    s_epoches = 1
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
     keep_run = False  # 指示是否持续跑maybe里面的属性
@@ -83,7 +84,9 @@ if testid == "cc_test":
         r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
     #
     synonym_mode = 'none'  # 属性同义词 ps_synonym| none
-    synonym_train_mode='synonym_train_mode' # 同义词的训练模式 synonym_train_mode|none
+    synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
+    # synonym S_model
+    S_model = 'S_model'  #S_model | none
 
 
 elif testid == 'cc_debug':
@@ -208,8 +211,10 @@ cc_p = {
     'restore_model': restore_model,
     'restore_path': restore_path,
     'synonym_mode': synonym_mode,
-    'synonym_words':'../data/nlpcc2016/5-class/synonym/same_p_tj_score.v2.3.txt',
-    'synonym_train_mode':synonym_train_mode
+    'synonym_words': '../data/nlpcc2016/5-class/synonym/same_p_tj_score.v2.3.txt',
+    'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/same_p_tj_clear_dict.txt',
+    'synonym_train_mode': synonym_train_mode,
+    'S_model':S_model
 
 }
 
@@ -233,6 +238,7 @@ tf.flags.DEFINE_integer("total_questions", total_questions, "总共的问题数 
 tf.flags.DEFINE_integer("epoches", epoches, "epoches")
 tf.flags.DEFINE_integer("g_epoches", g_epoches, "g_epoches")
 tf.flags.DEFINE_integer("d_epoches", d_epoches, "d_epoches")
+tf.flags.DEFINE_integer("s_epoches", s_epoches, "s_epoches")
 # tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 # tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
@@ -296,9 +302,10 @@ class config:
     @staticmethod
     def cc_par(key):
         return cc_p[key]
+
     @staticmethod
-    def cc_compare(key,value):
-        return cc_p[key]==value
+    def cc_compare(key, value):
+        return cc_p[key] == value
 
     @staticmethod
     def get_model():
@@ -335,7 +342,7 @@ class config:
 
         q_l_t = min(max_length, questions_len_train)
         a = []
-        for i in range(0, q_l_t ):
+        for i in range(0, q_l_t):
             a.append(i)
         return a
 
@@ -346,7 +353,7 @@ class config:
         # random.randint() 考虑改成随机的10个
         # a <= n <= b
         # min,max = 1,1000
-        for i in range(0, q_l_t ):
+        for i in range(0, q_l_t):
             a.append(i)
         return a
 

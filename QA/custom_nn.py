@@ -51,9 +51,11 @@ class CustomNetwork:
             self.cand_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 正确答案
             self.neg_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 错误答案
 
+            # print(self.ori_input_quests)
             self.test_input_q = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试问题
             self.test_input_r = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试关系
             # [num_seqs,num_steps] 等价于 [timesteps, num_input]
+
         with tf.device("/cpu:0"), tf.name_scope("embedding_layer"):
             if word_model == "tf_embedding":
                 # 方法1，char-rnn中的办法,如果报错就改成方法2，随机初始化一个W / embedding

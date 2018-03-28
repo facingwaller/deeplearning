@@ -19,6 +19,7 @@ from lib.baike_helper import baike_helper
 
 # ======================================================================common
 import math
+import random
 
 
 class DataClass:
@@ -160,8 +161,10 @@ class DataClass:
             self.division_data(0.8, config.cc_par('real_split_train_test'))
             self.build_embedding_weight(config.wiki_vector_path(mode))
             # 加载
-            if config.cc_par('synonym_mode')=='ps_synonym':
+            if config.cc_par('synonym_mode') == 'ps_synonym':
                 self.init_synonym(config.cc_par('synonym_words'))
+            if config.cc_compare('S_model', 'S_model'):
+                self.synonym_train_data(config.cc_par('synonym_train_data'))
             ct.print("load embedding ok!")
 
             return
@@ -1486,7 +1489,7 @@ class DataClass:
         elif pool_mode == 'synonym_train_mode':
             r_pos1 = self.relation_list[global_index]
             rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc_gan_synonym(name, ps_to_except1,
-                                                                           total,r_pos1,self.synonym_dict)
+                                                                                   total, r_pos1, self.synonym_dict)
         else:  # 默认是additional
             rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc_gan(entity_id=name, ps_to_except=ps_to_except1,
                                                                            total=total)
@@ -1566,6 +1569,24 @@ class DataClass:
         self.synonym_dict = synonym_dict
         self.synonym_score_dict = synonym_score_dict
 
+    def synonym_train_data(self, f1):
+        f1s = ct.file_read_all_lines_strip(f1)
+        f2s = []
+        synonym_train_dict = dict()
+        synonym_train_keys = []
+        synonym_train = []
+        for x in f1s:
+            k1 = x.split('\t')[0]
+            v1 = x.split('\t')[1:]
+            # synonym_train_dict[k1] = v1
+            synonym_train_keys.append(k1)
+            synonym_train.append(v1)
+
+        self.synonym_train_keys = synonym_train_keys
+        self.synonym_train = synonym_train
+        # self.synonym_train_dict = synonym_train_dict
+        ct.print('synonym_train_dict ok')
+
     def convert_str_to_indexlist(self, r1):
         padding_num = self.converter.vocab_size - 1
         r1_split = [r1]  # .split(" ")
@@ -1577,6 +1598,37 @@ class DataClass:
         # ct.just_log2("info","neg-r test:" + r1_text)
         r1 = ct.padding_line(r1, self.max_document_length, padding_num)
         return r1
+
+    # 产生s model下的数据
+    def batch_iter_s_model(self, index):
+        train_q = []
+        train_cand = []
+        train_neg = []
+        td = self.synonym_train[index]
+        max_num = 10
+
+        if len(td) > max_num:
+            td_index = np.random.choice(len(self.synonym_train[index]), size=max_num, replace=False)
+            td_new = []
+            for _i in td_index:
+                td_new.append(td[_i])
+            td = td_new
+        num = len(td)
+        neg_data = ct.synonym_random_get(self.synonym_train_keys, self.synonym_train, td, num)
+        if len(neg_data) < len(td):
+            print('error !!')
+
+        for i in range(len(td)):
+            q1 = self.convert_str_to_indexlist(self.synonym_train_keys[index])
+            train_q.append(q1)  # key
+            v1 = self.convert_str_to_indexlist(td[i])
+            train_cand.append(v1)
+            neg1 = self.convert_str_to_indexlist(neg_data[i])
+            train_neg.append(neg1)
+            msg = "%s\t%s\t%s" % (self.synonym_train_keys[index], td[i], neg_data[i])
+            ct.print(msg, 'debug_batch_iter_s_model')
+        ct.print('----', 'debug_batch_iter_s_model')
+        return np.array(train_q), np.array(train_cand), np.array(train_neg)
 
 
 # ======================================================================= clear data

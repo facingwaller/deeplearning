@@ -1,4 +1,5 @@
-from lib.baike_helper import baike_helper, baike_test, classification
+from lib.baike_helper import baike_helper, baike_test
+from lib.classification_helper import classification
 from lib.data_helper import DataClass
 from lib.config import config
 
