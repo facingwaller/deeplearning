@@ -1299,7 +1299,7 @@ class baike_helper:
                 r1.append(s1[0])
                 a1.append(s1[1])
 
-        is_debug = True
+        is_debug = False
         if is_debug:
 
             slice = ['韩娱守护力', '夏想', '李明(平安县委常委、县政府副县长)',
