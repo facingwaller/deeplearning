@@ -1017,6 +1017,7 @@ def main():
                         ct.print(line, 'loss')
 
                         # 验证
+
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict)
 
