@@ -2814,7 +2814,7 @@ class classification:
                 l1_splits = l1.split('|||')
                 q1 = l1_splits[0].split('\t')[0]
                 # 去除无意义
-                q1 = ct.re_clean_question(q1)
+                q1 = ct.re_clean_question(q1,False)
                 q1_origin = l1_splits[0].split('\t')[0]
                 q1 = q1.lower().replace(' ', '')
                 if len(l1_splits[0].split('\t')) < 2:

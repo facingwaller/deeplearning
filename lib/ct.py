@@ -1039,7 +1039,7 @@ class ct:
         return count / len(p1s)
 
     @staticmethod
-    def re_clean_question(str):
+    def re_clean_question(str,skipweather=True):
         # b = re.sub('\r\n','',a)
         re_list = []
         re_list.append('(啊|呀|(你知道)？吗|呢)？(？|\?)*$')
@@ -1053,7 +1053,8 @@ class ct:
         #
         re_list.append('你可以解释|你可以解释一下')
         #  是(.)*还是(.)*$
-        re_list.append('是(.)*还是(.)*$')
+        if skipweather:
+            re_list.append('是(.)*还是(.)*$')
 
         can_break = False
         tmp_list = []
