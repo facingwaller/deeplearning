@@ -466,16 +466,24 @@ def get_shuffle_indices_test(dh, step, train_part, model, train_step):
     """
     if train_part == 'relation':
         if model == "valid":
-            id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
+            if config.cc_compare('valid_model', 'only_error'):
+                f1s = ct.file_read_all_lines_strip(config.cc_par('valid_only_error_valid'))
+                id_list = [int(x) for x in f1s]
+            else:
+                id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
         else:
-            id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+            if config.cc_compare('valid_model', 'only_error'):
+                f1s = ct.file_read_all_lines_strip(config.cc_par('valid_only_error_test'))
+                id_list = [int(x) for x in f1s]
+            else:
+                id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
 
         id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
 
-        id_list2 = [str(x) for x in id_list]
-        # step  训练模式    训练部分
-        ct.just_log(config.cc_par('combine_test'),
-                    '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(id_list2)))
+        # id_list2 = [str(x) for x in id_list]
+        # # step  训练模式    训练部分
+        # ct.just_log(config.cc_par('combine_test'),
+        #             '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(id_list2)))
     else:
         f1s = ct.file_read_all_lines_strip(config.cc_par('combine_test'))
         line = ''
@@ -678,8 +686,8 @@ def main():
                 state = 'restore_test'
                 run_step = -1
                 step = -1
-                # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
-                #          error_test_dict)
+                elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                          error_test_dict)
 
             train_step = 0
             for step in range(FLAGS.epoches):
@@ -1000,6 +1008,7 @@ def main():
                     # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                     #           error_test_dict)
                     shuffle_indices = get_shuffle_indices_train(total=len(dh.synonym_train_keys))
+                    loss_dict['loss'] = 0
                     for index in shuffle_indices:
                         train_step += 1
                         train_q, train_cand, train_neg = dh.batch_iter_s_model(index)
@@ -1013,11 +1022,13 @@ def main():
                             [discriminator.train_op, discriminator.global_step, discriminator.loss,
                              discriminator.accuracy],
                             feed_dict)
-                        line = ("%s: Synonym step %d, loss %f with acc %f " % (
-                            datetime.datetime.now().isoformat(), run_step, current_loss, accuracy))
-                        ct.print(line, 'loss')
+                        loss_dict['loss'] += current_loss
+                        if train_step % 100 == 0 :
+                            line = ("%s-%s: Synonym step %d, loss %f with acc %f " % (
+                                train_step, len(shuffle_indices), run_step, loss_dict['loss'], accuracy))
+                            ct.print(line, 'loss')
 
-                        # 验证
+                            # 验证
 
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict)

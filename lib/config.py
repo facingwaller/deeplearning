@@ -86,7 +86,7 @@ if testid == "cc_test":
     synonym_mode = 'none'  # 属性同义词 ps_synonym| none
     synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
     # synonym S_model
-    S_model = 'S_model'  #S_model | none
+    S_model = 'S_model'  # S_model | none
 
 
 elif testid == 'cc_debug':
@@ -137,7 +137,12 @@ elif testid == 'cc_debug':
     synonym_mode = 'none'  # 属性同义词 | none
     synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
     # synonym S_model
-    S_model = 'S_model'  #S_model | none
+    S_model = 'S_model'  # S_model | none
+
+    # 只验证错误的模式 only_error|all
+    valid_model = 'only_error'
+    valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
+    valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
@@ -217,7 +222,10 @@ cc_p = {
     # 'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/same_p_tj_clear_dict.txt',
     'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/tongyici_dict_1.txt',
     'synonym_train_mode': synonym_train_mode,
-    'S_model':S_model
+    'S_model': S_model,
+    'valid_model': valid_model,
+    'valid_only_error_valid':valid_only_error_valid,
+    'valid_only_error_test':valid_only_error_test
 
 }
 

@@ -18,7 +18,7 @@ from multiprocessing import Pool
 # import datetime
 # import lib.my_log as mylog
 # from lib.config import config
-from lib.classification_helper import classification
+
 # from gensim import models
 # from lib.converter.langconv import *
 from lib.config import config
@@ -95,9 +95,7 @@ class baike_helper:
                     ct.just_log(clean_log_path, line)
                     continue
                 # 2
-                p = p.replace(" ", "").replace("•", "").replace("-", "") \
-                    .replace("【", "").replace("】", "") \
-                    .replace("[", "").replace("]", "")
+                p = ct.clean_str_rel(p)
                 new_line = "%s\t%s\t%s" % (s, p, o)
                 # 记录RDF
                 # ct.just_log(file_name + "_clean1.txt", new_line)
@@ -153,6 +151,29 @@ class baike_helper:
         #         f_out.write("%s\n" % (s))
 
         print(312321)
+
+    @staticmethod
+    def clean_baike_kb_repeat(f1, f2):
+        f1s = ct.file_read_all_lines_strip(f1)
+        words = ['八纵指', '包含国家', '不确定因素', '岗位职责', '管理', '领先技术', '配偶', '区域', '人口（2009）', '人物', '释义', '特点', '特性', '调料',
+                 '详细解释', '应用', '执行人权利', '注释', '遵循规定']
+        d1 = dict()
+        for word in words:
+            for i in range(1, 6):
+                word_new = "%s%d" % (word, i)
+                d1[word_new] = word
+        f2s = []
+        for l1 in f1s:
+            if ct.clean_str_rel(str(l1).split('\t')[1]) in d1:
+                ws = str(l1).split('\t')
+                ws[1] = d1[ws[1]]
+                l1_new = '\t'.join(ws)
+                f2s.append(l1_new)
+            else:
+                f2s.append(l1)
+        ct.file_wirte_list(f2, f2s)
+
+        print(1)
 
     # 从答案的文件中抽取需要的KB
     def extract_kb(self,
@@ -1301,10 +1322,10 @@ class baike_helper:
 
             slice = ['韩娱守护力', '夏想', '李明(平安县委常委、县政府副县长)',
                      '李军(工艺美术师)', '三月三(汉族及多个少数民族传统节日)',
-                     '安德烈(摩纳哥王子)','城关镇(独山县城关镇)',
-                     '茴香(茴香菜)','丹顶鹤(鹤属鸟类的一种)',
-                     '魔法少女奈叶(魔法少女奈叶系列第一部电视动画)','哈姆雷特(2000年麦克·阿尔默瑞德导演电影)',
-                     '福尔摩斯探案全集','李娜','边境牧羊犬',
+                     '安德烈(摩纳哥王子)', '城关镇(独山县城关镇)',
+                     '茴香(茴香菜)', '丹顶鹤(鹤属鸟类的一种)',
+                     '魔法少女奈叶(魔法少女奈叶系列第一部电视动画)', '哈姆雷特(2000年麦克·阿尔默瑞德导演电影)',
+                     '福尔摩斯探案全集', '李娜', '边境牧羊犬',
                      '监狱风云(2014年中国动作警匪犯罪电影)']  # self.kbqa.keys()
 
         else:
@@ -1377,9 +1398,9 @@ class baike_helper:
                 # except Exception as e1:
                 #     print(1)
                 r1.extend(_rs)
-            r1 =list(set(r1))
-            ct.print(len(r1),'test_ps_synonym_len')
-            ct.print("%s:\t%s"%(r_pos,'\t'.join(r1)),'test_ps_synonym_len')
+            r1 = list(set(r1))
+            ct.print(len(r1), 'test_ps_synonym_len')
+            ct.print("%s:\t%s" % (r_pos, '\t'.join(r1)), 'test_ps_synonym_len')
 
             keys = self.kbqa.keys()
             # try:

@@ -67,6 +67,10 @@ if __name__ == '__main__':  #
                                 f2="../data/nlpcc2016/2-kb/kb-use.v2.txt",
                                 f3='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt')
         print('根据答案抽取出精简的KB kb-use.v2.txt')
+    if False:
+        bkh.clean_baike_kb_repeat(f1="../data/nlpcc2016/2-kb/kb-use.v2.txt",
+                                  f2="../data/nlpcc2016/2-kb/kb-use.v3.txt")
+        print('替换指定属性')
     # 重写q.txt        # 3 生成新的训练文件
     if True:
         dh = DataClass(mode="cc", run_type='init')
