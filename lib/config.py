@@ -127,9 +127,9 @@ elif testid == 'cc_debug':
     gan_k = 10
     sampled_temperature = 20
     gan_learn_rate = 0.02
-    g_epoches = 0
-    d_epoches = 0
-    s_epoches = 1
+    g_epoches = 1
+    d_epoches = 1
+    s_epoches = 0
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
     keep_run = False  # 指示是否持续跑maybe里面的属性
@@ -138,19 +138,22 @@ elif testid == 'cc_debug':
     pool_mode = 'additional'
 
     # 模型恢复
-    restore_model = True
+    restore_model = False
     restore_path = \
         r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
     # 模式
     synonym_mode = 'none'  # 属性同义词 | none
     synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
     # synonym S_model
-    S_model = 'S_model'  # S_model | none
+    S_model = 'none'  # S_model | none
 
     # 只验证错误的模式 only_error|all
-    valid_model = 'only_error'
+    valid_model = 'all'
     valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
     valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
+
+    #
+    competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
