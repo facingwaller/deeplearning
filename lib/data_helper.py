@@ -1477,8 +1477,10 @@ class DataClass:
         ct.just_log2("info", msg)
 
         if global_index >= len(self.entity1_list):
-            print(1111)
+            print('error ')
+            raise Exception('error')
         name = self.entity1_list[global_index]
+
         # todo: index should not in
         # ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
         ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
@@ -1488,11 +1490,17 @@ class DataClass:
             rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
         elif pool_mode == 'synonym_train_mode':
             r_pos1 = self.relation_list[global_index]
-            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc_gan_synonym(name, ps_to_except1,
-                                                                                   total, r_pos1, self.synonym_dict)
+            rs, a_s = self.bh.rs_gan_synonym(name, ps_to_except1,
+                                             total, r_pos1, self.synonym_dict)
+        elif pool_mode == 'competing_ps':
+            r_pos1 = self.relation_list[global_index]
+            rs, a_s = self.bh.competing_ps(r_pos1, ps_to_except1,
+                                           total, self.competing_dict)
+            if rs is None:
+                return None, None, None, None
         else:  # 默认是additional
-            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc_gan(entity_id=name, ps_to_except=ps_to_except1,
-                                                                           total=total)
+            rs, a_s = self.bh.rs_cc_gan(entity_id=name, ps_to_except=ps_to_except1,
+                                        total=total)
 
         if pool_mode == 'fixed_amount':
             rs, a_s = rs[0:total], a_s[0:total]
@@ -1534,7 +1542,7 @@ class DataClass:
             y_neg.append(r1)
             # y_new.append(r1)  # neg
             # labels.append(False)
-            if pool_mode == 'synonym_train_mode':
+            if pool_mode in ['synonym_train_mode', 'competing_ps']:
                 r1_msg = "r-neg: %s" % (r1_text)
             else:
                 r1_msg = "r-neg: %s \t answer:%s" % (r1_text, a_s[_index])
@@ -1625,10 +1633,22 @@ class DataClass:
             train_cand.append(v1)
             neg1 = self.convert_str_to_indexlist(neg_data[i])
             train_neg.append(neg1)
-            msg = "%d\t%s\t%s\t%s" % (index,self.synonym_train_keys[index], td[i], neg_data[i])
+            msg = "%d\t%s\t%s\t%s" % (index, self.synonym_train_keys[index], td[i], neg_data[i])
             ct.print(msg, 'debug_batch_iter_s_model')
         ct.print('----', 'debug_batch_iter_s_model')
         return np.array(train_q), np.array(train_cand), np.array(train_neg)
+
+    # competing model 竞争模块
+    def init_competing_model(self, f1=''):
+        competing_dict = dict()
+        f1s = ct.file_read_all_lines_strip(f1)
+        for l1 in f1s:
+            k1 = str(l1).split('\t')[0]
+            v1 = str(l1).split('\t')[1:]
+            competing_dict[k1] = set(v1)
+        self.competing_dict = competing_dict
+
+        print(1)
 
 
 # ======================================================================= clear data

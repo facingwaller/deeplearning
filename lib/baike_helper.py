@@ -1303,7 +1303,7 @@ class baike_helper:
         return default
 
     # 读取实体所有的实体    返回所有的关系集合
-    def read_entity_and_get_all_neg_relations_cc_gan(self, entity_id, ps_to_except, total):
+    def rs_cc_gan(self, entity_id, ps_to_except, total):
         e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
         if e_s == "":
             print(entity_id)
@@ -1356,7 +1356,7 @@ class baike_helper:
         return r1, a1
 
     # 读取实体所有的实体    返回所有的关系集合
-    def read_entity_and_get_all_neg_relations_cc_gan_synonym(self, entity_id, ps_to_except, total, r_pos, synonym_dict):
+    def rs_gan_synonym(self, entity_id, ps_to_except, total, r_pos, synonym_dict):
         e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
         if e_s == "":
             print(entity_id)
@@ -1430,6 +1430,31 @@ class baike_helper:
         #
         # r1 = r1[0:total]
         # a1 = a1[0:total]
+
+
+        return r1, a1
+
+    # 读取实体所有的属性，返回竞争PS
+    def competing_ps(self, entity_id, ps_to_except, total, r_pos, competing_dict):
+        e_s = competing_dict.get(str(entity_id).replace(' ', '').lower(), "")
+        if e_s == "":
+            return None, None
+
+        r1 = []
+        a1 = []
+        for s1 in e_s:
+            if s1[0] not in ps_to_except:
+                r1.append(s1) # 温度范围	别名	中文名	又名
+
+
+        enough = False
+        default = len(r1)
+        total += default
+
+        if len(r1) > total:
+            enough = True
+            # 从r1种随机挑选total个
+            r1 = random.sample(r1, total)
 
 
         return r1, a1

@@ -2,9 +2,10 @@ import codecs
 import re
 from itertools import combinations
 
-from lib import baike_helper
+
 from lib.config import config
 from lib.ct import ct
+from lib.baike_helper import baike_helper
 
 # import synonyms  # https://github.com/huyingxi/Synonyms
 import numpy
@@ -704,6 +705,43 @@ class classification:
 
         print(1)
 
+    # 读取出所有NEG的PS
+    def build_competing_ps(self, f1='../data/nlpcc2016/5-class/test_ps.txt',
+                      f2='../data/nlpcc2016/5-class/competing_ps.txt' ):
+        f1s = ct.file_read_all_lines_strip(f1)
+        bkh = baike_helper()
+        bkh.init_spo()
+
+        index = -1
+        d1 = dict() # KEY=P VALUE = 竞争的P
+        for f1l in f1s:
+            index += 1
+
+            # if index < skip:  # 跳过train的数据
+            #     continue
+
+            # 每行互为K-V
+            l1 = str(f1l).split('\t')[2:]
+            for w1 in l1:
+                for w2 in l1:
+                    if w1 == w2:
+                        continue
+                    d1 = ct.dict_add(d1,w1,w2)
+        msg_list = []
+        for k1 in d1.keys():
+            vs = d1[k1]
+            msg = "%s\t%s"%(k1,'\t'.join(vs))
+            msg_list.append(msg)
+
+
+        ct.file_wirte_list(f2,msg_list)
+
+
+
+
+
+
+
     # 找到同实体不同属性名，但是属性值一样的
     def class_p_by_o_kb(self, f1='../data/nlpcc2016/2-kb/kb.v1.txt',
                         f3='../data/nlpcc2016/5-class/demo1/same_o.txt',
@@ -1349,7 +1387,8 @@ if __name__ == '__main__':
         # 使用相似度工具计算词语之间的相似度
         cf.cal_by_synonyms(f1='../data/nlpcc2016/5-class/synonym/all/same_p_tj_score.v2.txt'
                            , f2='../data/nlpcc2016/5-class/synonym/all/same_p_tj_score.synonyms.v1.txt')
-    if True:
+    # =============
+    if False:
         # 过滤掉比例=0；相似度《=0.1
         # 过滤一些字符 比如 网站
         # V2只要哪些出现在 问答中的pos和neg的部分
@@ -1357,10 +1396,11 @@ if __name__ == '__main__':
                             f2='../data/nlpcc2016/5-class/synonym/all/same_p_tj_score.synonyms.filter.v2.txt',
                             f3='../data/nlpcc2016/5-class/synonym/all/r_in_qa.txt',
                             min_rate=0.01, min_sim=0.271, min_pos=1)
-    if True:
+    if False:
         cf.init_synonym(f1='../data/nlpcc2016/5-class/synonym/all/same_p_tj_score.synonyms.filter.v2.txt',
                         f2='../data/nlpcc2016/5-class/synonym/all/same_p_tj_clear_dict.txt',
                         record=True)
+    # ==================
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
 
         # cf.class_p_by_o_select_combine()

@@ -1343,6 +1343,14 @@ class ct:
                     break
         return ret_data
 
+    @staticmethod
+    def toogle_line(q_len,step,model_name):
+        toogle_line = "S model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
+            step, q_len)
+        ct.log3(toogle_line)
+        ct.just_log2("info", toogle_line)
+        ct.print(toogle_line, model_name)
+
 
 log_path = ct.log_path_static()
 
