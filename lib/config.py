@@ -88,6 +88,10 @@ if testid == "cc_test":
     # synonym S_model
     S_model = 'S_model'  # S_model | none
 
+    # 只验证错误的模式 only_error|all
+    valid_model = 'only_error'
+    valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
+    valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
 
 elif testid == 'cc_debug':
     # 极限情况下调,1个问题，全关系
@@ -219,8 +223,8 @@ cc_p = {
     'restore_path': restore_path,
     'synonym_mode': synonym_mode,
     'synonym_words': '../data/nlpcc2016/5-class/synonym/same_p_tj_score.v2.3.txt',
-    # 'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/same_p_tj_clear_dict.txt',
-    'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/tongyici_dict_1.txt',
+    'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/same_p_tj_clear_dict.txt',
+    # 'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/tongyici_dict_1.txt',
     'synonym_train_mode': synonym_train_mode,
     'S_model': S_model,
     'valid_model': valid_model,

@@ -478,7 +478,7 @@ def get_shuffle_indices_test(dh, step, train_part, model, train_step):
             else:
                 id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
 
-        id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+        # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
 
         # id_list2 = [str(x) for x in id_list]
         # # step  训练模式    训练部分

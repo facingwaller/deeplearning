@@ -970,7 +970,7 @@ class DataClass:
 
         # log
         ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
-        msg = "model=%s,id=%s,global_index=%d;q_global_index=%d;" % (
+        msg = "%s\t%s\t%d\t%d;" % (
             model, index, global_index, self.question_global_index[global_index])
         ct.print(msg, 'debug')
         ct.log3(msg)
