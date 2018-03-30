@@ -68,7 +68,7 @@ if testid == "cc_test":
     gan_learn_rate = 0.02
 
     g_epoches = 0
-    d_epoches = 1
+    d_epoches = 2
     s_epoches = 0
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
@@ -77,14 +77,15 @@ if testid == "cc_test":
     # only_default 默认模式|fixed_amount 固定 | additional 默认+额外
     # synonym_train_mode 优先加入neg的同义词
     # competing_ps 竞争属性
-    pool_mode = 'only_default'
+    pool_mode = 'competing_ps'
 
     # 模型恢复
     restore_model = True
     restore_path = \
-    r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_29_11_36_36\checkpoints\step=3_epoches=d_index=0\model.ckpt-1'
+        r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_29_11_36_36_v2\checkpoints\step=3_epoches=d_index=0\model.ckpt-1'
     #    r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
     # 2018_03_29_11_36_36\checkpoints\step=3_epoches=d_index=0
+    restore_test = False
     synonym_mode = 'none'  # 属性同义词 ps_synonym| none
     synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
     # synonym S_model
@@ -138,9 +139,9 @@ elif testid == 'cc_debug':
     pool_mode = 'additional'
 
     # 模型恢复
-    restore_model = False
+    restore_model = True
     restore_path = \
-        r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
+        r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_30_10_41_37_gan.v2\checkpoints\step=0_epoches=d_index=0\model.ckpt-1'
     # 模式
     synonym_mode = 'none'  # 属性同义词 | none
     synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
@@ -226,8 +227,11 @@ cc_p = {
     'mark': mark,
     'gan_learn_rate': gan_learn_rate,
     'pool_mode': pool_mode,
+    #
     'restore_model': restore_model,
     'restore_path': restore_path,
+    'restore_test':restore_test,
+    #
     'synonym_mode': synonym_mode,
     'synonym_words': '../data/nlpcc2016/5-class/synonym/same_p_tj_score.v2.3.txt',
     'synonym_train_data': '../data/nlpcc2016/5-class/synonym/all/same_p_tj_clear_dict.txt',
@@ -235,10 +239,10 @@ cc_p = {
     'synonym_train_mode': synonym_train_mode,
     'S_model': S_model,
     'valid_model': valid_model,
-    'valid_only_error_valid':valid_only_error_valid,
-    'valid_only_error_test':valid_only_error_test,
+    'valid_only_error_valid': valid_only_error_valid,
+    'valid_only_error_test': valid_only_error_test,
     # 竞争
-    'competing_ps_path':competing_ps_path
+    'competing_ps_path': competing_ps_path
 
 }
 

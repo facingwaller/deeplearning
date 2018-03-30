@@ -1435,7 +1435,7 @@ class baike_helper:
         return r1, a1
 
     # 读取实体所有的属性，返回竞争PS
-    def competing_ps(self, entity_id, ps_to_except, total, r_pos, competing_dict):
+    def competing_ps(self, entity_id, ps_to_except, total,  competing_dict):
         e_s = competing_dict.get(str(entity_id).replace(' ', '').lower(), "")
         if e_s == "":
             return None, None

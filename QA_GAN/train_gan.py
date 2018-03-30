@@ -619,7 +619,7 @@ def main():
         ct.just_log2("test", now)
         ct.just_log2("info", get_config_msg())
         ct.print(get_config_msg(), "mark")
-        ct.just_log3("test_check", "ID\tquestion\tentity\tpos\tanswer\tr1\tr2\tr3\n")
+        ct.just_log3("test_check", "mode\tid\tglobal_id\tglobal_id_in_origin\tquestion\tentity\tpos\tanswer\tr1\tr2\tr3\n")
         ct.log3(now)
 
         embedding_weight = None
@@ -686,7 +686,8 @@ def main():
                 state = 'restore_test'
                 run_step = -1
                 step = -1
-                elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                if config.cc_par('restore_test'):
+                    elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                          error_test_dict)
 
             train_step = 0
@@ -909,7 +910,7 @@ def main():
                              generator.negative],  # self.prob= tf.nn.softmax( self.cos_13)
                             feed_dict)  # self.gan_loss = -tf.reduce_mean(tf.log(self.prob) * self.reward)
                         line = ("%s-%s: GEN step %d, loss %f  positive %f negative %f" % (
-                            train_step, len(shuffle_indices), step, run_step, current_loss, positive, negative))
+                            train_step, len(shuffle_indices),  run_step, current_loss, positive, negative))
                         loss_dict['loss'] += current_loss
                         loss_dict['pos'] += positive
                         loss_dict['neg'] += negative

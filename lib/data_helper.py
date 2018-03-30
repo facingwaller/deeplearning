@@ -165,6 +165,8 @@ class DataClass:
                 self.init_synonym(config.cc_par('synonym_words'))
             if config.cc_compare('S_model', 'S_model'):
                 self.synonym_train_data(config.cc_par('synonym_train_data'))
+            if config.cc_compare('pool_mode', 'competing_ps'):
+                self.init_competing_model(config.cc_par('competing_ps_path'))
             ct.print("load embedding ok!")
 
             return
@@ -970,7 +972,7 @@ class DataClass:
 
         # log
         ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
-        msg = "%s\t%s\t%d\t%d;" % (
+        msg = "%s\t%s\t%d\t%d" % (
             model, index, global_index, self.question_global_index[global_index])
         ct.print(msg, 'debug')
         ct.log3(msg)
@@ -1090,7 +1092,7 @@ class DataClass:
                 labels.append(False)
 
         # ct.print("show shuffle_indices")
-        ct.print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
+        # ct.print("len: " + str(len(x_new)) + "  " + str(len(y_new)) + " " + str(len(z_new)))
         ct.print("leave:batch_iter_wq_test_one_debug")
 
         if config.cc_par('synonym_mode') == 'ps_synonym':
@@ -1639,7 +1641,7 @@ class DataClass:
         return np.array(train_q), np.array(train_cand), np.array(train_neg)
 
     # competing model 竞争模块
-    def init_competing_model(self, f1=''):
+    def init_competing_model(self, f1='competing_ps_path'):
         competing_dict = dict()
         f1s = ct.file_read_all_lines_strip(f1)
         for l1 in f1s:
@@ -1647,8 +1649,6 @@ class DataClass:
             v1 = str(l1).split('\t')[1:]
             competing_dict[k1] = set(v1)
         self.competing_dict = competing_dict
-
-        print(1)
 
 
 # ======================================================================= clear data
