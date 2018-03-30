@@ -145,6 +145,7 @@ elif testid == 'cc_debug':
     restore_model = True
     restore_path = \
         r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_30_10_41_37_gan.v2\checkpoints\step=0_epoches=d_index=0\model.ckpt-1'
+    restore_test = False
     # 模式
     synonym_mode = 'none'  # 属性同义词 | none
     synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
