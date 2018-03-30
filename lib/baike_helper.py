@@ -1435,27 +1435,26 @@ class baike_helper:
         return r1, a1
 
     # 读取实体所有的属性，返回竞争PS
-    def competing_ps(self, entity_id, ps_to_except, total,  competing_dict):
-        e_s = competing_dict.get(str(entity_id).replace(' ', '').lower(), "")
-        if e_s == "":
-            return None, None
-
+    def competing_ps(self, entity_id, ps_to_except, total, competing_dict):
         r1 = []
         a1 = []
+
+        e_s = competing_dict.get(str(entity_id).replace(' ', '').lower(), "")
+        if e_s == "":
+            return r1, a1
+
+
         for s1 in e_s:
             if s1[0] not in ps_to_except:
-                r1.append(s1) # 温度范围	别名	中文名	又名
+                r1.append(s1)  # 温度范围	别名	中文名	又名
 
-
-        enough = False
+        random_choice = True
         default = len(r1)
         total += default
 
-        if len(r1) > total:
-            enough = True
+        if len(r1) > total and random_choice:
             # 从r1种随机挑选total个
             r1 = random.sample(r1, total)
-
 
         return r1, a1
 

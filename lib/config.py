@@ -68,8 +68,9 @@ if testid == "cc_test":
     gan_learn_rate = 0.02
 
     g_epoches = 0
-    d_epoches = 2
+    d_epoches = 0
     s_epoches = 0
+    c_epoches = 1
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
     keep_run = False  # 指示是否持续跑maybe里面的属性
@@ -91,6 +92,7 @@ if testid == "cc_test":
     # synonym S_model
     S_model = 'S_model'  # S_model | none
 
+
     # 只验证错误的模式 only_error|all
     valid_model = 'all'
     valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
@@ -98,6 +100,7 @@ if testid == "cc_test":
 
     #
     competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
+    competing_batch_size = 10 # 控制size
 elif testid == 'cc_debug':
     # 极限情况下调,1个问题，全关系
     epoches = 10  # 遍历多少轮
@@ -242,7 +245,8 @@ cc_p = {
     'valid_only_error_valid': valid_only_error_valid,
     'valid_only_error_test': valid_only_error_test,
     # 竞争
-    'competing_ps_path': competing_ps_path
+    'competing_ps_path': competing_ps_path,
+    'competing_batch_size':competing_batch_size
 
 }
 
@@ -267,6 +271,8 @@ tf.flags.DEFINE_integer("epoches", epoches, "epoches")
 tf.flags.DEFINE_integer("g_epoches", g_epoches, "g_epoches")
 tf.flags.DEFINE_integer("d_epoches", d_epoches, "d_epoches")
 tf.flags.DEFINE_integer("s_epoches", s_epoches, "s_epoches")
+tf.flags.DEFINE_integer("c_epoches", c_epoches, "c_epoches")
+#
 # tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 # tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")

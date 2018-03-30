@@ -619,7 +619,8 @@ def main():
         ct.just_log2("test", now)
         ct.just_log2("info", get_config_msg())
         ct.print(get_config_msg(), "mark")
-        ct.just_log3("test_check", "mode\tid\tglobal_id\tglobal_id_in_origin\tquestion\tentity\tpos\tanswer\tr1\tr2\tr3\n")
+        ct.just_log3("test_check",
+                     "mode\tid\tglobal_id\tglobal_id_in_origin\tquestion\tentity\tpos\tanswer\tr1\tr2\tr3\n")
         ct.log3(now)
 
         embedding_weight = None
@@ -688,7 +689,7 @@ def main():
                 step = -1
                 if config.cc_par('restore_test'):
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
-                         error_test_dict)
+                             error_test_dict)
 
             train_step = 0
             for step in range(FLAGS.epoches):
@@ -910,7 +911,7 @@ def main():
                              generator.negative],  # self.prob= tf.nn.softmax( self.cos_13)
                             feed_dict)  # self.gan_loss = -tf.reduce_mean(tf.log(self.prob) * self.reward)
                         line = ("%s-%s: GEN step %d, loss %f  positive %f negative %f" % (
-                            train_step, len(shuffle_indices),  run_step, current_loss, positive, negative))
+                            train_step, len(shuffle_indices), run_step, current_loss, positive, negative))
                         loss_dict['loss'] += current_loss
                         loss_dict['pos'] += positive
                         loss_dict['neg'] += negative
@@ -958,6 +959,54 @@ def main():
                             ct.print(line, 'loss')
 
                             # 验证
+
+                    elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                             error_test_dict)
+
+                # --------------- C model
+                for s_index in range(FLAGS.c_epoches):
+                    q_len = len(dh.question_list)
+                    state = "step=%d_epoches=%s_index=%d" % (step, 'c', s_index)
+                    model_name = 'debug_batch_iter_c_model'
+                    ct.toogle_line(q_len, step, model_name)
+                    # run_step= -1
+                    # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                    #           error_test_dict)
+                    shuffle_indices = get_shuffle_indices_train(total=len(dh.question_list))
+                    loss_dict['loss'] = 0
+                    model = 'train'
+                    for index in shuffle_indices:
+                        train_step += 1
+                        gc1 = dh.batch_iter_competing_ps(model,
+                                                         index, total=config.cc_par('competing_batch_size'))
+                        if gc1 is None:
+                            continue
+                        for item in gc1:
+
+
+                            train_q = item[0]
+                            train_cand = item[1]
+                            train_neg = item[2]
+                            # 构建feed_dict
+                            feed_dict = {
+                                discriminator.ori_input_quests: train_q,  # KEY
+                                discriminator.cand_input_quests: train_cand,  # KEY的value
+                                discriminator.neg_input_quests: train_neg  # 其他随机KEY的value
+                            }
+                            try:
+                                _, run_step, current_loss, accuracy = sess.run(
+                                    [discriminator.train_op, discriminator.global_step, discriminator.loss,
+                                     discriminator.accuracy],
+                                    feed_dict)
+                            except Exception as ee1:
+                                print(ee1)
+                            loss_dict['loss'] += current_loss
+                            if train_step % 10 == 0:
+                                line = ("%s-%s: competing step %d, loss %f with acc %f " % (
+                                    train_step, len(shuffle_indices), run_step, loss_dict['loss'], accuracy))
+                                ct.print(line, 'loss')
+
+                                # 验证
 
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict)
