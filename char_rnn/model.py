@@ -56,8 +56,11 @@ class CharRNN:
                 self.lstm_inputs = tf.one_hot(self.inputs, self.num_classes)
             else:
                 with tf.device("/cpu:0"):
-                    embedding = tf.get_variable('embedding', [self.num_classes, self.embedding_size])
+                    self.embeddings = []
+                    embedding = tf.Variable(tf.to_float(self.embeddings), trainable=True, name="W")
+                    # embedding = tf.get_variable('embedding', [self.num_classes, self.embedding_size])
                     self.lstm_inputs = tf.nn.embedding_lookup(embedding, self.inputs)
+
 
     def build_lstm(self):
         # 创建单个cell并堆叠多层

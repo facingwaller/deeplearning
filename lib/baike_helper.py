@@ -1443,7 +1443,6 @@ class baike_helper:
         if e_s == "":
             return r1, a1
 
-
         for s1 in e_s:
             if s1[0] not in ps_to_except:
                 r1.append(s1)  # 温度范围	别名	中文名	又名
@@ -2051,6 +2050,84 @@ class baike_test:
                 for t1 in f2s_line_new:
                     msg += "%s___%s\t" % (t1[0], t1[1])
                 o1.write(msg + '\n')
+
+
+
+                # 标注已经分词的文本并做输出
+
+    # 使用jieba分词，对每一个候选词做词性标注，1 0标识
+    @staticmethod
+    def try_jieba2(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                   f2='../data/nlpcc2016/result/e123.txt'):
+
+        import jieba.posseg as pseg
+        import jieba
+        # jieba.set_dictionary('../data/jieba_dict/dict.txt.big')
+        #
+        # # load stopwords set
+        # stopwordset = set()
+        # with open('../data/jieba_dict/stopwords.txt', 'r', encoding='utf-8') as sw:
+        #     for line in sw:
+        #         stopwordset.add(line.strip('\n'))
+
+        word_set = set()
+        f1s = ct.file_read_all_lines_strip(f1)
+        f1s = [str(x).split('\t')[0] for x in f1s]
+        f2s = ct.file_read_all_lines_strip(f2)
+        f2s = [ct.clean_str_rel(x) for x  in  f2s ]
+        jieba.load_userdict(f2s)
+
+        # 做好词性标注后使用三个下划线分割 ___
+        f3s = []
+        f4s = []
+        i = -1
+        for sentence in f1s:
+            i += 1
+            # print(w.word,w.flag)
+            pseg_words = pseg.cut(sentence=sentence)
+            pseg_words_list = []
+            for t1 in pseg_words:
+                pseg_words_list.append((t1.word, t1.flag))
+            pseg_words = pseg_words_list
+
+            f3s.append(pseg_words)  # 等会输出
+            f2s_line = str(f2s[i]).split('\t')
+            f2s_line_new = []
+            for f2s_line_word in f2s_line:
+                find = False
+                find_pseg_w = ''
+                for pseg_w in pseg_words:
+                    if pseg_w[0] == f2s_line_word:
+                        find = True
+                        find_pseg_w = pseg_w
+                        break
+                if find:
+                    # t1 = (find_pseg_w.word, find_pseg_w.flag)
+                    f2s_line_new.append(find_pseg_w)
+                else:
+                    t1 = (f2s_line_word, 'NULL')
+                    f2s_line_new.append(t1)
+            f4s.append(f2s_line_new)
+        # 输出词性标注文件
+        # i = -1
+        # with open(f3, mode='w', encoding='utf-8') as o1:
+        #     for f2s_line_new in f3s:
+        #         i += 1
+        #         o1.write(f1s[i] + '\t')
+        #         msg = ''
+        #         for t1 in f2s_line_new:
+        #             msg += "%s___%s\t" % (t1[0], t1[1])
+        #         o1.write(msg + '\n')
+        # print(33213)
+        # i = -1
+        # with open(f4, mode='w', encoding='utf-8') as o1:
+        #     for f2s_line_new in f4s:
+        #         i += 1
+        #         o1.write(f1s[i] + '\t')
+        #         msg = ''
+        #         for t1 in f2s_line_new:
+        #             msg += "%s___%s\t" % (t1[0], t1[1])
+        #         o1.write(msg + '\n')
 
 
 
@@ -2784,6 +2861,8 @@ if __name__ == '__main__':
     # baike_test.try_idf()
     # 5.8
     # baike_test.try_jieba()
+    if True:
+        baike_test.try_jieba2()
     # 5.8.2
     # extract_not_use_cx()
 

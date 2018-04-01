@@ -18,7 +18,7 @@ class CustomNetwork:
     #     print(1)
 
     def __init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
-                 need_cal_attention, need_max_pooling, word_model, embedding_weight,need_gan=False,first=True):
+                 need_cal_attention, need_max_pooling, word_model, embedding_weight, need_gan=False, first=True):
         # ===================初始化参数
         self.timesteps = max_document_length  # 一句话的单词数目，也是跑一次模型的times step，时刻步数
         self.word_dimension = word_dimension  # 一个单次的维度
@@ -44,7 +44,7 @@ class CustomNetwork:
         self.cos_sim()
 
     def build_inputs(self, word_model, embedding_weight):
-        with tf.name_scope('inputs_%d'%self.num):
+        with tf.name_scope('inputs_%d' % self.num):
             # print(self.timesteps)
             self.ori_input_quests_tmp = tf.placeholder(tf.int32, [None, self.timesteps])  # 临时
             self.ori_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 问题
@@ -86,11 +86,11 @@ class CustomNetwork:
         # 如果是首次D 进来初始化
 
 
-        with tf.variable_scope("LSTM_scope%d"%self.num, reuse=None) as scop1:
+        with tf.variable_scope("LSTM_scope%d" % self.num, reuse=None) as scop1:
             dsadasda = 1  # 下面全部重用
             # self.ori_quests_tmp
             self.ori_q1 = biLSTM(self.ori_quests_tmp, self.rnn_size)  # embedding size 之前设定是300
-        with tf.variable_scope("LSTM_scope%d"%self.num, reuse=True) as scop2:
+        with tf.variable_scope("LSTM_scope%d" % self.num, reuse=True) as scop2:
             # self.ori_q = biLSTM(self.ori_quests, self.rnn_size)  # embedding size 之前设定是300
             self.ori_q = biLSTM(self.ori_quests, self.rnn_size)  # embedding size 之前设定是300
             self.cand_a = biLSTM(self.cand_quests, self.rnn_size)
@@ -142,8 +142,6 @@ class CustomNetwork:
 
     def cos_sim(self):
 
-
-
         # 是否计算attention 看输入的是原始的ori_q还是经过注意力机制处理的ori_q_feat
         if self.need_cal_attention:
             self.ori_cand = feature2cos_sim(self.ori_q_feat, self.cand_q_feat)
@@ -167,9 +165,47 @@ class CustomNetwork:
         if self.need_gan:
             self.score12 = self.ori_cand
             self.score13 = self.ori_neg
-            self.gan_score1 = tf.subtract(self.ori_neg,self.ori_cand)
+            self.gan_score1 = tf.subtract(self.ori_neg, self.ori_cand)
             self.positive = tf.reduce_mean(self.score12)
             self.negative = tf.reduce_mean(self.score13)
 
         tf.summary.histogram("loss", self.loss)  # 可视化观看变量
         tf.summary.histogram("acc", self.acc)  # 可视化观看变量
+
+    def ap_attention(self):
+        rnn_size = self.rnn_size
+        ori_q = self.ori_q
+        test_q = self.test_q
+        cand_a = self.cand_a
+        neg_a = self.neg_a
+        test_a = self.test_a
+        self.quest_len = self.max_document_length
+        self.answer_len = self.quest_len
+        batch_size = len(self.ori_input_quests)  # 10
+        # ----------------------------- cal attention -------------------------------
+        with tf.variable_scope("attention_%d" % self.num, reuse=None) as scope:
+            U = tf.get_variable("U", [2 * self.rnn_size, 2 * rnn_size],
+                                initializer=tf.truncated_normal_initializer(stddev=0.1))
+            G = tf.nn.tanh(
+                tf.matmul(tf.matmul(ori_q, tf.tile(tf.expand_dims(U, 0), [batch_size, 1, 1])), cand_a, adjoint_b=True))
+            delta_q = tf.nn.softmax(tf.reduce_max(G, 2))
+            delta_a = tf.nn.softmax(tf.reduce_max(G, 1))
+            neg_G = tf.nn.tanh(
+                tf.matmul(tf.matmul(ori_q, tf.tile(tf.expand_dims(U, 0), [batch_size, 1, 1])), neg_a, adjoint_b=True))
+            #  tf.tile主要的功能就是在tensorflow中对矩阵进行自身进行复制的功能，比如按行进行复制，或是按列进行复制
+            delta_neg_q = tf.nn.softmax(tf.reduce_max(neg_G, 2))
+            delta_neg_a = tf.nn.softmax(tf.reduce_max(neg_G, 1))
+        with tf.variable_scope("attention_%d" % self.num, reuse=True) as scope:
+            test_G = tf.nn.tanh(
+                tf.matmul(tf.matmul(test_q, tf.tile(tf.expand_dims(U, 0), [batch_size, 1, 1])), test_a, adjoint_b=True))
+            delta_test_q = tf.nn.softmax(tf.reduce_max(test_G, 2))
+            delta_test_a = tf.nn.softmax(tf.reduce_max(test_G, 1))
+
+        # -------------------------- recalculate lstm output -------------------------
+
+        ori_q_feat = max_pooling(tf.multiply(ori_q, tf.reshape(delta_q, [-1, self.quest_len, 1])))
+        cand_q_feat = max_pooling(tf.multiply(cand_a, tf.reshape(delta_a, [-1, self.answer_len, 1])))
+        neg_ori_q_feat = max_pooling(tf.multiply(ori_q, tf.reshape(delta_neg_q, [-1, self.quest_len, 1])))
+        neg_q_feat = max_pooling(tf.multiply(neg_a, tf.reshape(delta_neg_a, [-1, self.answer_len, 1])))
+        test_q_feat = max_pooling(tf.multiply(test_q, tf.reshape(delta_test_q, [-1, self.quest_len, 1])))
+        test_a_feat = max_pooling(tf.multiply(test_a, tf.reshape(delta_test_a, [-1, self.answer_len, 1])))

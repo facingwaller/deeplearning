@@ -6,14 +6,14 @@ import os
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_integer('lstm_size', 128, 'size of hidden state of lstm')
-tf.flags.DEFINE_integer('num_layers', 2, 'number of lstm layers')
+tf.flags.DEFINE_integer('lstm_size', 100, 'size of hidden state of lstm')
+tf.flags.DEFINE_integer('num_layers', 1, 'number of lstm layers')
 tf.flags.DEFINE_boolean('use_embedding', True, 'whether to use embedding')
-tf.flags.DEFINE_integer('embedding_size', 128, 'size of embedding')
+tf.flags.DEFINE_integer('embedding_size', 100, 'size of embedding')
 tf.flags.DEFINE_string('converter_path', 'model/default/converter.pkl', 'model/name/converter.pkl')
 tf.flags.DEFINE_string('checkpoint_path', 'model/default/', 'checkpoint path')
-tf.flags.DEFINE_string('start_string', '我假装过去不重要 却发现自己办不到', 'use this string to start generating')
-tf.flags.DEFINE_integer('max_length', 30, 'max length to generate')
+tf.flags.DEFINE_string('start_string', '♠的', 'use this string to start generating')
+tf.flags.DEFINE_integer('max_length', 10, 'max length to generate')
 
 
 def main(_):

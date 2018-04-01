@@ -604,7 +604,7 @@ class ct:
             .replace("”", '').replace('）', '').replace('（', '').replace('／', '') \
             .replace('\u200B', '').replace('↙', '').replace('。', '') \
             .replace('"', '').replace(':', '').replace('*', '').replace(',', '') \
-            .replace('?', '').replace('&amp;', '&')
+            .replace('?', '').replace('&amp;', '&').replace('\xa0', '')
 
     @staticmethod
     def clean_str_answer(string):
@@ -1196,7 +1196,7 @@ class ct:
                 result = "%d年%d月%d日" % (y, m, d)
             except Exception as e1:
                 result = str
-                ct.print("%s\t%s" % (str, e1))
+                ct.print("%s\t%s" % (str, e1),'expection')
         return result
 
     @staticmethod

@@ -2,7 +2,6 @@ import codecs
 import re
 from itertools import combinations
 
-
 from lib.config import config
 from lib.ct import ct
 from lib.baike_helper import baike_helper
@@ -707,13 +706,13 @@ class classification:
 
     # 读取出所有NEG的PS
     def build_competing_ps(self, f1='../data/nlpcc2016/5-class/test_ps.txt',
-                      f2='../data/nlpcc2016/5-class/competing_ps.txt' ):
+                           f2='../data/nlpcc2016/5-class/competing_ps.txt'):
         f1s = ct.file_read_all_lines_strip(f1)
         bkh = baike_helper()
         bkh.init_spo()
 
         index = -1
-        d1 = dict() # KEY=P VALUE = 竞争的P
+        d1 = dict()  # KEY=P VALUE = 竞争的P
         for f1l in f1s:
             index += 1
 
@@ -726,21 +725,14 @@ class classification:
                 for w2 in l1:
                     if w1 == w2:
                         continue
-                    d1 = ct.dict_add(d1,w1,w2)
+                    d1 = ct.dict_add(d1, w1, w2)
         msg_list = []
         for k1 in d1.keys():
             vs = d1[k1]
-            msg = "%s\t%s"%(k1,'\t'.join(vs))
+            msg = "%s\t%s" % (k1, '\t'.join(vs))
             msg_list.append(msg)
 
-
-        ct.file_wirte_list(f2,msg_list)
-
-
-
-
-
-
+        ct.file_wirte_list(f2, msg_list)
 
     # 找到同实体不同属性名，但是属性值一样的
     def class_p_by_o_kb(self, f1='../data/nlpcc2016/2-kb/kb.v1.txt',
@@ -1274,11 +1266,10 @@ class classification:
             f2s.append("%s\t%s" % (l1, r))
         ct.file_wirte_list(f2, f2s)
 
-    def synonyms_filter1(self, f1, f2,f3, min_rate, min_sim, min_pos):
+    def synonyms_filter1(self, f1, f2, f3, min_rate, min_sim, min_pos):
         f1s = ct.file_read_all_lines_strip(f1)
         f1s = [ct.clean_str_rel(str(x)) for x in f1s]
         f3s = list(set(ct.file_read_all_lines_strip(f3)))
-
 
         f2s = []
         for l1 in f1s:
@@ -1296,15 +1287,107 @@ class classification:
             if str(l1).split('\t')[0] in f3s or str(l1).split('\t')[1] in f3s:
                 f2s.append(l1)
             else:
-                ct.print("skip\t%s"%l1)
+                ct.print("skip\t%s" % l1)
         ct.file_wirte_list(f2, f2s)
+
+    # class_p_by_q
+    @staticmethod
+    def class_p_by_q(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                     f5='../data/nlpcc2016/5-class/class_p_by_q/class_p_by_q.txt'):
+        index = -1
+        f1s = ct.file_read_all_lines_strip(f1)
+        p_set = set()
+        extract_dict = dict()
+        for x in f1s:
+            index += 1
+            p = ct.clean_str_rel(str(x).split('\t')[3])
+            p_set.add(p)
+            _q1 = str(x).split('\t')[0]
+            _m_s = str(x).split('\t')[5]
+            _ss = str(x).split('\t')[2]
+            # _q1 = _q1.replace(_m_s, '♠')
+            # # 去掉书名号干扰
+            # # 去掉无用次的干扰
+            # # 把属性列出来看看
+            # _q1 = _q1.replace('《♠》', '♠')
+            _q1 = str(x).split('\t')[7]
+            _q1 = _q1.replace('吗', '')
+
+            extract_start_str = _q1  # .split('♠')[0]
+            if extract_start_str in extract_dict:
+                extract_dict[extract_start_str] += 1
+            else:
+                extract_dict[extract_start_str] = 1
+        tp = ct.sort_dict(extract_dict, True)
+        f5s = []
+        for t in tp:
+            f5s.append("%s\t%s" % (t[0], t[1]))
+        ct.file_wirte_list(f5, f5s)
+
+    @staticmethod
+    def split_by_words(f1, f2):
+        f1s = ct.file_read_all_lines_strip(f1)
+        f1s = [str(x)  # .replace('的','').replace('是','').replace('有','')
+               for x in f1s]
+        f2s = []
+        ps_words = ['什么', '谁', '多', '哪', '如何', '怎', '几', '何', '啥', '否']
+        for l1 in f1s:
+            skip = False
+            for pw in ps_words:
+                if str(l1.split('\t')[0]).__contains__(pw):
+                    skip = True
+                    break
+            if skip:
+                continue
+            # 跳过没方块的？
+            # if str(l1.split('\t')[0]).__contains__('♢'):
+            #     continue
+            f2s.append(l1)
+        ct.file_wirte_list(f2, f2s)
+
+    def words_sat(self, f1='',  # 输入
+                  f2='', skip=0):
+        f1s = ct.file_read_all_lines_strip(f1)
+        f1s = [str(x).split('\t')[0] for x in f1s]
+        all = []
+        for l1 in f1s:
+            s1 = list(set(l1))
+            all.extend(s1)
+        f1s = ct.file_read_all_lines_strip(f1)
+        index = -1
+        f1s_new = []
+        for l1 in f1s:
+            if index <= skip:
+                f1s_new.append(str(l1).split('\t')[0])
+            else:
+                break
+        f1s = f1s_new
+        all_test = []
+        for l1 in f1s:
+            s1 = list(set(l1))
+            all.extend(s1)
+
+        a2 = (set(all) & set(all_test)) - set(all)
+        ct.file_wirte_list(f2, list(a2))
 
 
 if __name__ == '__main__':
     cf = classification()
-    # 抽取直接关联的看看有多少
-    # cf.test1()
-    # 选择一个没有关联的
+    if False:
+        cf.class_p_by_q(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                        f5='../data/nlpcc2016/5-class/class_p_by_q/class_p_by_q.txt')
+    if False:
+        cf.split_by_words(f1='../data/nlpcc2016/5-class/class_p_by_q/class_p_by_q.txt',
+                          f2='../data/nlpcc2016/5-class/class_p_by_q/class_p_by_q_leave.txt')
+    if True:
+        cf.words_sat(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',  # 输入
+                     f2='../data/nlpcc2016/5-class/class_p_by_q/words_sat.txt', skip=14610)
+
+        # 判断测试集中是否有训练集没有的字
+
+        # 抽取直接关联的看看有多少
+        # cf.test1()
+        # 选择一个没有关联的
 if __name__ == '__main__':
     cf = classification()
     # C1.2.1
@@ -1400,7 +1483,7 @@ if __name__ == '__main__':
         cf.init_synonym(f1='../data/nlpcc2016/5-class/synonym/all/same_p_tj_score.synonyms.filter.v2.txt',
                         f2='../data/nlpcc2016/5-class/synonym/all/same_p_tj_clear_dict.txt',
                         record=True)
-    # ==================
+        # ==================
         # cf.class_p_by_o_select2(f1='../data/nlpcc2016/5-class/demo1/same_p_tj.no_num.txt')
 
         # cf.class_p_by_o_select_combine()

@@ -120,7 +120,7 @@ elif testid == 'cc_debug':
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 4358  # 重要！这个指示了训练的关系个数 4358
+    t_relation_num = 2  # 重要！这个指示了训练的关系个数 4358
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -134,6 +134,7 @@ elif testid == 'cc_debug':
     g_epoches = 1
     d_epoches = 1
     s_epoches = 0
+    c_epoches = 0
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
     keep_run = False  # 指示是否持续跑maybe里面的属性
@@ -144,7 +145,7 @@ elif testid == 'cc_debug':
     # 模型恢复
     restore_model = True
     restore_path = \
-        r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_30_10_41_37_gan.v2\checkpoints\step=0_epoches=d_index=0\model.ckpt-1'
+        r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_30_14_33_09_gan.v3\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
     restore_test = False
     # 模式
     synonym_mode = 'none'  # 属性同义词 | none
@@ -159,6 +160,7 @@ elif testid == 'cc_debug':
 
     #
     competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
+    competing_batch_size = 10
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
@@ -281,7 +283,7 @@ tf.flags.DEFINE_integer("rnn_size", rnn_size, "LSTM 隐藏层的大小 ")
 tf.flags.DEFINE_integer("batch_size", batch_size, "batch_size")
 tf.flags.DEFINE_integer("batch_size_gan", batch_size_gan, "batch_size_gan")
 tf.flags.DEFINE_integer("max_grad_norm", 5, "max_grad_norm")
-tf.flags.DEFINE_float("learning_rate", 0.05, "learning_rate (default: 0.1)")
+tf.flags.DEFINE_float("learning_rate", 0.001, "learning_rate (default: 0.1)")
 tf.flags.DEFINE_integer("num_checkpoints", 2, "Number of checkpoints to store (default: 5)")
 
 tf.flags.DEFINE_integer("check", check, "Number of checkpoints to store (default: 5)")
@@ -308,6 +310,7 @@ ms = ["train", "test"
     , "debug_epoches"
     , "bad"
     , "loss"
+      # expection
       ]
 
 
@@ -414,6 +417,8 @@ class config:
             filename = config.par('sq_fb_path') + "/wiki.vector"  # '../data/simple_questions/fb_0_files/wiki.vector'
         elif mode == "cc":
             filename = config.par('cc_path') + "/wiki.vector"  # '../data/simple_questions/fb_0_files/wiki.vector'
+        elif mode == "ner":
+            filename = config.par('cc_path') + "/wiki.vector"
         else:
             print("???")
             raise Exception("mode error")

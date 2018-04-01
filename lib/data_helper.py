@@ -170,6 +170,38 @@ class DataClass:
             ct.print("load embedding ok!")
 
             return
+        elif mode == 'ner':
+            need_load_kb = True
+            if need_load_kb:
+                self.bh = baike_helper()
+                self.bh.init_spo(f_in=config.cc_par('kb-use'))
+
+            self.init_cc_questions(config.cc_par('cc_q_path'), run_type)
+            ct.print("init_cc_questions finish.")
+            self.build_vocab_ner()
+            # self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'), type="zh-cn")
+            if run_type == 'init':  # 初始化
+                return
+            msg = 'questions_len_train:%s\t wrong_relation_num:%s\t' % (
+                config.get_static_q_num_debug(), config.get_static_num_debug())
+            ct.print(msg, 'debug')
+
+            self.load_all_q_r_tuple(config.get_static_q_num_debug(), config.get_static_num_debug(), is_record=True)
+            self.get_max_length()
+            self.q_r_2_arrary_and_padding()
+            # 按比例分割训练和测试集
+            self.division_data(0.8, config.cc_par('real_split_train_test'))
+            self.build_embedding_weight(config.wiki_vector_path(mode))
+            # 加载
+            # if config.cc_par('synonym_mode') == 'ps_synonym':
+            #     self.init_synonym(config.cc_par('synonym_words'))
+            # if config.cc_compare('S_model', 'S_model'):
+            #     self.synonym_train_data(config.cc_par('synonym_train_data'))
+            # if config.cc_compare('pool_mode', 'competing_ps'):
+            #     self.init_competing_model(config.cc_par('competing_ps_path'))
+            ct.print("load embedding ok!")
+
+            return
         else:
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
             self.init_fb("../data/freebase/fb_1000/")
@@ -349,6 +381,9 @@ class DataClass:
         if self.mode == "cc":
             max_document_length1 = max([len(x) for x in self.question_list])  # 获取单行的最大的长度
             max_document_length2 = max([len(x) for x in self.relation_list])  # 获取单行的最大的长度
+        elif self.mode == "ner":
+            max_document_length1 = max([len(x) for x in self.question_list])  # 获取单行的最大的长度
+            max_document_length2 = max([len(x) for x in self.question_list])  # 获取单行的最大的长度
         else:
             # 将问题/关系转换成index的系列表示
             max_document_length1 = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
@@ -1321,6 +1356,8 @@ class DataClass:
             fname = "%s/q_neg_r_tuple.txt" % config.par('sq_fb_rdf_path')
         if self.mode == "cc":
             fname = config.cc_par('q_neg_r_tuple')
+        if self.mode == "ner":
+            fname = config.cc_par('q_neg_r_tuple')
         # 加载fname
         # 处理
         # 得到self.q_neg_r_tuple
@@ -1609,6 +1646,19 @@ class DataClass:
         r1 = ct.padding_line(r1, self.max_document_length, padding_num)
         return r1
 
+    def convert_str_to_indexlist_2(self, r1):
+        padding_num = self.converter.vocab_size - 1
+        # r1_split = r1.split(" ")
+        r1_split = [x for x in r1]
+        r1 = self.converter.text_to_arr_list(r1_split)
+        # r1_text = self.converter.arr_to_text_no_unk(r1)
+        # ct.log3(r1_text)
+        # ct.just_log2("info", "r1_neg in test %s" % r1_text)
+        # ct.print(r1_text)
+        # ct.just_log2("info","neg-r test:" + r1_text)
+        r1 = ct.padding_line(r1, self.max_document_length, padding_num)
+        return r1
+
     # 产生s model下的数据
     def batch_iter_s_model(self, index):
         train_q = []
@@ -1694,7 +1744,7 @@ class DataClass:
         rs, a_s = self.bh.competing_ps(r_pos1, ps_to_except1,
                                        total, self.competing_dict)
         if len(rs) == 0:
-            ct.print('%s not exist '%r_pos1)
+            ct.print('%s not exist ' % r_pos1)
             return None
 
         # if pool_mode == 'fixed_amount':
@@ -1725,7 +1775,7 @@ class DataClass:
             _index += 1
             r1_text = r1
             r1_split = [r1]
-            r1 =  self.converter.text_to_arr_list(r1_split)
+            r1 = self.converter.text_to_arr_list(r1_split)
             r1 = ct.padding_line(r1, self.max_document_length, padding_num)
             x_new.append(self.question_list_index[global_index])
             y_pos.append(self.relation_list_index[global_index])
@@ -1747,6 +1797,86 @@ class DataClass:
                 # ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
                 # ct.print("leave:batch_iter_gan_train")
                 # return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
+
+    # char-rnn
+    def build_vocab_ner(self):
+        # 建造词汇表
+        # 将问题和关系的字符串变成以空格隔开的一个单词的list
+        # total_list = self.question_list + self.relation_list
+        # q_words = self.get_split_list(self.question_list)
+        q_words = []
+
+        for q in self.question_list:
+            # q = str(q).replace("\n\r", " ")
+            q_words_list = [x for x in q]
+            for word in q_words_list:
+                q_words.append(word)
+        # q_words.extend(self.get_split_list(self.relations))  # freebase里面的关系
+        # 应该再加上问题里面的关系集合
+        # q_words = [str(x).replace(".","") for x in q_words ]
+        self.converter = read_utils.TextConverter(q_words)
+
+    # 将x转为id x
+    def convert_x_to_x_new(self, x):
+        x_new = []
+        for _ in x:
+            _new = []
+            for _1 in _:
+                _new1 = []
+                # for _2 in _1:
+                _3 = self.convert_str_to_indexlist_2(_1)
+                _new.append(_3)
+                # _new.append(_new1)
+            x_new.append(_new)
+
+        return x_new
+
+    def batch_iter_char_rnn(self, total):
+        # 只取前面的训练
+        qs_train = self.question_list[0:config.cc_par('real_split_train_test_skip')]
+        # arr = np.array(qs.copy())
+        # batch_size = n_seqs * n_steps
+        # n_batches = int(len(arr) / batch_size)
+        # arr = arr[:batch_size * n_batches]
+        # arr = arr.reshape((n_seqs, -1))
+        if len(qs_train) == 0:
+            raise ('qs_train = 0')
+
+        x = []
+        y = []
+        index = 0
+        for q in qs_train:
+            index+=1
+            # ct.print('epoches:%d ' % epoches)
+            _tmp_x = q
+
+
+            _tmp_y = [x for x in _tmp_x]
+            _tmp_x = [x for x in _tmp_x]
+            del _tmp_y[0]
+
+            x.append(self.convert_str_to_indexlist_2(''.join(_tmp_x)))
+            y.append(self.convert_str_to_indexlist_2(''.join(_tmp_y)))
+
+            # 将问题转化
+            if index % total == 0 :
+                r_x = x.copy()
+                r_y = y.copy()
+                x.clear()
+                y.clear()
+                # print(len(r_x))
+                yield np.array(r_x), np.array(r_y)
+
+
+
+                # for n in range(0, arr.shape[1], n_steps):
+                #     x = arr[:, n:n + n_steps]
+                #     y = np.zeros_like(x)
+                #     y[:, :-1], y[:, -1] = x[:, 1:], x[:, 0]
+                #     # 转为
+                #     x_new = self.convert_x_to_x_new(x)
+                #     y_new = self.convert_x_to_x_new(y)
+                #     yield x_new, y_new
 
 
 # ======================================================================= clear data
@@ -1926,6 +2056,14 @@ def test_tyc():
     dh.init_synonym()
 
 
+def test_ner():
+    dh = DataClass("ner")
+    g = dh.batch_iter_char_rnn(1)
+    for x, y in g:
+        print(x)
+        print(y)
+
+
 if __name__ == "__main__":
     # CC 部分的测试-和构建代码
     #    init_cc()
@@ -1933,7 +2071,7 @@ if __name__ == "__main__":
     # test_random_choose_indexs_debug()
     # test_random_choose_indexs_debug()
     # test_cc()
-    test_tyc()
+    test_ner()
 
     # 测试生成
 
