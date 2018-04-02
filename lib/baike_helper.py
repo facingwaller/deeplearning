@@ -315,7 +315,20 @@ class baike_helper:
             output[ngramTemp] += 1
         return output
 
-    # F2.4 重新输出实体-长度，并排序,
+    # 抽取实体F0.3.1
+    @staticmethod
+    def extract_e(f1='../data/nlpcc2016/2-kb/kb.v1.txt',
+                  f2='../data/nlpcc2016/4-ner/extract_e/e1.txt'):
+        f1s = []
+        f_in = ''
+        with open(f_in, mode='r', encoding='utf-8') as rf:
+            for l in rf:
+                f1s.append(str(l).split('\t')[0])
+        # f1s = ct.file_read_all_lines_strip(f1)
+
+        print(1)
+
+    # F0.3.1 重新输出实体-长度，并排序,
     @staticmethod
     def statistics_subject_len(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb_clean1_s.txt"
                                ,
@@ -1488,6 +1501,10 @@ class baike_helper:
         v1 = dict(self.d_f6s).get(word, 0)
         return v1
 
+    def get_idf4sort(self, word):
+        v1 = dict(self.d_f6s).get(word, 0)
+        return v1
+
     # 看看m1_2 中是否有重复的
     def test_m1_m2(self):
         m1s = ct.file_read_all_lines_strip('../data/nlpcc2016/result/e_12.txt')
@@ -2206,20 +2223,24 @@ class baike_test:
 
         #
         acc1 = 0.0
-        f3s = ct.file_read_all_lines_strip(f3)
-        f1s = ct.file_read_all_lines_strip(f1)
+        f3s = ct.file_read_all_lines_strip(f3)  # 已经抽取的实体N-GRAM
+        f1s = ct.file_read_all_lines_strip(f1)  # 问题
         f4s = ct.file_read_all_lines_strip(f4)  # 结巴 标注好的分词
         f6s = ct.file_read_all_lines_strip(f6)  # 期望.IDF文件
         f5s = []
         f7s = []
         f8s = []
         f9s = []
-        # 载入期望 5.9
+        f10s = []
+
+        filter_words= ['?','？','']
+
+        # 载入期望 5.9 => 改成期望
         f6s = f6s[1:]
         d_f6s = dict()
         for f6s_line in f6s:
             key = str(f6s_line).split('\t')[0]
-            v = float((f6s_line).split('\t')[5])
+            v = float((f6s_line).split('\t')[3])  # 5 期望 3 IDF
             d_f6s[key] = v
         bkh.d_f6s = d_f6s
         ##
@@ -2236,12 +2257,15 @@ class baike_test:
         total_f1s_i_e1 = 0  # 统计下 是命中实体1还是实体2
         total_f1s_i_e2 = 0
         skip = 0
-        cgc = ct.generate_counter()
+
         index = -1
         for i in range(len(f1s)):
             index += 1
-            if index % 1000 == 0:
-                print(index / 1000)
+            # if index > 2000:
+            #     break
+            if index % 1000 == 0  :
+                print("%d - %d" % (index / 1000, len(f1s) / 1000))
+                # break
             if len(str(f1s[i]).split('\t')) < 3:
                 skip += 1
                 # print(f1s[i])
@@ -2275,10 +2299,7 @@ class baike_test:
             filter_flags = ['ul', 'tg', 'an', 'vq', 'e', 'c', 'ag', 'u', 'mq', 'df', 'vd', 'ug', 'f']
 
             for l_i in acc_index:
-                try:
-                    start_list = str(f3s[index]).split('\t')
-                except Exception as e1:
-                    print(e1)
+                start_list = str(f3s[index]).split('\t')
                 if use_cx:
                     # 增加词性
                     f4s_line = str(f4s[i]).split('\t')
@@ -2297,9 +2318,11 @@ class baike_test:
                             #
 
                 # ct.print_t('候选去除前:%s' % start_list)
-                list1 = [x.lower().replace(' ', '') for x in start_list]  # 小写
+                list1 = []
+                for x in start_list:
+                    list1.append(x.lower().replace(' ', ''))
 
-                # 去掉候选的书名号和括号
+                    # 去掉候选的书名号和括号
                 list1 = [baike_helper.entity_re_extract_one_repeat(ct.clean_str_zh2en(x)) for x in list1]
                 # 去重
                 # list1_new = []
@@ -2313,6 +2336,7 @@ class baike_test:
                     list1_new = ct.list_no_repeat_cx(list1, d_f4s_line)
                 else:
                     list1_new = ct.list_no_repeat(list1)
+
                 # 5.8.3 去掉词语包含试试 有一首歌叫	有一首歌	一首歌
                 # 不好使
                 # list1_new_2 = []
@@ -2326,12 +2350,24 @@ class baike_test:
 
                 start_list = list1_new
                 if use_expect:
-                    min1 = min(len(start_list), 15)  # 最多排序6个
+                    min1 = min(len(start_list), 999)  # 最多排序6个
                     start_list = start_list[0:min1]
                     # 通过期望 重写排序 候选 5.9
-                    start_list = sorted(start_list, key=bkh.get_qiwang, reverse=True)
+                    start_tuple_list = []
+                    # for _ in start_list:
+                    #     start_tuple_list.append((_,bkh.get_idf4sort(_)))
+                    start_list = sorted(start_list, key=bkh.get_idf4sort, reverse=False)
                 # ct.print_t('候选去除后:%s' % start_list)
 
+                word_idf_str_list= []
+                for _ in start_list:
+                    flag = 0
+                    if f1s_i_e2 == _:
+                        flag=1
+                    # 0_1_0.898056_类型  INDEX 是否正确 分值/IDF 实体
+                    word_idf_str_list.append("0____%s____%s____%s"%(flag,bkh.get_idf4sort(_),_))
+                word_idf_str = '\t'.join(word_idf_str_list)
+                # print(word_idf_str)
                 list1 = start_list[0:l_i]
                 # list1 = [ct.clean_str_zh2en(x.lower()) for x in list1] # 小写
 
@@ -2399,7 +2435,7 @@ class baike_test:
                     #     record.append("%s\t%s" % (f1s[i], f3s[i]))
 
                 # 不管判断是对的还是错的都保存
-                f9s.append("%s\t%s" % (f1s[i], f3s[i]))
+                f9s.append("%s\t%s" % (f1s[i], word_idf_str))
 
         print("skip:%d total:%d  toatal2:%d ;total_f1s_i_e1 %d; total_f1s_i_e2 %d ;" % (
             skip, total, total2, total_f1s_i_e1, total_f1s_i_e2))
@@ -2452,7 +2488,7 @@ class baike_test:
     @staticmethod
     def file_tj(f1='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',  # 原始
                 f_out='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt',
-                record =False):
+                record=False):
         result = ct.file_read_all_lines_strip(f1)
         # l2s = ct.file_read_all_lines_strip(f2)
 
@@ -2465,6 +2501,7 @@ class baike_test:
                 else:
                     d1[word] = 1
         # result = [x= sorted(x,key=get_total(x))  for x  in  result]
+        bkh = baike_helper()
         bkh.d1 = d1
         bkh.d2_get_total = dict()
 
@@ -2475,7 +2512,7 @@ class baike_test:
             tmp = sorted(tmp, key=bkh.get_total)
             tmp_new = []
             for _t in tmp:
-                tmp_new.append((_t,bkh.get_total(_t)))
+                tmp_new.append((_t, bkh.get_total(_t)))
             result[index] = tmp_new
             # print(tmp)
         if record:
@@ -2487,8 +2524,6 @@ class baike_test:
                     # for x1 in x :
                     #     print("%s  %s"%(x1,bkh.get_total(x1)))
         return result
-
-
 
     # 统计前3的词性
     @staticmethod
