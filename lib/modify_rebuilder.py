@@ -17,8 +17,7 @@ if __name__ == '__main__':  #
 
         # 2 生成KB的实体统计文件,这个还不够，还需要结合em_by_1 em_by_2
     if False:
-        baike_helper.statistics_subject_len(f_in="../data/nlpcc2016/2-kb/kb.v1.txt"
-                                            ,
+        baike_helper.statistics_subject_len(f_in="../data/nlpcc2016/2-kb/kb.v1.txt",
                                             f_out="../data/nlpcc2016/2-kb/kb-entity.v1.txt")
         print('NER部分 统计KB长度')
 

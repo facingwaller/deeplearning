@@ -2451,7 +2451,8 @@ class baike_test:
     # file_tj
     @staticmethod
     def file_tj(f1='../data/nlpcc2016/ner_t1/extract_entitys_all.txt',  # 原始
-                f_out='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt'):
+                f_out='../data/nlpcc2016/ner_t1/extract_entitys_all_tj.txt',
+                record =False):
         result = ct.file_read_all_lines_strip(f1)
         # l2s = ct.file_read_all_lines_strip(f2)
 
@@ -2472,16 +2473,22 @@ class baike_test:
                 print("%d /  %d" % (index / 100, len(result) / 100))
             tmp = str(result[index]).split('\t')
             tmp = sorted(tmp, key=bkh.get_total)
-            result[index] = tmp
-            print(tmp)
+            tmp_new = []
+            for _t in tmp:
+                tmp_new.append((_t,bkh.get_total(_t)))
+            result[index] = tmp_new
+            # print(tmp)
+        if record:
+            with open(f_out, mode='w', encoding='utf-8') as o1:
+                for words_list in result:
+                    # print("------")
+                    # print(x)
+                    o1.write("%s\n" % '\t'.join(words_list))
+                    # for x1 in x :
+                    #     print("%s  %s"%(x1,bkh.get_total(x1)))
+        return result
 
-        with open(f_out, mode='w', encoding='utf-8') as o1:
-            for words_list in result:
-                # print("------")
-                # print(x)
-                o1.write("%s\n" % '\t'.join(words_list))
-                # for x1 in x :
-                #     print("%s  %s"%(x1,bkh.get_total(x1)))
+
 
     # 统计前3的词性
     @staticmethod
