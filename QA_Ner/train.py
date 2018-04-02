@@ -26,8 +26,8 @@ tf.flags.DEFINE_integer('num_layers', 1, 'number of lstm layers')
 tf.flags.DEFINE_boolean('use_embedding', True, 'whether to use embedding')
 # tf.flags.DEFINE_integer('embedding_size', 100, 'size of embedding')
 # tf.flags.DEFINE_float('learning_rate', 0.001, 'learning_rate')
-tf.flags.DEFINE_float('train_keep_prob', 0.5, 'dropout rate during training')
-tf.flags.DEFINE_string('input_file', '../char_rnn/data/c1_train.txt', 'utf8 encoded text file')
+tf.flags.DEFINE_float('train_keep_prob', 0.05, 'dropout rate during training')
+# tf.flags.DEFINE_string('input_file', '../char_rnn/data/c1_train.txt', 'utf8 encoded text file')
 tf.flags.DEFINE_integer('max_steps', 100000, 'max steps to train 100000 这里是epoch')
 tf.flags.DEFINE_integer('save_every_n', 1000, 'save the model every n steps 100')
 tf.flags.DEFINE_integer('log_every_n', 100, 'log to the screen every n steps')
@@ -40,7 +40,7 @@ def main(_):
         os.makedirs(model_path)
     model = 'ner'
     dh = data_helper.DataClass(model)
-    train_batch_size = 2
+    train_batch_size = 1
     # g = dh.batch_iter_char_rnn(train_batch_size)  # (FLAGS.num_seqs, FLAGS.num_steps)
     embedding_weight = dh.embeddings
     # with codecs.open(FLAGS.input_file, encoding='utf-8') as f:

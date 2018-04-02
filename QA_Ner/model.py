@@ -7,16 +7,27 @@ import os
 from tensorflow.contrib import rnn
 from lib.ct import ct
 
-def pick_top_n(preds, vocab_size, top_n=5):
-    p = np.squeeze(preds)
+
+def pick_top_n(preds, vocab_size, top_n=5, padding_num=-1):
+    p = np.squeeze(preds)  # 从数组的形状中删除单维条目，即把shape中为1的维度去掉
     # 将除了top_n个预测值的位置都置为0
-    p[np.argsort(p)[:-(top_n+1)]] = 0
-    p[59]=0
+
+    # argsort函数返回的是数组值从小到大的索引值
+    p[np.argsort(p)[:-(top_n + 1)]] = 0
+    # p[59]=0
     # 归一化概率
+    # p[padding_num] = 0.0 # 去除空格
     p = p / np.sum(p)
     # 随机选取一个字符
     c = np.random.choice(vocab_size, 1, p=p)[0]
     return c
+
+
+# 得到C的概率
+def score_preds(preds, c):
+    p = np.squeeze(preds)
+    p = p / np.sum(p)
+    return p[c]
 
 
 class CharRNN:
@@ -148,11 +159,40 @@ class CharRNN:
                         # self.checkpoint(sess, state)
                     if step >= max_steps:
                         break
-                # print('1 epoches ok')
+                        # print('1 epoches ok')
 
             self.saver.save(sess, os.path.join(save_path, 'model'), global_step=step)
 
-    def sample(self, n_samples, prime, vocab_size):
+    def judge(self, prime, vocab_size):
+        # samples = [c for c in prime]
+        sess = self.session
+        new_state = sess.run(self.initial_state)
+        preds = np.ones((vocab_size,))  # for prime=[]
+        index = -1
+        score_list = []
+        for c in prime:
+            x = np.zeros((1, 1))
+            # 输入单个字符
+            x[0, 0] = c
+            # print(x)
+            feed = {self.inputs: x,
+                    self.keep_prob: 1.,
+                    self.initial_state: new_state}
+            preds, new_state = sess.run([self.proba_prediction, self.final_state],
+                                        feed_dict=feed)
+            index += 1
+            if index > 0:
+                _s1 = score_preds(preds, c)
+                score_list.append(_s1 * 10000000)
+
+        #
+        result1 = 0.0
+        for _s in score_list:
+            result1 += np.log(_s)
+        result1 = result1 / len(score_list)
+        return result1, ','.join([str(x) for x in score_list])
+
+    def sample(self, n_samples, prime, vocab_size, padding_num):
         samples = [c for c in prime]
         sess = self.session
         new_state = sess.run(self.initial_state)
@@ -167,7 +207,7 @@ class CharRNN:
             preds, new_state = sess.run([self.proba_prediction, self.final_state],
                                         feed_dict=feed)
 
-        c = pick_top_n(preds, vocab_size)
+        c = pick_top_n(preds, vocab_size, padding_num)
         # 添加字符到samples中
         samples.append(c)
 
@@ -191,7 +231,7 @@ class CharRNN:
         self.saver.restore(self.session, checkpoint)
         print('Restored from: {}'.format(checkpoint))
 
-    def checkpoint(self,sess, state):
+    def checkpoint(self, sess, state):
         # Output directory for models and summaries
 
         out_dir = ct.log_path_checkpoint(state)

@@ -1932,6 +1932,27 @@ class baike_helper:
                 f5s.append("%s\t%s" % (t[0], t[1]))
             ct.file_wirte_list('../data/nlpcc2016/3-questions/demo2/class_p_by_q.txt', f5s)
 
+    # 一次性 合并
+    @staticmethod
+    def buqi_lost(f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
+                  f2='../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
+                  f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.fix.txt'):
+        f1s = ct.file_read_all_lines_strip(f1)
+        f2s = ct.file_read_all_lines_strip(f2)
+        i1 = 0
+        i2 = 0
+        f1s_new = []
+        for i in range(len(f2s)):
+
+            if str(f1s[i1]).split('\t')[0] != str(f2s[i2]).split('\t')[0]:
+                f1s_new.append(f2s[i2] + '\t####NULL\t####NULL\t####NULL')
+                i2 += 1
+            else:
+                f1s_new.append(f1s[i1])
+                i1 += 1
+                i2 += 1
+        ct.file_wirte_list(f3, f1s_new)
+
 
 class baike_test:
     @staticmethod
@@ -1972,7 +1993,7 @@ class baike_test:
             out.write("%s\t%s\t%s\t%s\t%s\t%s\n" % ('实体', '出现次数', '出现次数/总数', 'IDF', '命中次数', '期望'))
             for t in list1:
                 out.write("%s\t%s\t%f\t%f\t%s\t%f\n" % (
-                    t[0], t[1], t[1] / total, math.log(t[1] / total), d3.get(t[0], 0),
+                    t[0], t[1], t[1] / total, math.log(total / t[1]), d3.get(t[0], 0),
                     (d3.get(t[0], 0) * 10000 / t[1])))
         print(11111132)
 
@@ -2074,7 +2095,7 @@ class baike_test:
         f1s = ct.file_read_all_lines_strip(f1)
         f1s = [str(x).split('\t')[0] for x in f1s]
         f2s = ct.file_read_all_lines_strip(f2)
-        f2s = [ct.clean_str_rel(x) for x  in  f2s ]
+        f2s = [ct.clean_str_rel(x) for x in f2s]
         jieba.load_userdict(f2s)
 
         # 做好词性标注后使用三个下划线分割 ___
@@ -2108,30 +2129,30 @@ class baike_test:
                     t1 = (f2s_line_word, 'NULL')
                     f2s_line_new.append(t1)
             f4s.append(f2s_line_new)
-        # 输出词性标注文件
-        # i = -1
-        # with open(f3, mode='w', encoding='utf-8') as o1:
-        #     for f2s_line_new in f3s:
-        #         i += 1
-        #         o1.write(f1s[i] + '\t')
-        #         msg = ''
-        #         for t1 in f2s_line_new:
-        #             msg += "%s___%s\t" % (t1[0], t1[1])
-        #         o1.write(msg + '\n')
-        # print(33213)
-        # i = -1
-        # with open(f4, mode='w', encoding='utf-8') as o1:
-        #     for f2s_line_new in f4s:
-        #         i += 1
-        #         o1.write(f1s[i] + '\t')
-        #         msg = ''
-        #         for t1 in f2s_line_new:
-        #             msg += "%s___%s\t" % (t1[0], t1[1])
-        #         o1.write(msg + '\n')
+            # 输出词性标注文件
+            # i = -1
+            # with open(f3, mode='w', encoding='utf-8') as o1:
+            #     for f2s_line_new in f3s:
+            #         i += 1
+            #         o1.write(f1s[i] + '\t')
+            #         msg = ''
+            #         for t1 in f2s_line_new:
+            #             msg += "%s___%s\t" % (t1[0], t1[1])
+            #         o1.write(msg + '\n')
+            # print(33213)
+            # i = -1
+            # with open(f4, mode='w', encoding='utf-8') as o1:
+            #     for f2s_line_new in f4s:
+            #         i += 1
+            #         o1.write(f1s[i] + '\t')
+            #         msg = ''
+            #         for t1 in f2s_line_new:
+            #             msg += "%s___%s\t" % (t1[0], t1[1])
+            #         o1.write(msg + '\n')
 
 
 
-                # 标注已经分词的文本并做输出
+            # 标注已经分词的文本并做输出
 
     # 合并识别结果和未识别,一次性
     @staticmethod
@@ -2158,6 +2179,7 @@ class baike_test:
 
     # 试试检测一下前1，前2，前3命中的概率
     # 增加别名词典匹配
+    # 增加·不能被其他的包含
     # @staticmethod
     def try_test_acc_of_m1(self, f1='../data/nlpcc2016/ner_t1/q.rdf.txt',
                            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed4.txt',
@@ -2170,7 +2192,9 @@ class baike_test:
                            use_expect=False,
                            acc_index=[1, 2, 3],
                            get_math_subject=False,
-                           f7='../data/nlpcc2016/ner_t1/q.rdf.txt.math_s.txt'
+                           f7='../data/nlpcc2016/ner_t1/q.rdf.txt.math_s.txt',
+                           f8='',
+                           f9=''
                            ):
         # f1   # 输入文件
         # 《机械设计基础》	机械设计基础	设计基础	机械设计	机械	基础	这本书	作者	本书	设计	谁？	是谁
@@ -2188,7 +2212,8 @@ class baike_test:
         f6s = ct.file_read_all_lines_strip(f6)  # 期望.IDF文件
         f5s = []
         f7s = []
-
+        f8s = []
+        f9s = []
         # 载入期望 5.9
         f6s = f6s[1:]
         d_f6s = dict()
@@ -2212,10 +2237,11 @@ class baike_test:
         total_f1s_i_e2 = 0
         skip = 0
         cgc = ct.generate_counter()
+        index = -1
         for i in range(len(f1s)):
-            index = cgc()
-            if index % 10 == 0:
-                print(index / 10)
+            index += 1
+            if index % 1000 == 0:
+                print(index / 1000)
             if len(str(f1s[i]).split('\t')) < 3:
                 skip += 1
                 # print(f1s[i])
@@ -2231,10 +2257,9 @@ class baike_test:
 
             f1s_i_e = str(f1s[i]).split('\t')[2]  # 答案中的实体
             f1s_i_e1 = f1s_i_e
-            f1s_i_e = ct.clean_str_zh2en(f1s_i_e)  # 符号转换
+            f1s_i_e = ct.clean_str_zh2en(f1s_i_e).lower().replace(' ', '')  # 符号转换
             # ct.print_t('答案改写前:%s' % f1s_i_e)
-            f1s_i_e = f1s_i_e.lower().replace(' ', '')
-            f1s_i_e = baike_helper.entity_re_extract_one_repeat(f1s_i_e)  # 小写
+            f1s_i_e = baike_helper.entity_re_extract_one_repeat(f1s_i_e)
             # if (f1s_i_e.__contains__('《') and f1s_i_e.__contains__('》')) or \
             #         (f1s_i_e.__contains__('(') and f1s_i_e.__contains__(')')):
             #     f1s_i_e = baike_helper.entity_re_extract_one(f1s_i_e).lower()  # 小写
@@ -2250,7 +2275,10 @@ class baike_test:
             filter_flags = ['ul', 'tg', 'an', 'vq', 'e', 'c', 'ag', 'u', 'mq', 'df', 'vd', 'ug', 'f']
 
             for l_i in acc_index:
-                start_list = str(f3s[i]).split('\t')
+                try:
+                    start_list = str(f3s[index]).split('\t')
+                except Exception as e1:
+                    print(e1)
                 if use_cx:
                     # 增加词性
                     f4s_line = str(f4s[i]).split('\t')
@@ -2289,8 +2317,11 @@ class baike_test:
                 # 不好使
                 # list1_new_2 = []
                 # for list1_new_word in list1_new:
-                #     if not ct.be_contains(list1_new_word,list1_new):
+                #     if not ct.be_contains(list1_new_word, list1_new):
                 #         list1_new_2.append(list1_new_word)
+                # x1 = set(list1_new) - set(list1_new_2)
+                # if f1s_i_e2 in x1:
+                #     print("%s\t%s" % (f1s_i_e2, '\t'.join(start_list)))
                 # list1_new = list1_new_2
 
                 start_list = list1_new
@@ -2313,29 +2344,35 @@ class baike_test:
                 # list1 = list(set(list1))
                 # #
                 # ct.print_t('扩展后:%s' % list1)
-
+                f8s.append('\t'.join(list1))
                 exist = f1s_i_e2 in list1
                 if exist:
                     acc[str(l_i)] += 1
-                    # F6.1.1 找到对应的index
-                    if get_math_subject:
-                        list1_index = -1
-                        list1_find = False
-                        # 重新处理一次list1
-                        f3s_i_list = str(f3s[i]).split('\t')
-                        #
-                        for list1_item in f3s_i_list:
-                            list1_index += 1
-                            list1_item_bak = list1_item
-                            list1_item = baike_helper.entity_re_extract_one_repeat(
-                                ct.clean_str_zh2en(list1_item.lower().replace(' ', '')))
-                            if list1_item == f1s_i_e2:
-                                list1_find = True
-                                break
-                        if list1_find:
-                            f7s.append(list1_item_bak)
-                        else:
-                            f7s.append('NULL')
+                    if str(f1s[i]).split('\t')[0] in [
+                        # '请问荣耀xl是什么时候曝光的？',
+                        # '你知道创亿bx-3的适用机型是什么系列吗？',
+                        '辣子鸡属于八大菜系中的哪一种'
+                    ]:
+                        print(12313)
+                        # F6.1.1 找到对应的index
+                        # if get_math_subject:
+                        #     list1_index = -1
+                        #     list1_find = False
+                        #     # 重新处理一次list1
+                        #     f3s_i_list = str(f3s[i]).split('\t')
+                        #     #
+                        #     for list1_item in f3s_i_list:
+                        #         list1_index += 1
+                        #         list1_item_bak = list1_item
+                        #         list1_item = baike_helper.entity_re_extract_one_repeat(
+                        #             ct.clean_str_zh2en(list1_item.lower().replace(' ', '')))
+                        #         if list1_item == f1s_i_e2:
+                        #             list1_find = True
+                        #             break
+                        #     if list1_find:
+                        #         f7s.append(list1_item_bak)
+                        #     else:
+                        #         f7s.append('NULL')
                 elif l_i == 3 and not exist:
                     if str(f1s[i]).split('\t')[0] in ['有一本叫《毛泽东》的书是怎样装订的'
                         , '《兄弟》属于哪种小说', '《i》是什么音乐风格的？',
@@ -2346,8 +2383,9 @@ class baike_test:
 
                 elif l_i == 999:
                     if str(f1s[i]).split('\t')[0] in [
-                        '请问荣耀xl是什么时候曝光的？',
-                        '你知道创亿bx-3的适用机型是什么系列吗？'
+                        # '请问荣耀xl是什么时候曝光的？',
+                        # '你知道创亿bx-3的适用机型是什么系列吗？',
+                        '请问iPad的输入方式有什么？'
                     ]:
                         print(333333333333)
 
@@ -2360,20 +2398,25 @@ class baike_test:
                     # if not exist:
                     #     record.append("%s\t%s" % (f1s[i], f3s[i]))
 
+                # 不管判断是对的还是错的都保存
+                f9s.append("%s\t%s" % (f1s[i], f3s[i]))
+
         print("skip:%d total:%d  toatal2:%d ;total_f1s_i_e1 %d; total_f1s_i_e2 %d ;" % (
             skip, total, total2, total_f1s_i_e1, total_f1s_i_e2))
 
         for k, v in acc.items():
-            print("前%s,get:%d   acc: %f,total - skip=%d  " % (k, v, v / (total - skip), total - skip))
+            print("前%s,get:%d   acc: %f,total - skip=%d  " % (k, v, v / (total - skip), skip))
         print(len(record))
         # 记录出错的
         with open(f2, mode='w', encoding='utf-8') as o1:
             for item in record:
                 o1.write(item + '\n')
-        if get_math_subject:
-            with open(f7, mode='w', encoding='utf-8') as o1:
-                for item in f7s:
-                    o1.write(item + '\n')
+                # if get_math_subject:
+                #     with open(f7, mode='w', encoding='utf-8') as o1:
+                #         for item in f7s:
+                #             o1.write(item + '\n')
+        ct.file_wirte_list(f8, f8s)
+        ct.file_wirte_list(f9, f9s)
 
     # 一次性 合并
     @staticmethod
@@ -2685,6 +2728,11 @@ if __name__ == '__main__':
 
     bkt = baike_test()
     bkh = baike_helper()
+
+    if False:
+        baike_helper.buqi_lost(f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
+                               f2='../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
+                               f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.fix.txt')
     # baike-test流程 3.0
     # baike_test.one_combine_all(f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt',
     #                            f2='../data/nlpcc2016/tang/20180205-1/q.rdf.txt',
@@ -2855,13 +2903,13 @@ if __name__ == '__main__':
                         f_out='../data/nlpcc2016/ner_t1/n-gram-test/extract_entitys-n-gram.txt',
                         f3="../data/nlpcc2016/n_gram/e_12.txt.tj_sort.txt", skip_no_space=False)
     # 测试单行
-
-
     # 5.9
-    # baike_test.try_idf()
+    baike_test.try_idf(f1='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt',
+                       f2='../data/nlpcc2016/4-ner/extract_entitys_all.txt.statistics.txt',
+                       f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt')
     # 5.8
     # baike_test.try_jieba()
-    if True:
+    if False:
         baike_test.try_jieba2()
     # 5.8.2
     # extract_not_use_cx()

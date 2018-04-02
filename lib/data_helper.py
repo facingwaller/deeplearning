@@ -103,6 +103,7 @@ class DataClass:
         :param mode:
         """
         # ---------------------初始化实体
+        self.question_list_origin = []
         self.synonym_dict = dict()
         self.answer_list_index = []
         self.question_global_index = []
@@ -571,12 +572,14 @@ class DataClass:
             # question = question.replace(entity_ner, '♠')
             # 改成直接取第7列
             question = line_seg[6]
+            question_origin = str(line_seg[0]).replace(' ', '').lower()
 
             self.entity1_list.append(entity1)
             self.relation_list.append(relation1)
             self.entity2_list.append(entity2)
 
             self.question_list.append(question)  # 将问题替换掉
+            self.question_list_origin.append(question_origin)  # 将问题替换掉
             self.entity_ner_list.append(entity_ner)
             self.answer_list.append(answer)
 
@@ -1646,7 +1649,7 @@ class DataClass:
         r1 = ct.padding_line(r1, self.max_document_length, padding_num)
         return r1
 
-    def convert_str_to_indexlist_2(self, r1):
+    def convert_str_to_indexlist_2(self, r1, padding=True):
         padding_num = self.converter.vocab_size - 1
         # r1_split = r1.split(" ")
         r1_split = [x for x in r1]
@@ -1656,7 +1659,8 @@ class DataClass:
         # ct.just_log2("info", "r1_neg in test %s" % r1_text)
         # ct.print(r1_text)
         # ct.just_log2("info","neg-r test:" + r1_text)
-        r1 = ct.padding_line(r1, self.max_document_length, padding_num)
+        if padding:
+            r1 = ct.padding_line(r1, self.max_document_length, padding_num)
         return r1
 
     # 产生s model下的数据
@@ -1806,11 +1810,13 @@ class DataClass:
         # q_words = self.get_split_list(self.question_list)
         q_words = []
 
-        for q in self.question_list:
+        for q in self.question_list_origin:
             # q = str(q).replace("\n\r", " ")
             q_words_list = [x for x in q]
             for word in q_words_list:
                 q_words.append(word)
+
+        q_words.extend(['ἐ', 'ল', '♠'])
         # q_words.extend(self.get_split_list(self.relations))  # freebase里面的关系
         # 应该再加上问题里面的关系集合
         # q_words = [str(x).replace(".","") for x in q_words ]
@@ -1846,10 +1852,9 @@ class DataClass:
         y = []
         index = 0
         for q in qs_train:
-            index+=1
+            index += 1
             # ct.print('epoches:%d ' % epoches)
-            _tmp_x = q
-
+            _tmp_x = "ἐ%sল" % q  # 使用2个无意义的字符做开始和结束的字符
 
             _tmp_y = [x for x in _tmp_x]
             _tmp_x = [x for x in _tmp_x]
@@ -1859,7 +1864,7 @@ class DataClass:
             y.append(self.convert_str_to_indexlist_2(''.join(_tmp_y)))
 
             # 将问题转化
-            if index % total == 0 :
+            if index % total == 0:
                 r_x = x.copy()
                 r_y = y.copy()
                 x.clear()

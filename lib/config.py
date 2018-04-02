@@ -83,7 +83,7 @@ if testid == "cc_test":
     # 模型恢复
     restore_model = True
     restore_path = \
-        r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_29_11_36_36_v2\checkpoints\step=3_epoches=d_index=0\model.ckpt-1'
+        r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_04_01_13_50_19_4Mv1\checkpoints\step=9_epoches=d_index=0\model.ckpt-1'
     #    r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
     # 2018_03_29_11_36_36\checkpoints\step=3_epoches=d_index=0
     restore_test = False
@@ -160,7 +160,7 @@ elif testid == 'cc_debug':
 
     #
     competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
-    competing_batch_size = 10
+    competing_batch_size = 5
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
