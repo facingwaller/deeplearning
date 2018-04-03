@@ -1,7 +1,11 @@
 文件读写
     f_in = ''
+    _index = -1
     with open(f_in, mode='r', encoding='utf-8') as rf:
-        for l in rf.readlines():
+        for l in rf:
+            _index += 1
+            if _index % 10000 == 0:
+                ct.print(_index/10000)
 
 -
         with open(f2, mode='w', encoding='utf-8') as o1:
@@ -23,7 +27,12 @@ f1s = ct.file_read_all_lines_strip('../data/nlpcc2016/3-questions/q.rdf.m_s.filt
                     o1.write(msg + '\n')
 
 
-                    extract_kb_possible
+r3 = (r_train | r_test) - r_train
+
+for k,v in d1.items():
+    print(k)
+    print(v)
+
 
  2. 加载和保存一个模型
 

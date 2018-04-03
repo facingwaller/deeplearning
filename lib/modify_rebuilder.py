@@ -8,6 +8,8 @@ if __name__ == '__main__':  #
     bkt = baike_test()
     bkh = baike_helper()
     cf = classification()
+
+    # -------------- 清理部分 NER部分
     if False:
         # 1 过滤KB
         baike_helper.clean_baike_kb(file_name="../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.kb",
@@ -15,25 +17,57 @@ if __name__ == '__main__':  #
                                     clean_log_path="../data/nlpcc2016/2-kb/clean_baike_kb.txt")
         print('过滤KB')
 
+    if False:
+        # 初步抽取
+        # bkh.extract_e(f1='../data/nlpcc2016/2-kb/kb.v1.txt',
+        #           f2='../data/nlpcc2016/4-ner/extract_e/e1.txt')
+        # 过滤一遍，抽取出别名
+        # bkh.extract_alis_1(f1='../data/nlpcc2016/4-ner/extract_e/e1.txt',
+        #                  f2='../data/nlpcc2016/4-ner/extract_e/e1.alis.txt',
+        #                  f3='../data/nlpcc2016/4-ner/extract_e/e1.double.txt',
+        #                  f4='../data/nlpcc2016/4-ner/extract_e/e1.dict.txt',
+        #                  max_len=60)
+        # 构建字典
+        bkh.extract_alis_2(f1='../data/nlpcc2016/4-ner/extract_e/e1.alis.txt',
+                           f4='../data/nlpcc2016/4-ner/extract_e/e1.dict.txt',
+                           f5='../data/nlpcc2016/4-ner/extract_e/e1.set.txt')
         # 2 生成KB的实体统计文件,这个还不够，还需要结合em_by_1 em_by_2
     if False:
-        baike_helper.statistics_subject_len(f_in="../data/nlpcc2016/2-kb/kb.v1.txt",
-                                            f_out="../data/nlpcc2016/2-kb/kb-entity.v1.txt")
+        # 计算长度然后排序
+        bkh.statistics_subject_len(f_in='../data/nlpcc2016/4-ner/extract_e/e1.set.txt',
+                                   f_out='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt')
+        # bkh.tmp_compare_1()
         print('NER部分 统计KB长度')
+        # 计算IDF
+    if False:
+        baike_test.try_idf(f1='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt',
+                           f2='../data/nlpcc2016/4-ner/extract_entitys_all.txt.statistics.txt',
+                           f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt')
+    if False:
+        print(1)
+        # 重写extract_entitys_all_tj 过滤不存在的属性
+        bkh.filter_not_exist_in_f11(f1='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt',
+                                    f2='../data/nlpcc2016/4-ner/extract_entitys_all_tj.v0.txt',
+                                    f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.v1.txt')
+        # bkh.init_find_entity()
+        # bkh.init_ner(f11)  # bkh.n_gram_dict[time] = word list
 
     if True:
         num = 3
         bkt.try_test_acc_of_m1(
             f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
-            f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt',
+            f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.v1.txt',
             # extract_entitys_v3                extract_entitys_all
-            f2='../data/nlpcc2016/4-ner/q.rdf.txt.failed_v3_%d.txt' % num,
+            f2='../data/nlpcc2016/4-ner/q.rdf.txt.failed_v4.1_%d.txt' % num,
             use_cx=False, use_expect=False, acc_index=[num],
             get_math_subject=True,
             f6='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt.statistics.txt',
             f8='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_%d.v1.txt' % num,
-            f9='../data/nlpcc2016/6-answer/q.rdf.ms.re.top_%d.v1.txt' % num)
+            f9='../data/nlpcc2016/6-answer/q.rdf.ms.re.top_%d.v1.txt' % num,
+            combine_idf=True,
+            cant_contains_others=False)
         print('try_test_acc_of_m1 ')
+
     if False:
         # 合并 q.rdf.txt.math_s.txt ， q.rdf 到 q.rdf.m_s
         bkh.rewrite_rdf(f3='../data/nlpcc2016/3-questions/q.rdf.txt',

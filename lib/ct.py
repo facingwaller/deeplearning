@@ -593,7 +593,9 @@ class ct:
 
     @staticmethod
     def clean_str_entity(string):
-        return str(string).strip().strip('\n').strip('\r').replace(' ', '').lower()
+        return str(string).strip().strip('\n').strip('\r').replace(' ', '').lower() \
+                .replace('\xa0', '').replace('\u200B', '')
+
 
     @staticmethod
     def clean_str_rel(string):
@@ -1357,6 +1359,7 @@ log_path = ct.log_path_static()
 if __name__ == "__main__":
     aa1 = ct.log_path_static()
     print(aa1 + "\\log\\")
+    print(len('你知道国务院学位委员会、国家教育委员会关于整顿普通高等学校授予成人高等教育本科毕业生学士学位工作的通知是谁发布的吗？'))
     # print(len('死亡日记1999年电影thevirginsuicides(1999film)'))
     # c1 = ct.re_clean_question('请问一下谁知道♠要打印多少张，请问下？')
     # c1 = re.sub('(♠)+','♠','11231♠♠♠1♠♠3♠')
