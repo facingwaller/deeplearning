@@ -2153,6 +2153,36 @@ class baike_helper:
                 i2 += 1
         ct.file_wirte_list(f3, f1s_new)
 
+    # 根据别名字典扩展实体
+    @staticmethod
+    def expend_es_by_dict(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                          f2='../data/nlpcc2016/4-ner/extract_e/e1.dict.txt',
+                          f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.v1.txt',
+                          f4='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.expend.v1.txt'):
+        # f1s = ct.file_read_all_lines_strip(f1)
+        # f1s = [str(x).split('\t')[] for x in f1s]
+        f2s = ct.file_read_all_lines_strip(f2)
+        f3s = ct.file_read_all_lines_strip(f3)
+        d1 = dict()
+        for l1 in f2s:
+            key = str(l1).split('\t')[0]
+            v1 = str(l1).split('\t')[1:]
+            d1[key] = v1
+
+        f4s = []
+        for l3 in f3s:
+            if str(l3).__contains__('NULL'):
+                f4s.append('NULL')
+                continue
+            words = str(l3).split('\t')
+            for index in range(len(words)):
+                w1 = words[index]
+                w_str = "%s____%s" % (w1, '____'.join(d1[w1]))
+                words[index] = w_str
+            f4s.append('\t'.join(words))
+        ct.file_wirte_list(f4,f4s)
+
+
 
 class baike_test:
     @staticmethod
@@ -2458,7 +2488,6 @@ class baike_test:
             need_skip = False
             if len(str(f1s[i]).split('\t')) < 3:
                 need_skip = True
-                continue
             if str(f1s[i]).__contains__('NULL'):
                 need_skip = True
             if str(f1s[i]).__contains__('####'):
@@ -2469,6 +2498,7 @@ class baike_test:
             if need_skip:
                 skip += 1
                 f7s.append('NULL')
+                f8s.append('NULL')
                 continue
             if str(f1s[i]).split('\t')[0] in [
                 # '请问荣耀xl是什么时候曝光的？',

@@ -11,13 +11,13 @@ if __name__ == '__main__':  #
 
     # -------------- 清理部分 NER部分
     if False:
-        # 1 过滤KB
+        print('1 过滤KB')
         baike_helper.clean_baike_kb(file_name="../data/nlpcc2016/1-origin/nlpcc-iccpol-2016.kbqa.kb",
                                     file_out_name="../data/nlpcc2016/2-kb/kb.v1.txt",
                                     clean_log_path="../data/nlpcc2016/2-kb/clean_baike_kb.txt")
-        print('过滤KB')
 
     if False:
+        print('2 生成KB的实体统计文件')
         # 初步抽取
         # bkh.extract_e(f1='../data/nlpcc2016/2-kb/kb.v1.txt',
         #           f2='../data/nlpcc2016/4-ner/extract_e/e1.txt')
@@ -33,7 +33,7 @@ if __name__ == '__main__':  #
                            f5='../data/nlpcc2016/4-ner/extract_e/e1.set.txt')
         # 2 生成KB的实体统计文件,这个还不够，还需要结合em_by_1 em_by_2
     if False:
-        # 计算长度然后排序
+        print('3 计算长度然后排序')
         bkh.statistics_subject_len(f_in='../data/nlpcc2016/4-ner/extract_e/e1.set.txt',
                                    f_out='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt')
         # bkh.tmp_compare_1()
@@ -52,21 +52,26 @@ if __name__ == '__main__':  #
         # bkh.init_find_entity()
         # bkh.init_ner(f11)  # bkh.n_gram_dict[time] = word list
 
-    if True:
+    if False:
         num = 3
         bkt.try_test_acc_of_m1(
             f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
             f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.v1.txt',
             # extract_entitys_v3                extract_entitys_all
-            f2='../data/nlpcc2016/4-ner/q.rdf.txt.failed_v4.1_%d.txt' % num,
+            f2='../data/nlpcc2016/4-ner/q.rdf.txt.failed_v4.2_%d.txt' % num,
             use_cx=False, use_expect=False, acc_index=[num],
             get_math_subject=True,
             f6='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt.statistics.txt',
             f8='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_%d.v1.txt' % num,
             f9='../data/nlpcc2016/6-answer/q.rdf.ms.re.top_%d.v1.txt' % num,
-            combine_idf=True,
+            combine_idf=False,
             cant_contains_others=False)
-        print('try_test_acc_of_m1 ')
+        print('try_test_acc_of_m1 Top3 23706,0.977567 (不互相包含23725,97.8351%) ')
+    if True:
+        print('获取扩展的实体集合')
+        bkh.expend_es_by_dict(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                          f2='../data/nlpcc2016/4-ner/extract_e/e1.dict.txt',
+                              f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.v1.txt')
 
     if False:
         # 合并 q.rdf.txt.math_s.txt ， q.rdf 到 q.rdf.m_s

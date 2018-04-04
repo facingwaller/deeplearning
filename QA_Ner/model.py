@@ -189,7 +189,7 @@ class CharRNN:
         result1 = 0.0
         for _s in score_list:
             result1 += np.log(_s)
-        result1 = result1 / len(score_list)
+        result1 = result1 / (len(score_list)+1)
         return result1, ','.join([str(x) for x in score_list])
 
     def sample(self, n_samples, prime, vocab_size, padding_num):

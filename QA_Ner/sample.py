@@ -37,6 +37,7 @@ tf.flags.DEFINE_string('checkpoint_path', 'model/default/', 'checkpoint path')
 tf.flags.DEFINE_string('start_string', '♠是', 'use this string to start generating')
 tf.flags.DEFINE_integer('max_length', 10, 'max length to generate')
 
+
 def prepare_data():
     f1 = '../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt'
     f3 = '../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt'
@@ -68,7 +69,7 @@ def prepare_data():
         entitys = []
         for content, l3 in replace_qs:
             # content = input("input:")
-            r1='1'
+            r1 = '1'
             entitys.append((l3, r1))
             # print(content)
             # print(r1)
@@ -93,7 +94,7 @@ def main(_):
         os.makedirs(model_path)
     model = 'ner'
     dh = data_helper.DataClass(model)
-    train_batch_size = 2
+    train_batch_size = 1
     # g = dh.batch_iter_char_rnn(train_batch_size)  # (FLAGS.num_seqs, FLAGS.num_steps)
     embedding_weight = dh.embeddings
 
@@ -117,15 +118,15 @@ def main(_):
     # cs.append('♠是谁')
     # cs.append('♠是哪个公司的长度')
     f1 = '../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt'
-    f3 = '../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt'
-    f4 = '../data/nlpcc2016/4-ner/extract_entitys_all_tj.sort_by_ner_lstm.txt'
+    f3 = '../data/nlpcc2016/4-ner/extract_entitys_all_tj.v1.txt'
+    f4 = '../data/nlpcc2016/4-ner/extract_entitys_all_tj.sort_by_ner_lstm.v1.txt'
     f1s = ct.file_read_all_lines_strip(f1)
     f3s = ct.file_read_all_lines_strip(f3)
     f1s_new = []
     f3s_new = []
     for i in range(len(f1s)):
-        if str(f1s[i]).__contains__('NULL'):
-            continue
+        # if str(f1s[i]).__contains__('NULL'):
+        #     continue
         f1s_new.append(f1s[i])
         f3s_new.append(f3s[i])
 
@@ -155,15 +156,15 @@ def main(_):
             # print(content)
             # print(r1)
             # print(score_list)
-            ct.print("%s\t%s\t%s"%(content,l3,r1),'debug_process')
+            ct.print("%s\t%s\t%s" % (content, l3, r1), 'debug_process')
         entitys.sort(key=lambda x: x[1])
         entitys_new = [x[0] for x in entitys]
         ct.print('\t'.join(entitys_new))
         f4s.append('\t'.join(entitys_new))
-    ct.file_wirte_list(f4,f4s)
+    ct.file_wirte_list(f4, f4s)
 
-        # print(arr)
-        # print(dh.converter.arr_to_text_no_unk(arr))
+    # print(arr)
+    # print(dh.converter.arr_to_text_no_unk(arr))
 
 
 if __name__ == '__main__':
