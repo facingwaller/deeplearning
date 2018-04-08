@@ -34,7 +34,7 @@ else:
 print("%s\t%s" % (myaddr, testid))
 
 # ==正常调参
-mark = '...IR-GAN系列实验中...'
+mark = '...答案选择系列实验中...'
 
 if testid == "cc_test":
     # 极限情况下调,1个问题，全关系
@@ -86,11 +86,11 @@ if testid == "cc_test":
         r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_04_01_13_50_19_4Mv1\checkpoints\step=9_epoches=d_index=0\model.ckpt-1'
     #    r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
     # 2018_03_29_11_36_36\checkpoints\step=3_epoches=d_index=0
-    restore_test = False
+    restore_test = True
     synonym_mode = 'none'  # 属性同义词 ps_synonym| none
     synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
     # synonym S_model
-    S_model = 'S_model'  # S_model | none
+    S_model = 'none'  # S_model | none
 
 
     # 只验证错误的模式 only_error|all
@@ -140,7 +140,7 @@ elif testid == 'cc_debug':
     keep_run = False  # 指示是否持续跑maybe里面的属性
     optimizer_method = optimizer_m.lstm  # 优化模式 gan | lstm
     # only_default 默认|fixed_amount 固定 | additional 默认+额外
-    pool_mode = 'additional'
+    pool_mode = 'only_default'
 
     # 模型恢复
     restore_model = True

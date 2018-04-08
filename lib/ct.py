@@ -620,7 +620,8 @@ class ct:
             .replace("•", "·") \
             .replace("【", "[").replace("】", "]") \
             .replace('，', ',').replace("”", '"').replace('“', '"') \
-            .replace('）', ')').replace('（', '(').replace('／', '/')
+            .replace('）', ')').replace('（', '(').replace('／', '/') \
+            .replace('！','!')
 
     @staticmethod
     def str_start_with(line, words):
@@ -1238,6 +1239,13 @@ class ct:
         s2 = ct.clean_str_zh2en(s1)  # 符号转换
         return s2
 
+    # 清理问句，去除空格
+    @staticmethod
+    def clean_str_question(string):
+        s1 = str(string).strip().strip('\n').strip('\r').replace(' ', '')\
+            .lower().replace('\xa0','')
+        return s1
+
     @staticmethod
     def do_some_clean(str):
         str = re.sub('吗$', '', str)
@@ -1352,6 +1360,16 @@ class ct:
         ct.log3(toogle_line)
         ct.just_log2("info", toogle_line)
         ct.print(toogle_line, model_name)
+
+    @staticmethod
+    def not_contains_match_s(line,_question,_match_s):
+        if line.__contains__('@@@@@@'):
+            real_s = _match_s.replace('1@@@@@@', '').replace('@@@@@@', '')
+            real_s = str(real_s).replace(' ','').lower()
+            if not _question.__contains__(real_s):
+                # ct.print("过滤掉不包含KB实体的  " + line, "bad")
+                return True
+        return False
 
 
 log_path = ct.log_path_static()

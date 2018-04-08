@@ -60,6 +60,7 @@ class baike_helper:
     # 2.去除属性中所有非中文、数字和英文字母的字符
     # 3.将实体和属性中的所有大写外文字符转为小写 1
     # 4.实体中的空格去掉
+    # 5.实体名格式化，全角转半角
     @staticmethod
     def clean_baike_kb(file_name="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb",
                        file_out_name="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt",
@@ -95,6 +96,7 @@ class baike_helper:
                     ct.just_log(clean_log_path, line)
                     continue
                 # 2
+                s = ct.clean_str_s(s)
                 p = ct.clean_str_rel(p)
                 new_line = "%s\t%s\t%s" % (s, p, o)
                 # 记录RDF
@@ -210,27 +212,56 @@ class baike_helper:
 
         print('ok')
 
-    # 从答案KB-ONE的文件（答案存在的所有KB）中抽取需要的KB
+    # 从答案的文件（答案存在的所有KB）中抽取需要的KB
     def extract_kb_possible(self,
                             f1='../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb.out.txt',
                             f2="../data/nlpcc2016/demo1/kb_possible.txt",
-                            f3='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt'):
+                            f3='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',
+                            f4='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.expend.v1.txt',
+                            f5='../data/nlpcc2016/2-kb/kb-entity.v1.txt'):
         f3s = ct.file_read_all_lines_strip(f3)
+        f4s = ct.file_read_all_lines_strip(f4)
+
+        # f5s = ct.file_read_all_lines_strip(f5)
+        # f5s_new = []
+        # for l5 in f5s:
+        #     f5s_new.append(ct.clean_str_s(str(l5).split('\t')[0]))
+        #
+        # f5s = set(f5s_new)
         print(len(f3s))
         # f3s = [str(x).split('\t')[2].lower() for x in f3s]
         f3s_new = set()
         for x in f3s:
+            if str(x).__contains__('NULL'):
+                print(x)
+                continue
             x1 = str(x).split('\t')
             if len(x1) < 3:
                 print(x)
                 continue
-            f3s_new.add(x1[2].lower().replace(' ', ''))
+            f3s_new.add(ct.clean_str_s(x1[2]))
+
+        for l4 in f4s:
+            for l4_1 in str(l4).split('\t'):
+                t1 = str(l4_1).split('____')
+                t1 = t1[1:]
+                for l4_2 in t1:
+                    f3s_new.add(l4_2)
+
         f3s = list(f3s_new)
 
-        print(f3s[0])
-        print(f3s[1])
+        # tt1 = (set(f3s) & f5s) - f5s
+        # print(len(tt1))
+        # for _ in tt1:
+        #     print(_)
 
-        self.init_spo(f_in=f1)
+
+
+        print("条目数量 %d" % len(f3s))
+        # print(f3s[0])
+        # exit(0)
+
+        self.init_spo(config.cc_par('kb'))  # 加载全部
 
         with open(f2, mode='w', encoding='utf-8') as o1:
             for f3s_e in f3s:
@@ -1116,7 +1147,7 @@ class baike_helper:
 
             ls = str(line).strip('\n').strip('\r').split('\t')
             # s = ct.clean_str_entity(ls[0])
-            s = ls[0]
+            s = ct.clean_str_s(ls[0])
             p = ct.clean_str_rel(ls[1])
             o1 = ls[2]
             t1 = (p, o1)
@@ -1481,6 +1512,57 @@ class baike_helper:
                 a1.append(s1[1])
 
         return r1, a1
+
+    # 生成的是,黑桃问题-属性-属性值；
+    def answer_get_all_neg_relations_cc_1(self, entity_list, answer_to_except):
+        # 获取所有实体和属性，将答案是正确答案的排前面
+        r_all = []
+        a_all = []
+        right_label = []
+        for entity_id in entity_list:
+            e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
+            if e_s == "":
+                print(entity_id)
+                # raise Exception('entity cant find')
+                ct.print(str(entity_id).replace(' ', '').lower()
+                         , 'read_entity_and_get_all_neg_relations_cc')
+            r1 = []
+            a1 = []
+            result = []
+            for s1 in e_s:
+                if s1[1] != answer_to_except:
+                    r1.append(s1[0])
+                    a1.append(s1[1])
+                    result.append(False)
+                else:
+                    r1.append(s1[0])
+                    a1.append(s1[1])
+                    result.append(True)
+            r_all.extend(r1)
+            a_all.extend(a1)
+            right_label.extend(result)
+
+        return r_all, a_all, right_label
+
+    # 生成的是,黑桃问题-属性-属性值；
+    def answer_get_all_neg_relations_cc(self, entity_list, ps_to_except):
+        # 获取所有实体和属性，将答案是正确答案的排前面
+        r_all = []
+        a_all = []
+        right_label = []
+        all_tuple = []
+        for entity_id in entity_list:
+            e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
+            if e_s == "":
+                print(entity_id)
+                # raise Exception('entity cant find')
+                ct.print(str(entity_id).replace(' ', '').lower()
+                         , 'read_entity_and_get_all_neg_relations_cc')
+            for s1 in e_s:
+                result = s1[0] in ps_to_except
+                # 生成的是,实体-属性-属性值-是否是正确的属性；
+                all_tuple.append((entity_id, s1[0], s1[1], result))
+        return all_tuple
 
     def read_entity_and_get_all_neg_relations_cc_len(self, entity_id, ps_to_except):
         e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
@@ -2154,13 +2236,15 @@ class baike_helper:
         ct.file_wirte_list(f3, f1s_new)
 
     # 根据别名字典扩展实体
+    # 去掉不是实体名的别名
     @staticmethod
     def expend_es_by_dict(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                           f2='../data/nlpcc2016/4-ner/extract_e/e1.dict.txt',
                           f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.v1.txt',
-                          f4='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.expend.v1.txt'):
-        # f1s = ct.file_read_all_lines_strip(f1)
-        # f1s = [str(x).split('\t')[] for x in f1s]
+                          f4='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.expend.v1.txt',
+                          record=True,
+                          compare=False):
+        f1s = ct.file_read_all_lines_strip(f1)
         f2s = ct.file_read_all_lines_strip(f2)
         f3s = ct.file_read_all_lines_strip(f3)
         d1 = dict()
@@ -2180,8 +2264,42 @@ class baike_helper:
                 w_str = "%s____%s" % (w1, '____'.join(d1[w1]))
                 words[index] = w_str
             f4s.append('\t'.join(words))
-        ct.file_wirte_list(f4,f4s)
+        if record:
+            ct.file_wirte_list(f4, f4s)
+        if compare:
+            # 检查一下他们是否共有正确的属性
+            bkh = baike_helper()
+            bkh.init_spo()
+            common_r_num = 0
+            for l1 in f1s:
+                if str(l1).__contains__('NULL'):
+                    continue
 
+                # 获取实体集合
+
+                k1 = str(l1).split('\t')[2]
+                k1 = ct.clean_str_s(k1)
+                right_r = str(l1).split('\t')[3]  # 正确的属性
+
+                k1 = baike_helper.entity_re_extract_one_repeat(k1)
+                d1_vs = d1[k1]  # 实体集合
+                right_r_count = 0
+                _tmp1 = []
+                _answer_list = []
+                for _ in d1_vs:  # 遍历实体集合
+                    vs1 = bkh.kbqa.get(_, '')  # 取KB中的对应的实体
+                    for _vs1 in vs1:
+                        if _vs1[0] == right_r:
+                            right_r_count += 1
+                            _tmp1.append(_)
+                            _answer_list.append(_vs1[1])
+                    if right_r_count >= 2:  # 找出共有2个就无法区分了, 超过2个实体相等？
+                        print('same %s \t %s \t %s '
+                              % ('\t'.join(_tmp1), '\t'.join(_answer_list), _answer_list[0] == _answer_list[1]))
+                        break
+                if right_r_count >= 2:
+                    common_r_num += 1
+            print(common_r_num)
 
 
 class baike_test:
@@ -2450,7 +2568,7 @@ class baike_test:
         f9s = []
         f10s = []
         f11s = ct.file_read_all_lines_strip(f11)
-
+        filter_list = []
         filter_words = ['?', '？', '']
 
         # 载入期望 5.9 => 改成期望
@@ -2486,19 +2604,40 @@ class baike_test:
                 # break
 
             need_skip = False
-            if len(str(f1s[i]).split('\t')) < 3:
-                need_skip = True
+            line_seg = str(f1s[i]).split('\t')
+
+            line_seg[0] = ct.clean_str_question(line_seg[0])
+            # str(line_seg[0]).replace(' ','').lower()
+            # if len(str(f1s[i]).split('\t')) < 6:
+            #     print('<3 = %d' % i)
+            #     need_skip = True
             if str(f1s[i]).__contains__('NULL'):
+                ct.print("NULL bad:" + f1s[i], "bad")
                 need_skip = True
-            if str(f1s[i]).__contains__('####'):
+            if line_seg[0] == line_seg[2]:
+                ct.print("过滤掉问题等于实体的 bad:" + f1s[i], "bad")
                 need_skip = True
+            # if str(f1s[i]).__contains__('####'):
+            #     need_skip = True
             # if str(f1s[i]).__contains__('@@@@@@'):
             #     need_skip=True
+            l1 = f1s[i]
+            # 剔除掉不能完全匹配的实体
+            # line_seg = l1.split('\t')
+            # skip_cant_match
+            _match_s = line_seg[2]
+            _question = line_seg[0]
+            if ct.not_contains_match_s(l1, _question, _match_s):
+                need_skip = True
 
+            if i in [23691, 22792, 24407]:
+
+                print(11)
             if need_skip:
                 skip += 1
-                f7s.append('NULL')
-                f8s.append('NULL')
+                # f7s.append('####NULL')
+                # f8s.append('####NULL')
+                filter_list.append(str(i))
                 continue
             if str(f1s[i]).split('\t')[0] in [
                 # '请问荣耀xl是什么时候曝光的？',
@@ -2688,6 +2827,10 @@ class baike_test:
                 #             o1.write(item + '\n')
         ct.file_wirte_list(f8, f8s)
         ct.file_wirte_list(f9, f9s)
+        print(len(f8s))
+        # for _ in filter_list:
+        print(' '.join(filter_list))
+        return filter_list
 
     # 一次性 合并
     @staticmethod

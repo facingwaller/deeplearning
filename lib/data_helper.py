@@ -168,6 +168,7 @@ class DataClass:
                 self.synonym_train_data(config.cc_par('synonym_train_data'))
             if config.cc_compare('pool_mode', 'competing_ps'):
                 self.init_competing_model(config.cc_par('competing_ps_path'))
+            self.init_expend_es(f1='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.expend.v1.txt')
             ct.print("load embedding ok!")
 
             return
@@ -1138,6 +1139,89 @@ class DataClass:
         else:
             return np.array(x_new), np.array(y_new), labels
 
+    # batch_iter_cc_answer_test_one_debug
+    # 答案选择模块的产生训练或者测试的问题
+    def batch_iter_cc_answer_test_one_debug(self, question_list_index, relation_list_index, model, index,
+                                     train_part='relation'):
+        """
+        web questions
+        生成指定batch_size的数据
+        :param batch_size:
+        :return:
+        """
+        ct.print("enter:batch_iter_cc_answer_test_one_debug")
+
+        x_new = []  # 问题集合
+        y_new = []  # 关系集合
+        y_a_new = []  # 答案集合
+        z_new = []  #
+        labels = []  # 标签集合
+        synonym_score = []  # 每个分数
+
+        if model == "valid":
+            global_index = index
+        elif model == "test":
+            global_index = index + self.padding
+        else:
+            raise Exception("MODEL 参数出错")
+
+        # log
+        ct.just_log2("info", "\nbatch_iter_wq_test_one_debug=================================start")
+        msg = "%s\t%s\t%d\t%d" % (
+            model, index, global_index, self.question_global_index[global_index])
+        ct.print(msg, 'debug')
+        ct.log3(msg)
+        ct.just_log2("info", msg)
+        part1 = msg
+
+        if global_index >= len(self.entity1_list):
+            ct.print('error ! ', 'error')
+        # 获取实体名
+        es_all = []
+        es_all.extend(self.expend_es[global_index][0])
+        es_all.extend(self.expend_es[global_index][1])
+        es_all.extend(self.expend_es[global_index][2])
+        es_all = list(set(es_all))
+
+        name = self.entity1_list[global_index]
+        # todo: index should not in
+        # ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
+        ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
+        # ps_to_except1 数组组合
+
+        answer_to_except = self.answer_list[global_index]
+        # 实体-属性-属性值-是否是正确的属性
+        all_tuple = self.bh.answer_get_all_neg_relations_cc(es_all, ps_to_except1)
+
+        ct.just_log2("info", "entity:%s " % name)
+        part4 = "%s " % name
+
+        # ct.print(y[index])
+        r1_text = self.converter.arr_to_text_no_unk(self.relation_list_index[global_index])
+        q1_text = self.converter.arr_to_text_no_unk(self.question_list_index[global_index])
+        r1_msg = "r-pos: %s \t answer:%s" % (r1_text, self.answer_list[global_index])
+        q1_msg = "q : %s" % q1_text
+        ct.just_log2("info", q1_msg)
+        ct.just_log2("info", r1_msg)
+        part2 = q1_text
+        part3 = "%s\t%s" % (r1_text, self.answer_list[global_index])
+        ct.just_log3("test_check", "%s\t%s\t%s\t%s\t" % (part1, part2, part4, part3))
+
+        for index in range(len(all_tuple)):  # 遍历all_tuple 设定数据
+            match_s = all_tuple[index][0]
+            p = all_tuple[index][1]
+            o = all_tuple[index][2]
+            is_right = all_tuple[index][3]
+
+            q = self.question_list[global_index]
+            q = str(q).replace(match_s,'♠')
+            x_new.append(self.convert_str_to_indexlist(q))
+            y_new.append(self.convert_str_to_indexlist(p))  # neg
+            labels.append(is_right)
+
+        ct.print("leave:batch_iter_cc_answer_test_one_debug")
+
+        return np.array(x_new), np.array(y_new), labels
     # --------------------按比例分割
     def cap_nums(self, y, rate=0.8):
         y = y.copy()
@@ -1882,6 +1966,28 @@ class DataClass:
                 #     x_new = self.convert_x_to_x_new(x)
                 #     y_new = self.convert_x_to_x_new(y)
                 #     yield x_new, y_new
+
+    # 答案选择模块
+    def init_expend_es(self, f1='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.expend.v1.txt'):
+        f1s = ct.file_read_all_lines_strip(f1)
+        # f1s_new = []
+        # # f1s = [_ for _ in filter(lambda x: str(x).__contains__('NULL'), f1s)]
+
+        expend_es = []
+        s1 = '____'
+        for l1 in f1s:
+            vs = str(l1).split('\t')
+            index = -1
+            # d1 = dict()
+            list1 = []
+            for vs1 in vs:
+                index += 1
+                # d1[str(index)] = vs1[1:] # KEY=第几个，value 对应的实体
+                vs2 = str(vs1).split(s1)
+                list1.append(vs2)
+            expend_es.append(list1)
+        self.expend_es = expend_es
+        ct.print('init_expend_es len:%d' % len(expend_es))
 
 
 # ======================================================================= clear data

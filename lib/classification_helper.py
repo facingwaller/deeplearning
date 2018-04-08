@@ -15,10 +15,12 @@ import unittest
 
 
 class classification:
+    # 过滤增加条件：@@@@@@ 剔除掉不能完全匹配的实体
     def extract_property(self, f3='',  # 输入
                          f4='',  # 过滤的RDF
                          f_out='',  # 抽取出的关系集合
-                         skip=0
+                         skip=0,
+                         skip_cant_match=False
                          ):
         f3s = ct.file_read_all_lines_strip(f3)
         print(len(f3s))
@@ -26,25 +28,27 @@ class classification:
         d_f3s = dict()
         d_line_f3s = dict()
         f1s_new = []
-        idx = 0
+        filter_list = []
+        idx = -1
         # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
         # 机械设计基础         作者          杨可桢，程光蕴，李仲生
         # 问题0 答案1 实体s-2 关系p-3 属性值o-4    匹配到的实体s-5
         with codecs.open(f3, mode="r", encoding="utf-8") as read_file:
             try:
-                for line in read_file.readlines():
+                for line in read_file:
                     idx += 1
                     if idx < skip:
                         continue
-
+                    if idx in [23691, 22792 ,24407 ] :
+                        print(11)
+                    need_skip = False
                     # line = "".join(line.split())
                     line_seg = line.split('\t')
-                    if len(line_seg) < 5 or line.__contains__('NULL'):  # todo:rewrite input file,重写输入文件
-                        ct.print("NULL bad:" + line, "bad")
-                        continue
-                    if line_seg[0] == line_seg[2]:
-                        ct.print("过滤掉问题等于实体的 bad:" + line, "bad")
-                        continue
+                    # if len(line_seg) < 5:
+                    # print(line)
+                    # line_seg[0] = ct.clean_str_question(line_seg[0])
+
+
                     # if line_seg[3] == line_seg[4]:
                     #     ct.print("过滤掉问题的答案=属性:" + line, "bad")
                     #     continue
@@ -54,6 +58,27 @@ class classification:
                         .replace('\n', '').replace(' ', '').lower()  # .replace('？','').replace('?','')
                     # 去掉问句后面的吗
                     line_seg = new_line.split('\t')
+                    if line.__contains__('NULL'):
+                        # ct.print("NULL bad:" + line, "bad")
+                        need_skip = True
+                    if line_seg[0] == line_seg[2]:
+                        # ct.print("过滤掉问题等于实体的 bad:" + line, "bad")
+                        need_skip = True
+
+                    # skip_cant_match
+                    _match_s = line_seg[2]
+                    _question = ct.clean_str_question(line_seg[0])
+
+                    if skip_cant_match and ct.not_contains_match_s(line, _question, _match_s):
+                        # real_s = _match_s.replace('1@@@@@@', '').replace('@@@@@@', '')
+                        # if not _question.__contains__(real_s):
+                        #     ct.print("过滤掉不包含KB实体的  " + line, "bad")
+                        need_skip = True
+
+                    if need_skip:
+                        filter_list.append(str(idx))
+                        continue
+
                     line_seg[6] = ct.do_some_clean(line_seg[6])
                     line_seg[7] = ct.do_some_clean(line_seg[7])
                     new_line = '\t'.join(line_seg)
@@ -62,19 +87,24 @@ class classification:
                         # line_seg
                         line_seg[2] = line_seg[2].replace('1@@@@@@', '').replace('@@@@@@', '')
                         line_seg[5] = line_seg[2]  # match s
-                        # 抠掉匹配的字
-                        _tmp_l5 = list(set(line_seg[5]))
-                        _tmp_q = line_seg[0]
-                        for _word in _tmp_l5:
-                            if _word not in list(set(line_seg[3])):  # 只去掉不包含属性的文字
-                                _tmp_q = _tmp_q.replace(_word, '♠')
+                        # skip_cant_match
 
-                        # _tt1 = re.sub('(♠.*♠)+', '♠', _tmp_q) 模糊全匹配
-                        _tt2 = re.sub('(♠)+', '♠', _tmp_q)  # 只去掉部分
-                        # if _tt1=='♠':
-                        #     _tmp_q = _tt1
-                        # else:
-                        _tmp_q = _tt2
+                        # 抠掉匹配的字
+                        if skip_cant_match:
+                            _tmp_q = line_seg[0].replace(baike_helper.entity_re_extract_one_repeat(line_seg[2]), '♠')
+                        else:
+                            _tmp_l5 = list(set(line_seg[5]))
+                            _tmp_q = line_seg[0]
+                            for _word in _tmp_l5:
+                                if _word not in list(set(line_seg[3])):  # 只去掉不包含属性的文字
+                                    _tmp_q = _tmp_q.replace(_word, '♠')
+
+                            # _tt1 = re.sub('(♠.*♠)+', '♠', _tmp_q) 模糊全匹配
+                            _tt2 = re.sub('(♠)+', '♠', _tmp_q)  # 只去掉部分
+                            # if _tt1=='♠':
+                            #     _tmp_q = _tt1
+                            # else:
+                            _tmp_q = _tt2
 
                         line_seg[6] = _tmp_q  # line_seg[0].replace(line_seg[5], '♠')
                         line_seg[7] = line_seg[6].replace(line_seg[3], '♢')
@@ -121,6 +151,10 @@ class classification:
                 out.write("%s\t%s\t%s\n" % (t[0], t[1], msg))
         if f4 != '':
             ct.file_wirte_list(f4, list1=f1s_new)
+        ct.print('skip : %s' % (' '.join(filter_list)))
+        print(len(filter_list))
+        return filter_list
+
 
     def pattern_class1(self, f1='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt'):
         # 1         从答案入手做一次标注
