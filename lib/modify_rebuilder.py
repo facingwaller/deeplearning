@@ -54,7 +54,7 @@ if __name__ == '__main__':  #
         # bkh.init_ner(f11)  # bkh.n_gram_dict[time] = word list
 
     if True:
-        num = 99
+        num = 1
         filter_list1 = bkt.try_test_acc_of_m1(
             f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
             f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.v1.txt',
@@ -66,8 +66,10 @@ if __name__ == '__main__':  #
             f8='../data/nlpcc2016/4-ner/demo2/extract_entitys_all_tj.resort_%d.v4.8.txt' % num,
             f9='../data/nlpcc2016/4-ner/demo2/q.rdf.ms.re.top_%d.v4.10.txt' % num,
             f10='../data/nlpcc2016/4-ner/demo2/ner_%d.v4.10.txt',
-            combine_idf=True,
+            combine_idf=False,
             cant_contains_others=False)
+        print('==================之前的任务============')
+        print('前99,get:23840   acc: 0.999748,total - skip=633 ')
         print('备注：try_test_acc_of_m1 Top3 23706,0.977567 (不互相包含23725,97.8351%) ')
         print('备注：TOP3 23706 0.993332 (不互相包含 前3,get:23706   acc: 0.994129 ')
     if False:

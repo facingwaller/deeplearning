@@ -2638,10 +2638,18 @@ class baike_test:
             #     need_skip = True
             # if str(f1s[i]).__contains__('@@@@@@'):
             #     need_skip=True
+            if str(f1s[i]).split('\t')[0] in [
+                # '请问荣耀xl是什么时候曝光的？',
+                # '你知道创亿bx-3的适用机型是什么系列吗？',
+                # '请问iPad的输入方式有什么？',
+                '请问6210-z 轴承的内径是多少？'
+            ]:
+                print(str(f1s[i]).split('\t')[0])
+
             l1 = f1s[i]
             # 剔除掉不能完全匹配的实体
             _match_s = line_seg[2]
-            _question = line_seg[0]
+            _question = line_seg[0].replace(' ','')
             if ct.not_contains_match_s(l1, _question, _match_s):
                 need_skip = True
 
@@ -2658,7 +2666,7 @@ class baike_test:
                 # '请问荣耀xl是什么时候曝光的？',
                 # '你知道创亿bx-3的适用机型是什么系列吗？',
                 # '请问iPad的输入方式有什么？',
-                '请问Intel奔腾双核e5400是什么类型的核心？'
+                '你知道断骨有什么严重的影响吗？'
             ]:
                 print(333333333333)
 
@@ -2719,14 +2727,14 @@ class baike_test:
 
                 # 去掉候选的书名号和括号
                 list1 = [baike_helper.entity_re_extract_one_repeat(ct.clean_str_zh2en(x)) for x in list1]
-                for i in range(len(list1)):
-                    _ = list1[i]
+                for _i in range(len(list1)):
+                    _ = list1[_i]
                     if _ in len_dict:
                         item_len = len_dict[_]
-                        if item_len < len_list[i]:
-                            len_dict[_] = len_list[i]
+                        if item_len < len_list[_i]:
+                            len_dict[_] = len_list[_i]
                     else:
-                        len_dict[_] = len_list[i]
+                        len_dict[_] = len_list[_i]
 
                 # 去重
                 # list1_new = []
@@ -2859,9 +2867,10 @@ class baike_test:
             print("前%s,get:%d   acc: %f,total - skip=%d  " % (k, v, v / (total - skip), skip))
         print(len(record))
         # 记录出错的
-        with open(f2, mode='w', encoding='utf-8') as o1:
-            for item in record:
-                o1.write(item + '\n')
+        ct.file_wirte_list(f2,record)
+        # with open(f2, mode='w', encoding='utf-8') as o1:
+        #     for item in record:
+        #         o1.write(item + '\n')
                 # if get_math_subject:
                 #     with open(f7, mode='w', encoding='utf-8') as o1:
                 #         for item in f7s:

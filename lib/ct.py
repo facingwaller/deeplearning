@@ -1363,12 +1363,16 @@ class ct:
 
     @staticmethod
     def not_contains_match_s(line,_question,_match_s):
-        if line.__contains__('@@@@@@'):
-            real_s = _match_s.replace('1@@@@@@', '').replace('@@@@@@', '')
-            real_s = str(real_s).replace(' ','').lower()
-            if not _question.__contains__(real_s):
-                # ct.print("过滤掉不包含KB实体的  " + line, "bad")
-                return True
+        real_s = _match_s.replace('1@@@@@@', '').replace('@@@@@@', '')
+        real_s = str(real_s).replace(' ', '').lower()
+        # if line.__contains__('@@@@@@'):
+        #     if not _question.__contains__(real_s):
+        #         return True
+        # else:
+        if not _question.__contains__(real_s):
+            # ct.print("过滤掉不包含KB实体的  " + line, "bad")
+            return True
+
         return False
 
 
