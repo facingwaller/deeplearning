@@ -621,7 +621,7 @@ class ct:
             .replace("【", "[").replace("】", "]") \
             .replace('，', ',').replace("”", '"').replace('“', '"') \
             .replace('）', ')').replace('（', '(').replace('／', '/') \
-            .replace('！','!')
+            .replace('！','!').replace(" ", "").lower()
 
     @staticmethod
     def str_start_with(line, words):

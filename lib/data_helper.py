@@ -351,26 +351,27 @@ class DataClass:
             ct.print(r, 'train_test_q')
 
         # 看看哪些neg关系是训练有，测试没有的
-        ct.print('neg test not in train', 'train_test_q')
-        neg_r_train = set()
-        neg_r_test = set()
-        for l in range(len(self.train_question_list_index)):
-            global_index = l
-            ps_to_except1 = self.relation_path_clear_str_all[global_index]
-            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
-            for r in rs:
-                neg_r_train.add(r)
+        if False:
+            ct.print('neg test not in train', 'train_test_q')
+            neg_r_train = set()
+            neg_r_test = set()
+            for l in range(len(self.train_question_list_index)):
+                global_index = l
+                ps_to_except1 = self.relation_path_clear_str_all[global_index]
+                rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
+                for r in rs:
+                    neg_r_train.add(r)
 
-        for l in range(len(self.test_question_list_index)):
-            global_index = l + self.padding
-            ps_to_except1 = self.relation_path_clear_str_all[global_index]
-            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
-            for r in rs:
-                neg_r_test.add(r)
+            for l in range(len(self.test_question_list_index)):
+                global_index = l + self.padding
+                ps_to_except1 = self.relation_path_clear_str_all[global_index]
+                rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
+                for r in rs:
+                    neg_r_test.add(r)
 
-        r4 = (neg_r_train | neg_r_test) - neg_r_train
-        for r in r4:
-            ct.print(r, 'train_test_q')
+            r4 = (neg_r_train | neg_r_test) - neg_r_train
+            for r in r4:
+                ct.print(r, 'train_test_q')
 
             # print('记录所有的训练和测试的负问句')
             # # 记录所有的训练和测试的负问句，其中测试负问句不会参与训练
@@ -1157,6 +1158,7 @@ class DataClass:
         z_new = []  #
         labels = []  # 标签集合
         synonym_score = []  # 每个分数
+        es_name_labels = []
 
         if model == "valid":
             global_index = index
@@ -1212,16 +1214,18 @@ class DataClass:
             p = all_tuple[index][1]
             o = all_tuple[index][2]
             is_right = all_tuple[index][3]
+            entity_name_in_kb = all_tuple[index][4]
 
-            q = self.question_list[global_index]
+            q = self.question_list_origin[global_index]
             q = str(q).replace(match_s,'♠')
             x_new.append(self.convert_str_to_indexlist(q))
             y_new.append(self.convert_str_to_indexlist(p))  # neg
             labels.append(is_right)
+            es_name_labels.append(entity_name_in_kb)
 
         ct.print("leave:batch_iter_cc_answer_test_one_debug")
 
-        return np.array(x_new), np.array(y_new), labels
+        return np.array(x_new), np.array(y_new), [labels,es_name_labels]
     # --------------------按比例分割
     def cap_nums(self, y, rate=0.8):
         y = y.copy()
@@ -2174,6 +2178,20 @@ def test_ner():
         print(x)
         print(y)
 
+def test_answer():
+    dh = DataClass("cc")
+    train_question_list_index = None
+    train_relation_list_index = None
+    model = 'valid'
+    index = 1
+    train_part= 'relation'
+    g = dh.batch_iter_cc_answer_test_one_debug(
+            train_question_list_index, train_relation_list_index, model, index,
+                                                   train_part)
+    for x, y,z in g:
+        print(x)
+        print(y)
+        print(z)
 
 if __name__ == "__main__":
     # CC 部分的测试-和构建代码
@@ -2182,7 +2200,7 @@ if __name__ == "__main__":
     # test_random_choose_indexs_debug()
     # test_random_choose_indexs_debug()
     # test_cc()
-    test_ner()
+    test_answer()
 
     # 测试生成
 

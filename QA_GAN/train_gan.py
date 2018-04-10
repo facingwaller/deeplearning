@@ -89,24 +89,24 @@ def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_
 # test_r,关系
 # labels,标签,
 # 2018.2.26 把相近的分数也带回去
-def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model, global_index, state,anser_select=False):
+def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model, global_index, state, anwser_select=False):
     start_time = time.time()
     feed_dict = {
         lstm.test_input_q: test_q,
         lstm.test_input_r: test_r,
     }
-    question = ''
-    # relations = []
-    # for _ in test_q:
-    #     v_s_1 = dh.converter.arr_to_text_no_unk(_)
-    #     valid_msg = model + " test_q 1:" + v_s_1
-    #     ct.just_log2("valid_step", valid_msg)
-    #     question = v_s_1
-    # for _ in test_r:
-    #     v_s_1 = dh.converter.arr_to_text_no_unk(_)
-    #     valid_msg = model + " test_r 1:" + v_s_1
-    #     ct.just_log2("valid_step", valid_msg)
-    #     relations.append(v_s_1)
+    question = []
+    relations = []
+    for _ in test_q:
+        v_s_1 = dh.converter.arr_to_text_no_unk(_)
+        valid_msg = model + " test_q 1:" + v_s_1
+        ct.just_log2("valid_step", valid_msg)
+        question .append( v_s_1)
+    for _ in test_r:
+        v_s_1 = dh.converter.arr_to_text_no_unk(_)
+        valid_msg = model + " test_r 1:" + v_s_1
+        ct.just_log2("valid_step", valid_msg)
+        relations.append(v_s_1)
 
     error_test_q = []
     error_test_pos_r = []
@@ -147,8 +147,9 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         synonym_score = labels[1]
         right_labels = labels[0]
         # (r_pos, _ps_item,_v1,r_pos==_ps_item)
-    if anser_select:
-        right_labels = labels
+    if anwser_select:
+        right_labels = labels[0]
+        es_name_labels = labels[1]
     index = -1
     is_correct = False
     for st in st_list_sort:
@@ -162,14 +163,17 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         # 根据对应的关系数组找到对应的文字
         r1 = dh.converter.arr_to_text_no_unk(test_r[better_index])
         # ct.print(r1)
-        ct.just_log2("info", "step:%d st.index:%d,score:%f,r:%s" % (step, st.index, st.score, r1))
+        ct.just_log2("info", "step:%d st.index:%d,score:%f,q:%s,s:%s,r:%s" %
+                     (step, st.index, st.score,question[better_index],es_name_labels[better_index], r1))
         if not find_right:
             # 在这里改下
             if config.cc_par('synonym_mode') == 'ps_synonym':
                 # 增加一个synonym_score
                 # 原始属性，当前属性，当前属性得分，是否原本属性，该属性的字表面得分
                 tcmsg = "%d,%f,%s(%s)" % (st.index, st.score, r1, '_'.join(synonym_score[st.index]))
+            # elif anwser_select:
             else:
+
                 tcmsg = "%d,%f,%s" % (st.index, st.score, r1)
             test_check_msg_list.append(tcmsg)
 
@@ -182,7 +186,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
                     is_correct = True
             else:
                 _tmp_right = 0
-        elif anser_select:
+        elif anwser_select:
             if right_labels[st.index]:
                 find_right = True
                 _tmp_right = 1
@@ -369,7 +373,8 @@ def answer_valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, bat
         ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = valid_step(sess, lstm, step, train_op,
                                                                                       test_q, test_r,
                                                                                       labels, merged, writer, dh, model,
-                                                                                      global_index, state,anser_select=True)
+                                                                                      global_index, state,
+                                                                                      anwser_select=True)
         error_test_q_list.extend(error_test_q)
         error_test_pos_r_list.extend(error_test_pos_r)
         error_test_neg_r_list.extend(error_test_neg_r)
@@ -824,8 +829,10 @@ def main():
                 run_step = -1
                 step = -1
                 if config.cc_par('restore_test'):
+                    ct.print('answer_select')
                     answer_select(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict)
+                    ct.print('elvation')
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict)
 
