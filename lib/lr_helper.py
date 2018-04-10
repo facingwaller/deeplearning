@@ -14,31 +14,30 @@ class lr_helper:
 
         f1_ls = str(f1_l).split('\t')
         split_word = '____'
-
-        step = f1_ls[0]
-        model = f1_ls[1]
-        global_index = f1_ls[2]
-        question = f1_ls[3]
-        ds = f1_ls[8:]
+        # 0____1____8.718868____9.006550____机械设计基础____8
+        step = ''  # f1_ls[0]
+        model = ''  # f1_ls[1]
+        global_index = 0  # f1_ls[2]
+        question = f1_ls[0]
+        ds = f1_ls[8:]  # str(f1_l).split('\t')  #
         ts = []
+        index = -1
         for item in ds:
-            # 第九行开始
-            try:
-                index = int(str(item).split(split_word)[0])
-            except Exception as e1:
-                print(e1)
+            index += 1
+
             right = str(item).split(split_word)[1] == '1'
             if right:
                 right1 = [1, 0]
             else:
                 right1 = [0, 1]
-            score = float(str(item).split(split_word)[2])
-            relation = str(item).split(split_word)[3]
-
+            # 0____1____8.718868____9.006550____机械设计基础____8
+            score1 = float(str(item).split(split_word)[2])
+            score2 = str(item).split(split_word)[3]
+            relation = str(item).split(split_word)[4]
             # z_score = ct.get_zi_flag_score_ps(question, relation)
-            z_score = len(relation)  # ct.math2(question, relation)
+            score3 = str(item).split(split_word)[5]  # ct.math2(question, relation)
 
-            t1 = (index, right1, score, relation, right, z_score)
+            t1 = (index, right1, relation, right, score1, score2, score3)
             ts.append(t1)
         t1 = (global_index, question, ts, step, model)
         return t1
@@ -53,13 +52,13 @@ class lr_helper:
         index = -1
         for f1_l in f1s:
             index += 1
-            need_skip =False
+            need_skip = False
             if str(f1_l).__contains__('NULL'):
                 need_skip = True
             if str(f1_l).__contains__('####'):
                 need_skip = True
             if str(f1_l).__contains__('@@@@@@'):
-                 need_skip=True
+                need_skip = True
 
             if need_skip:
                 continue
@@ -109,10 +108,11 @@ class lr_helper:
             for ts in data_current[2]:
                 index += 1
                 x_new.append(data_current[1])
+                # 0____1____8.718868____9.006550____机械设计基础____8
                 # t1 = (index, right1, score, relation,right,z_score)
-                y_new.append((ts[2], ts[5]))  # 继续遍历
+                y_new.append((ts[2], ts[3], ts[5]))  # 继续遍历
                 z_new.append(ts[1])
-                p_new.append(ts[3])
+                p_new.append(ts[4])
                 # ts
 
                 # 问题  Z分数 NN得分

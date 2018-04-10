@@ -9,7 +9,7 @@ from lib.ct import ct
 # X_SIZE = 784
 # Y_SIZE = 10
 
-X_SIZE = 2  # len IDF 之后加 SCORE
+X_SIZE = 3  # len IDF 之后加 SCORE
 Y_SIZE = 2
 
 # 改成 2 位 ， 2分类
@@ -17,7 +17,7 @@ lr = 0.01  # 0.001
 epochs = 100
 batch_size = 10
 # 0_1_0.898056_类型  INDEX 是否正确 分值/IDF 实体
-f1 = '../data/nlpcc2016/6-answer/q.rdf.ms.re.top_3.v1-20180403-1.txt'
+f1 = '../data/nlpcc2016/4-ner/demo3/q.rdf.ms.re.top_99.v4.10.txt'
 # f1 = '../data/nlpcc2016/8-logistics/logistics-2018-03-20.txt_bak.txt'
 #
 lh = lr_helper(f1)

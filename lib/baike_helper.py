@@ -2614,8 +2614,8 @@ class baike_test:
         index = -1
         for i in range(len(f1s)):  # 遍历所有问题
             index += 1
-            # if index > 10:
-            #      break
+            if index > 5000:
+                 break
             if index % 1000 == 0:
                 print("%d - %d" % (index / 1000, len(f1s) / 1000))
                 # break
@@ -2648,7 +2648,7 @@ class baike_test:
 
             l1 = f1s[i]
             # 剔除掉不能完全匹配的实体
-            _match_s = line_seg[2]
+            _match_s = baike_helper.entity_re_extract_one_repeat(line_seg[2])
             _question = line_seg[0].replace(' ','')
             if ct.not_contains_match_s(l1, _question, _match_s):
                 need_skip = True
