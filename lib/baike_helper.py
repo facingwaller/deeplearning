@@ -2614,8 +2614,8 @@ class baike_test:
         index = -1
         for i in range(len(f1s)):  # 遍历所有问题
             index += 1
-            if index > 5000:
-                 break
+            # if index > 5000:
+            #      break
             if index % 1000 == 0:
                 print("%d - %d" % (index / 1000, len(f1s) / 1000))
                 # break
@@ -2662,13 +2662,7 @@ class baike_test:
                 filter_list.append(str(i))
                 continue
 
-            if str(f1s[i]).split('\t')[0] in [
-                # '请问荣耀xl是什么时候曝光的？',
-                # '你知道创亿bx-3的适用机型是什么系列吗？',
-                # '请问iPad的输入方式有什么？',
-                '你知道断骨有什么严重的影响吗？'
-            ]:
-                print(333333333333)
+
 
             total2 += 1
 
