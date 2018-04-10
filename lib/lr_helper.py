@@ -86,6 +86,8 @@ class lr_helper:
             # 问题  Z分数 NN得分
             if int(data_current[2][0][1][0]) == 1:
                 rith_answer += 1
+            # else:
+            #     print(data_current)
 
         return rith_answer / total
 
@@ -110,7 +112,7 @@ class lr_helper:
                 x_new.append(data_current[1])
                 # 0____1____8.718868____9.006550____机械设计基础____8
                 # t1 = (index, right1, score, relation,right,z_score)
-                y_new.append((ts[2], ts[3], ts[5]))  # 继续遍历
+                y_new.append((float(ts[4]), float(ts[5]), float(ts[6])))  # 继续遍历
                 z_new.append(ts[1])
                 p_new.append(ts[4])
                 # ts
@@ -137,7 +139,7 @@ class lr_helper:
 
 if __name__ == "__main__":
     batch_size = 1
-    lh = lr_helper(f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.top_3.v1-20180403-1.txt')
+    lh = lr_helper(f1='../data/nlpcc2016/4-ner/demo3/q.rdf.ms.re.top_99.v4.10.txt')
 
     print(lh.baseline(lh.train_data))
     print(lh.baseline(lh.test_data))

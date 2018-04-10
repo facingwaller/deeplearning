@@ -11,6 +11,7 @@ from lib.ct import ct
 
 X_SIZE = 3  # len IDF 之后加 SCORE
 Y_SIZE = 2
+X_SIZE_COL = 1
 
 # 改成 2 位 ， 2分类
 lr = 0.01  # 0.001
@@ -29,8 +30,9 @@ y = tf.placeholder(dtype=tf.float32, shape=[None, Y_SIZE], name='output')  # 10 
 right_index = tf.placeholder(dtype=tf.int32, name='right_index')  # 正确的分类的index
 # w = tf.Variable(tf.random_normal([X_SIZE, Y_SIZE], seed=1, dtype=tf.float32), name='weights',trainable=True)
 # tf.fill([2,3], 9)
-w = tf.Variable(tf.random_uniform(shape=[X_SIZE, Y_SIZE], minval=0, maxval=2, dtype=tf.float32), name='weights',
-                trainable=True)
+w = tf.Variable(tf.random_uniform(shape=[X_SIZE, X_SIZE_COL], minval=-1, maxval=1, dtype=tf.float32), name='weights',
+                 trainable=True)
+# w = tf.Variable([1.0,-1.0,0.8], name='weights',                trainable=True)
 # w = tf.Variable([[ 1.0],[1.0]], name='weights',trainable=True)
 b = tf.Variable(tf.random_normal([1, Y_SIZE], dtype=tf.float32), name='bias', trainable=True)
 
@@ -75,7 +77,7 @@ def run_step1(data, model):
         y1 = gc_valid_item[2]
         p1 = gc_valid_item[3]
         r_i = gc_valid_item[4]
-        x1 = x1.reshape(-1, 2)
+        x1 = x1.reshape(-1, X_SIZE)
         y1 = y1.reshape(-1, 2)
 
         _z, _z1, _z_max, _z_right, _loss, _w, _b, _accuracy, _optimizer = \
@@ -93,15 +95,15 @@ def run_step1(data, model):
         # print(_loss)
         total_loss += _loss
         total_acc += _accuracy
-        if total %1000 == 0:
-            print(total/1000)
+        if total % 1000 == 0:
+            print(total / 1000)
     ct.print(
         'model %s epoch %s   loss = %s,  acc = %s error_count %s right_count %s total:%s' %
         (model, epoch, total_loss / total, right_count / total, error_count, right_count, total),
         'debug')
-    ct.print(_w, 'w')
-    ct.print(_b, 'b')
-    return w, b
+    ct.print(_w)
+    ct.print(_b)
+    return _w, _b
 
 
 def test_step1(data, model):
@@ -118,7 +120,7 @@ def test_step1(data, model):
         y1 = gc_valid_item[2]
         p1 = gc_valid_item[3]
         r_i = gc_valid_item[4]
-        x1 = x1.reshape(-1, 2)
+        x1 = x1.reshape(-1, X_SIZE)
         y1 = y1.reshape(-1, 2)
 
         _z, _z1, _z_max, _z_right, _loss, _w, _b, _accuracy = \
@@ -160,5 +162,5 @@ with tf.Session() as sess:
         # if epoch % (epochs // 10) == 0 and epoch != 0:
         # run_step(lh.train_data, 'valid')
         test_step1(lh.test_data, 'test')
-        if epoch % (epochs // 10) == 0 and epoch != 0:
-            ct.print("w1=%s b1=%s" % (w1, b1))
+        # if epoch % (epochs // 10) == 0 and epoch != 0:
+        ct.print("w1=%s b1=%s" % (w1, b1))
