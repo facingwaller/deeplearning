@@ -152,14 +152,14 @@ def test_step1(data, model):
     total_acc = 0.0
     total = 0
     gc_valid = lh.batch_iter(data, batch_size,transform=True)
-    error_count = 0
+
     error_count = 0
     right_count = dict()
     top_k = [1]
     right_count[1] = 0
     right_count[2] = 0
     right_count[3] = 0
-
+    res_list = [] # 记录下来
     for gc_valid_item in gc_valid:
         total += 1
         x1 = gc_valid_item[1]
@@ -204,17 +204,17 @@ def test_step1(data, model):
                 msg = "top %d\n %s\n%s" % (k, _q, '\n'.join(_rs))
                 ct.print(msg, 'error')
 
-        if _accuracy:
-
-            right_count += 1
-        else:
-            error_count += 1
+        # if _accuracy:
+        #     right_count += 1
+        # else:
+        #     error_count += 1
         # print(_loss)
         total_loss += _loss
         total_acc += _accuracy
     ct.print(
-        'model %s epoch %s   loss = %s,  acc = %s error_count %s right_count %s total:%s' %
-        (model, epoch, total_loss / total, right_count / total, error_count, right_count, total),
+        'model %s epoch %s   loss = %s,  acc1 = %s acc3 = %s error_count %s right_count %s total:%s' %
+        (model, epoch, total_loss / total, right_count[1] / total, right_count[3] / total, error_count, right_count,
+         total),
         'debug')
     ct.print(_w, 'w')
     ct.print(_b, 'b')
