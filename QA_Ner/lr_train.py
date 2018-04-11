@@ -69,7 +69,10 @@ def run_step1(data, model):
     total = 0
     gc_valid = lh.batch_iter(data, batch_size)
     error_count = 0
-    right_count = 0
+    right_count= dict()
+    top_k = [1,2,3]
+    for k in top_k:
+        right_count[k] = 0
 
     for gc_valid_item in gc_valid:
         total += 1
@@ -83,14 +86,30 @@ def run_step1(data, model):
         _z, _z1, _z_max, _z_right, _loss, _w, _b, _accuracy, _optimizer = \
             sess.run([z, z1, z_max, z_right, loss, w, b, accuracy, optimizer],
                      feed_dict={x: x1, y: y1, right_index: r_i})
+        # _z1 是一列 ，同 y1[index][0]一起构建一个tuple
+        t1 = []
+        for _index in range(len(_z1)):
+            _z1_item = _z1[_index]
+            t1.append((_z1_item,y1[_index][0]))
 
         ct.print(_w, 'w')
         ct.print(_b, 'b')
-        if _accuracy:
-            right_count += 1
-        else:
-            error_count += 1
+        t2 = sorted(t1,key= lambda  x:x[0],reverse=True)
+        for k in top_k:
+            _t2 = t2[0:k]
+            exist = False
+            for _t2_item in _t2:
+                if _t2_item[1]==1:
+                    exist = True
+                    break
+            if exist:
+                right_count[k] += 1
+        # if _accuracy:
+        #     right_count[1] += 1
+        # else:
+        #     error_count += 1
             ct.print(gc_valid_item[1], 'error')
+        # 增加检查最大值所在的index
 
         # print(_loss)
         total_loss += _loss
@@ -98,8 +117,8 @@ def run_step1(data, model):
         if total % 1000 == 0:
             print(total / 1000)
     ct.print(
-        'model %s epoch %s   loss = %s,  acc = %s error_count %s right_count %s total:%s' %
-        (model, epoch, total_loss / total, right_count / total, error_count, right_count, total),
+        'model %s epoch %s   loss = %s,  acc1 = %s acc3 = %s error_count %s right_count %s total:%s' %
+        (model, epoch, total_loss / total,  right_count[1] / total,right_count[3] / total, error_count, right_count, total),
         'debug')
     ct.print(_w)
     ct.print(_b)

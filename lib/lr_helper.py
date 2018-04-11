@@ -24,8 +24,10 @@ class lr_helper:
         index = -1
         for item in ds:
             index += 1
-
-            right = str(item).split(split_word)[1] == '1'
+            try:
+                right = str(item).split(split_word)[1] == '1'
+            except Exception as e1:
+                print(e1)
             if right:
                 right1 = [1, 0]
             else:
@@ -74,10 +76,12 @@ class lr_helper:
     def baseline(self, data):
         total = len(data)
         # shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
-        rith_answer = 0
+
         right_index = 0
-        rith_answer = 0
-        right_index = 0
+        rith_answer1 = 0
+        rith_answer2 = 0
+        rith_answer3 = 0
+        rith_answer4 = 0
         for list_index in range(total):
             index = -1
             data_current = data[list_index]
@@ -85,11 +89,19 @@ class lr_helper:
             #     index += 1
             # 问题  Z分数 NN得分
             if int(data_current[2][0][1][0]) == 1:
-                rith_answer += 1
-            # else:
-            #     print(data_current)
+                rith_answer1 += 1
+            elif int(data_current[2][1][1][0]) == 1:
+                rith_answer2 += 1
+            elif int(data_current[2][2][1][0]) == 1:
+                rith_answer3 += 1
+            else:
+                rith_answer4 += 1
+                # else:
+                #     print(data_current)
 
-        return rith_answer / total
+        return [rith_answer1 / total, (rith_answer1 + rith_answer2) / total,
+                (rith_answer1 + rith_answer2 + rith_answer3) / total,
+                (rith_answer1 + rith_answer2 + rith_answer3 + rith_answer4) / total]
 
     def batch_iter(self, data, batch_size):
         total = len(data)
