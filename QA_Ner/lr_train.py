@@ -31,7 +31,7 @@ right_index = tf.placeholder(dtype=tf.int32, name='right_index')  # 正确的分
 # w = tf.Variable(tf.random_normal([X_SIZE, Y_SIZE], seed=1, dtype=tf.float32), name='weights',trainable=True)
 # tf.fill([2,3], 9)
 w = tf.Variable(tf.random_uniform(shape=[X_SIZE, X_SIZE_COL], minval=-1, maxval=1, dtype=tf.float32), name='weights',
-                 trainable=True)
+                trainable=True)
 # w = tf.Variable([1.0,-1.0,0.8], name='weights',                trainable=True)
 # w = tf.Variable([[ 1.0],[1.0]], name='weights',trainable=True)
 b = tf.Variable(tf.random_normal([1, Y_SIZE], dtype=tf.float32), name='bias', trainable=True)
@@ -63,16 +63,18 @@ test_accuracy = tf.equal(test_loss, 0)
 ct.print("lr %s size %s f1= %s" % (lr, batch_size, f1))
 
 
+# 问题      数据      标签      属性
 def run_step1(data, model):
     total_loss = 0.0
     total_acc = 0.0
     total = 0
-    gc_valid = lh.batch_iter(data, batch_size)
+    gc_valid = lh.batch_iter(data, batch_size,transform=True)
     error_count = 0
-    right_count= dict()
-    top_k = [1,2,3]
-    for k in top_k:
-        right_count[k] = 0
+    right_count = dict()
+    top_k = [1]
+    right_count[1] = 0
+    right_count[2] = 0
+    right_count[3] = 0
 
     for gc_valid_item in gc_valid:
         total += 1
@@ -87,28 +89,47 @@ def run_step1(data, model):
             sess.run([z, z1, z_max, z_right, loss, w, b, accuracy, optimizer],
                      feed_dict={x: x1, y: y1, right_index: r_i})
         # _z1 是一列 ，同 y1[index][0]一起构建一个tuple
-        t1 = []
-        for _index in range(len(_z1)):
-            _z1_item = _z1[_index]
-            t1.append((_z1_item,y1[_index][0]))
+
 
         ct.print(_w, 'w')
         ct.print(_b, 'b')
-        t2 = sorted(t1,key= lambda  x:x[0],reverse=True)
-        for k in top_k:
-            _t2 = t2[0:k]
-            exist = False
-            for _t2_item in _t2:
-                if _t2_item[1]==1:
-                    exist = True
-                    break
-            if exist:
-                right_count[k] += 1
+        record = False
+        if record:
+            t1 = []
+            for _index in range(len(_z1)):
+                _z1_item = _z1[_index]
+                t1.append((_z1_item, y1[_index][0], _index))
+            t2 = sorted(t1, key=lambda x: x[0], reverse=True)
+            for k in top_k:
+                _t2 = t2[0:k]
+                exist = False
+                for _t2_item in _t2:
+                    if _t2_item[1] == 1:
+                        exist = True
+                        break
+                if exist:
+                    right_count[k] += 1
+                    # ct.print('OK', 'error')
+                else:
+                    _q = gc_valid_item[0][0]
+                    _rs = []
+                    for index1 in range(len(t2)):
+                        _i = t2[index1][2]
+                        _rs_1 = "%s\t%s\t%s\t%s" % (gc_valid_item[3][_i], _z1[_i]
+                                                    , ' '.join([str(x) for x in gc_valid_item[1][_i]]),
+                                                    ' '.join([str(x) for x in gc_valid_item[2][_i]]))
+                        _rs.append(_rs_1)
+                        if t2[_i][1] == 1:
+                            break
+                    msg = "top %d\n %s\n%s" % (k, _q, '\n'.join(_rs))
+                    ct.print(msg, 'error')
+
         # if _accuracy:
         #     right_count[1] += 1
         # else:
         #     error_count += 1
-            ct.print(gc_valid_item[1], 'error')
+
+
         # 增加检查最大值所在的index
 
         # print(_loss)
@@ -118,7 +139,8 @@ def run_step1(data, model):
             print(total / 1000)
     ct.print(
         'model %s epoch %s   loss = %s,  acc1 = %s acc3 = %s error_count %s right_count %s total:%s' %
-        (model, epoch, total_loss / total,  right_count[1] / total,right_count[3] / total, error_count, right_count, total),
+        (model, epoch, total_loss / total, right_count[1] / total, right_count[3] / total, error_count, right_count,
+         total),
         'debug')
     ct.print(_w)
     ct.print(_b)
@@ -129,9 +151,14 @@ def test_step1(data, model):
     total_loss = 0.0
     total_acc = 0.0
     total = 0
-    gc_valid = lh.batch_iter(data, batch_size)
+    gc_valid = lh.batch_iter(data, batch_size,transform=True)
     error_count = 0
-    right_count = 0
+    error_count = 0
+    right_count = dict()
+    top_k = [1]
+    right_count[1] = 0
+    right_count[2] = 0
+    right_count[3] = 0
 
     for gc_valid_item in gc_valid:
         total += 1
@@ -145,9 +172,38 @@ def test_step1(data, model):
         _z, _z1, _z_max, _z_right, _loss, _w, _b, _accuracy = \
             sess.run([test_z, test_z1, test_z_max, test_z_right, test_loss, w, b, test_accuracy],
                      feed_dict={test_x: x1, test_y: y1, test_right_index: r_i})
+        t1 = []
+        for _index in range(len(_z1)):
+            _z1_item = _z1[_index]
+            t1.append((_z1_item, y1[_index][0], _index))
 
         ct.print(_w, 'w')
         ct.print(_b, 'b')
+        t2 = sorted(t1, key=lambda x: x[0], reverse=True)
+        for k in top_k:
+            _t2 = t2[0:k]
+            exist = False
+            for _t2_item in _t2:
+                if _t2_item[1] == 1:
+                    exist = True
+                    break
+            if exist:
+                right_count[k] += 1
+                # ct.print('OK', 'error')
+            else:
+                _q = gc_valid_item[0][0]
+                _rs = []
+                for index1 in range(len(t2)):
+                    _i = t2[index1][2]
+                    _rs_1 = "%s\t%s\t%s\t%s" % (gc_valid_item[3][_i], _z1[_i]
+                                                , ' '.join([str(x) for x in gc_valid_item[1][_i]]),
+                                                ' '.join([str(x) for x in gc_valid_item[2][_i]]))
+                    _rs.append(_rs_1)
+                    if t2[_i][1] == 1:
+                        break
+                msg = "top %d\n %s\n%s" % (k, _q, '\n'.join(_rs))
+                ct.print(msg, 'error')
+
         if _accuracy:
 
             right_count += 1

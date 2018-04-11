@@ -5,6 +5,7 @@ import gzip
 import gc
 import math
 import numpy as np
+from sklearn import preprocessing
 
 
 # 1 装载数据
@@ -46,6 +47,9 @@ class lr_helper:
 
     def __init__(self, f1='',
                  f2='../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'):
+
+        self.min_max_scaler = preprocessing.MinMaxScaler()
+
         self.all_datas = []
         # f1 = '../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'
         f1s = ct.file_read_all_lines_strip(f1)
@@ -70,6 +74,7 @@ class lr_helper:
                 self.train_data.append(self.extract_line(f1_l))
             else:
                 self.test_data.append(self.extract_line(f1_l))
+                # 在这里除了下归一化
 
         print('init ok')
 
@@ -103,7 +108,7 @@ class lr_helper:
                 (rith_answer1 + rith_answer2 + rith_answer3) / total,
                 (rith_answer1 + rith_answer2 + rith_answer3 + rith_answer4) / total]
 
-    def batch_iter(self, data, batch_size):
+    def batch_iter(self, data, batch_size,mode='train',transform=False):
         total = len(data)
         shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
 
@@ -126,7 +131,7 @@ class lr_helper:
                 # t1 = (index, right1, score, relation,right,z_score)
                 y_new.append((float(ts[4]), float(ts[5]), float(ts[6])))  # 继续遍历
                 z_new.append(ts[1])
-                p_new.append(ts[4])
+                p_new.append(ts[2])
                 # ts
 
                 # 问题  Z分数 NN得分
@@ -146,7 +151,12 @@ class lr_helper:
             y_new.clear()
             z_new.clear()
             p_new.clear()
-            yield np.array(x_return), np.array(y_return), np.array(z_return), np.array(p_return), right_index
+            if transform:
+                y_return_new = self.min_max_scaler.fit_transform(y_return)
+            else:
+                y_return_new = np.array(y_return)
+            # yield np.array(x_return), np.array(y_return), np.array(y_return_new), np.array(p_return), right_index
+            yield np.array(x_return), y_return_new, np.array(z_return), np.array(p_return), right_index
 
 
 if __name__ == "__main__":
