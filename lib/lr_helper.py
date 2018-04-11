@@ -21,6 +21,7 @@ class lr_helper:
         global_index = 0  # f1_ls[2]
         question = f1_ls[0]
         ds = f1_ls[8:]  # str(f1_l).split('\t')  #
+        origin_data = f1_ls[0:8]  # str(f1_l).split('\t')  #
         ts = []
         index = -1
         for item in ds:
@@ -42,11 +43,10 @@ class lr_helper:
 
             t1 = (index, right1, relation, right, score1, score2, score3)
             ts.append(t1)
-        t1 = (global_index, question, ts, step, model)
+        t1 = (global_index, question, ts, step, model, origin_data)
         return t1
 
-    def __init__(self, f1='',
-                 f2='../data/nlpcc2016/8-logistics/logistics-2018-03-10.txt_bak.txt'):
+    def __init__(self, f1=''):
 
         self.min_max_scaler = preprocessing.MinMaxScaler()
 
@@ -63,14 +63,22 @@ class lr_helper:
                 need_skip = True
             if str(f1_l).__contains__('####'):
                 need_skip = True
+            # 改成不包含则跳过
             if str(f1_l).__contains__('@@@@@@'):
                 need_skip = True
 
-            if need_skip:
+            if need_skip:  # 实际没有跳过的
+                print(f1_l, 'skip')
                 continue
 
-            if index < config.cc_par('real_split_train_test_skip'):  # <= int(len(f1s)*0.8):
-                # if str(f1_l).__contains__('\tvalid\t'):
+            # if index < config.cc_par('real_split_train_test_skip'):  # <= int(len(f1s)*0.8):
+            m1 = False
+            if m1:
+                is_train = index < config.cc_par('real_split_train_test_skip')
+            else:
+                is_train = index < int(len(f1s)*0.8)
+
+            if is_train:
                 self.train_data.append(self.extract_line(f1_l))
             else:
                 self.test_data.append(self.extract_line(f1_l))
@@ -108,9 +116,12 @@ class lr_helper:
                 (rith_answer1 + rith_answer2 + rith_answer3) / total,
                 (rith_answer1 + rith_answer2 + rith_answer3 + rith_answer4) / total]
 
-    def batch_iter(self, data, batch_size,mode='train',transform=False):
+    def batch_iter(self, data, batch_size, mode='train', transform=False,random_index=True):
         total = len(data)
-        shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
+        if random_index:
+            shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
+        else:
+            shuffle_indices = np.arange(total)  # 打乱样本下标
 
         info1 = "q total:%d ; epohches-size:%s " % (total, len(data) // batch_size)
         ct.print(info1, 'info')

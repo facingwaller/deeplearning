@@ -147,11 +147,11 @@ def run_step1(data, model):
     return _w, _b
 
 
-def test_step1(data, model):
+def test_step1(data, model,record_all = False,epoch_index=0):
     total_loss = 0.0
     total_acc = 0.0
     total = 0
-    gc_valid = lh.batch_iter(data, batch_size,transform=True)
+    gc_valid = lh.batch_iter(data, batch_size,transform=True,random_index=False)
 
     error_count = 0
     right_count = dict()
@@ -203,6 +203,19 @@ def test_step1(data, model):
                         break
                 msg = "top %d\n %s\n%s" % (k, _q, '\n'.join(_rs))
                 ct.print(msg, 'error')
+            # 记录全部
+            if record_all:
+                k = 3 # 一般都是记录前3个
+                _t2 = t2[0:k]
+                _q = gc_valid_item[0][5]  # 全部的前缀
+                _rs = []
+                for index1 in range(len(_t2)):
+                    _i = _t2[index1][2]
+                    _rs_1 = "%s____%s" % (gc_valid_item[3][_i], _z1[_i])
+                    _rs.append(_rs_1)
+                msg = "%s\t%s" % (_q, '\t'.join(_rs))
+                # ct.print(msg,'test_record')
+                res_list.append(msg)
 
         # if _accuracy:
         #     right_count += 1
@@ -211,13 +224,15 @@ def test_step1(data, model):
         # print(_loss)
         total_loss += _loss
         total_acc += _accuracy
+
     ct.print(
-        'model %s epoch %s   loss = %s,  acc1 = %s acc3 = %s error_count %s right_count %s total:%s' %
-        (model, epoch, total_loss / total, right_count[1] / total, right_count[3] / total, error_count, right_count,
+        'test model %s epoch %s   loss = %s,  acc1 = %s acc2 = %s acc3 = %s error_count %s right_count %s total:%s' %
+        (model, epoch, total_loss / total, right_count[1] / total, right_count[2] / total, right_count[3] / total, error_count, right_count,
          total),
         'debug')
-    ct.print(_w, 'w')
-    ct.print(_b, 'b')
+    # ct.print(_w, 'w')
+    # ct.print(_b, 'b')
+    ct.file_wirte_list('../data/nlpcc2016/4-ner/demo3/q.rdf.score.top_3_%s_%d.v4.10.txt'%(model,epoch_index),res_list)
     return w, b
 
 
@@ -236,6 +251,14 @@ with tf.Session() as sess:
         w1, b1 = run_step1(lh.train_data, 'train')
         # if epoch % (epochs // 10) == 0 and epoch != 0:
         # run_step(lh.train_data, 'valid')
-        test_step1(lh.test_data, 'test')
+        data_all = []
+        data_all.extend(lh.train_data)
+        data_all.extend(lh.test_data)
+
+        test_step1(lh.train_data, 'only_train', record_all=True, epoch_index=epoch)
+        test_step1(lh.test_data, 'only_test', record_all=True, epoch_index=epoch)
+
+        test_step1(data_all, 'all', record_all=True, epoch_index=epoch)
+
         # if epoch % (epochs // 10) == 0 and epoch != 0:
         ct.print("w1=%s b1=%s" % (w1, b1))
