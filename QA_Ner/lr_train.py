@@ -68,7 +68,7 @@ def run_step1(data, model):
     total_loss = 0.0
     total_acc = 0.0
     total = 0
-    gc_valid = lh.batch_iter(data, batch_size,transform=True)
+    gc_valid = lh.batch_iter(data, batch_size, transform=True)
     error_count = 0
     right_count = dict()
     top_k = [1]
@@ -93,7 +93,7 @@ def run_step1(data, model):
 
         ct.print(_w, 'w')
         ct.print(_b, 'b')
-        record = False
+        record = True
         if record:
             t1 = []
             for _index in range(len(_z1)):
@@ -142,16 +142,16 @@ def run_step1(data, model):
         (model, epoch, total_loss / total, right_count[1] / total, right_count[3] / total, error_count, right_count,
          total),
         'debug')
-    ct.print(_w)
-    ct.print(_b)
+    # ct.print(_w)
+    # ct.print(_b)
     return _w, _b
 
 
-def test_step1(data, model,record_all = False,epoch_index=0):
+def test_step1(data, model, record_all=False, epoch_index=0):
     total_loss = 0.0
     total_acc = 0.0
     total = 0
-    gc_valid = lh.batch_iter(data, batch_size,transform=True,random_index=False)
+    gc_valid = lh.batch_iter(data, batch_size, transform=True, random_index=False)
 
     error_count = 0
     right_count = dict()
@@ -159,13 +159,14 @@ def test_step1(data, model,record_all = False,epoch_index=0):
     right_count[1] = 0
     right_count[2] = 0
     right_count[3] = 0
-    res_list = [] # 记录下来
+    res_list = []  # 记录下来
     for gc_valid_item in gc_valid:
         total += 1
         x1 = gc_valid_item[1]
         y1 = gc_valid_item[2]
         p1 = gc_valid_item[3]
         r_i = gc_valid_item[4]
+        origin = gc_valid_item[5]
         x1 = x1.reshape(-1, X_SIZE)
         y1 = y1.reshape(-1, 2)
 
@@ -205,15 +206,15 @@ def test_step1(data, model,record_all = False,epoch_index=0):
                 ct.print(msg, 'error')
             # 记录全部
             if record_all:
-                k = 3 # 一般都是记录前3个
+                k = 3  # 一般都是记录前3个
                 _t2 = t2[0:k]
-                _q = gc_valid_item[0][5]  # 全部的前缀
+                _q = origin  # 全部的前缀
                 _rs = []
                 for index1 in range(len(_t2)):
                     _i = _t2[index1][2]
                     _rs_1 = "%s____%s" % (gc_valid_item[3][_i], _z1[_i])
                     _rs.append(_rs_1)
-                msg = "%s\t%s" % (_q, '\t'.join(_rs))
+                msg = "%s\t%s" % ('\t'.join(_q), '\t'.join(_rs))
                 # ct.print(msg,'test_record')
                 res_list.append(msg)
 
@@ -227,12 +228,15 @@ def test_step1(data, model,record_all = False,epoch_index=0):
 
     ct.print(
         'test model %s epoch %s   loss = %s,  acc1 = %s acc2 = %s acc3 = %s error_count %s right_count %s total:%s' %
-        (model, epoch, total_loss / total, right_count[1] / total, right_count[2] / total, right_count[3] / total, error_count, right_count,
+        (model, epoch, total_loss / total, right_count[1] / total, right_count[2] / total, right_count[3] / total,
+         error_count, right_count,
          total),
         'debug')
     # ct.print(_w, 'w')
     # ct.print(_b, 'b')
-    ct.file_wirte_list('../data/nlpcc2016/4-ner/demo3/q.rdf.score.top_3_%s_%d.v4.10.txt'%(model,epoch_index),res_list)
+    if record_all:
+        ct.file_wirte_list('../data/nlpcc2016/4-ner/demo3/q.rdf.score.top_3_%s_%d.v4.10.txt' % (model, epoch_index),
+                           res_list)
     return w, b
 
 
@@ -255,8 +259,8 @@ with tf.Session() as sess:
         data_all.extend(lh.train_data)
         data_all.extend(lh.test_data)
 
-        test_step1(lh.train_data, 'only_train', record_all=True, epoch_index=epoch)
-        test_step1(lh.test_data, 'only_test', record_all=True, epoch_index=epoch)
+        test_step1(lh.train_data, 'only_train', record_all=False, epoch_index=epoch)
+        test_step1(lh.test_data, 'only_test', record_all=False, epoch_index=epoch)
 
         test_step1(data_all, 'all', record_all=True, epoch_index=epoch)
 

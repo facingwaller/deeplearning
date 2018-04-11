@@ -1159,6 +1159,7 @@ class DataClass:
         labels = []  # 标签集合
         synonym_score = []  # 每个分数
         es_name_labels = []
+        ner_score_list = []
 
         if model == "valid":
             global_index = index
@@ -1183,7 +1184,9 @@ class DataClass:
         es_all.extend(self.expend_es[global_index][0])
         es_all.extend(self.expend_es[global_index][1])
         es_all.extend(self.expend_es[global_index][2])
-        es_all = list(set(es_all))
+        # es_all = list(set(es_all))
+        # 在这里加入分数
+
 
         name = self.entity1_list[global_index]
         # todo: index should not in
@@ -1193,7 +1196,15 @@ class DataClass:
 
         answer_to_except = self.answer_list[global_index]
         # 实体-属性-属性值-是否是正确的属性
-        all_tuple = self.bh.answer_get_all_neg_relations_cc(es_all, ps_to_except1)
+        # all_tuple = self.bh.answer_get_all_neg_relations_cc(es_all, ps_to_except1,score1)
+
+        all_tuple = []
+        top_k = [1,2,3]
+        for k in top_k:
+            score1 = self.expend_es[global_index][0]  # score int
+            tuple1 = self.bh.answer_get_all_neg_relations_cc(self.expend_es[global_index][k], ps_to_except1, score1)
+            all_tuple.extend(tuple1)
+
 
         ct.just_log2("info", "entity:%s " % name)
         part4 = "%s " % name
@@ -1215,17 +1226,18 @@ class DataClass:
             o = all_tuple[index][2]
             is_right = all_tuple[index][3]
             entity_name_in_kb = all_tuple[index][4]
-
+            ner_score = all_tuple[index][5]
             q = self.question_list_origin[global_index]
             q = str(q).replace(match_s,'♠')
             x_new.append(self.convert_str_to_indexlist(q))
             y_new.append(self.convert_str_to_indexlist(p))  # neg
             labels.append(is_right)
             es_name_labels.append(entity_name_in_kb)
+            ner_score_list.append(ner_score)
 
         ct.print("leave:batch_iter_cc_answer_test_one_debug")
 
-        return np.array(x_new), np.array(y_new), [labels,es_name_labels]
+        return np.array(x_new), np.array(y_new), [labels,es_name_labels,ner_score_list]
     # --------------------按比例分割
     def cap_nums(self, y, rate=0.8):
         y = y.copy()
@@ -1978,19 +1990,26 @@ class DataClass:
         # # f1s = [_ for _ in filter(lambda x: str(x).__contains__('NULL'), f1s)]
 
         expend_es = []
+        expend_score = []
         s1 = '____'
         for l1 in f1s:
             vs = str(l1).split('\t')
             index = -1
             # d1 = dict()
             list1 = []
+            list2 = []
             for vs1 in vs:
                 index += 1
                 # d1[str(index)] = vs1[1:] # KEY=第几个，value 对应的实体
                 vs2 = str(vs1).split(s1)
+                #  截取分数之后的
+                vs2 = vs2[2:]
                 list1.append(vs2)
+                list2.append(vs2[1])
+            expend_score.append(list2)
             expend_es.append(list1)
         self.expend_es = expend_es
+        self.expend_score = expend_score
         ct.print('init_expend_es len:%d' % len(expend_es))
 
 

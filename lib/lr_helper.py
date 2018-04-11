@@ -168,7 +168,7 @@ class lr_helper:
             else:
                 y_return_new = np.array(y_return)
             # yield np.array(x_return), np.array(y_return), np.array(y_return_new), np.array(p_return), right_index
-            yield np.array(x_return), y_return_new, np.array(z_return), np.array(p_return), right_index
+            yield np.array(x_return), y_return_new, np.array(z_return), np.array(p_return), right_index,data_current[5]
 
 
 if __name__ == "__main__":

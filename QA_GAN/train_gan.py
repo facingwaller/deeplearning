@@ -150,6 +150,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     if anwser_select:
         right_labels = labels[0]
         es_name_labels = labels[1]
+        ner_score_list = labels[2]
     index = -1
     is_correct = False
     for st in st_list_sort:
@@ -163,8 +164,8 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         # 根据对应的关系数组找到对应的文字
         r1 = dh.converter.arr_to_text_no_unk(test_r[better_index])
         # ct.print(r1)
-        ct.just_log2("info", "step:%d st.index:%d,score:%f,q:%s,s:%s,r:%s" %
-                     (step, st.index, st.score,question[better_index],es_name_labels[better_index], r1))
+        ct.just_log2("info", "step:%d st.index:%d,score:%f,q:%s,s:%s,ner_score:%s,r:%s" %
+                     (step, st.index, st.score,question[better_index],es_name_labels[better_index],ner_score_list[better_index], r1))
         if not find_right:
             # 在这里改下
             if config.cc_par('synonym_mode') == 'ps_synonym':
