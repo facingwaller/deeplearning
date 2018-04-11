@@ -65,7 +65,8 @@ class lr_helper:
                 need_skip = True
             # 改成不包含则跳过
             if str(f1_l).__contains__('@@@@@@'):
-                need_skip = True
+                f1_l = str(f1_l).replace('1@@@@@@','').replace('@@@@@@','')
+                # need_skip = True
 
             if need_skip:  # 实际没有跳过的
                 print(f1_l, 'skip')
