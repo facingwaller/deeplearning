@@ -2614,8 +2614,8 @@ class baike_test:
         index = -1
         for i in range(len(f1s)):  # 遍历所有问题
             index += 1
-            if index > 5000:
-                 break
+            # if index > 5000:
+            #      break
             if index % 1000 == 0:
                 print("%d - %d" % (index / 1000, len(f1s) / 1000))
                 # break

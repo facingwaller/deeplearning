@@ -67,7 +67,7 @@ if __name__ == '__main__':  #
             f9='../data/nlpcc2016/4-ner/demo2/q.rdf.ms.re.top_%d.v4.10.txt' % num,
             f10='../data/nlpcc2016/4-ner/demo2/ner_%d.v4.10.txt' % num,
             combine_idf=True,
-            cant_contains_others=False)
+            cant_contains_others=True)
         print('==================之前的任务============')
         print('前99,get:23840   acc: 0.999748,total - skip=633 ')
         print('备注：try_test_acc_of_m1 Top3 23706,0.977567 (不互相包含23725,97.8351%) ')
