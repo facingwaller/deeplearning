@@ -102,6 +102,8 @@ if testid == "cc_test":
     competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
     competing_batch_size = 10 # 控制size
 
+    expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
+
 elif testid == 'cc_debug':
     # 极限情况下调,1个问题，全关系
     epoches = 10  # 遍历多少轮
@@ -219,8 +221,8 @@ cc_p = {
     # 只包含使用的部分
     'kb-use': '../data/nlpcc2016/2-kb/kb-use.v2.txt',
     # 匹配实体和过滤后的问题集
-    'cc_q_path': '../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
-
+    # 'cc_q_path': '../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+    'cc_q_path': '../data/nlpcc2016/4-ner/demo3/q.rdf.score.top_3_all_0.v4.10.txt',
     'real_split_train_test': True,
     'real_split_train_test_skip': 14610,
     'use_property': use_property,  # 记录进日志

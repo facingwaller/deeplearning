@@ -112,10 +112,12 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     error_test_pos_r = []
     error_test_neg_r = []
     # fuzzy_boundary = []
-
-    test_q_r_cosin = sess.run(
+    try:
+        test_q_r_cosin = sess.run(
         [lstm.test_q_r],
         feed_dict=feed_dict)
+    except Exception as e1:
+        print(e1)
 
     test_q_r_cosin = test_q_r_cosin[0]
     right, wrong, score = [0.0] * 3

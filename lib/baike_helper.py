@@ -2880,7 +2880,7 @@ class baike_test:
 
                 # 不管判断是对的还是错的都保存
                 f9s.append("%s\t%s" % (f1s[i], word_idf_str))
-                f10s.append("%s" % (word_idf_str))
+                f10s.append("%s" % word_idf_str)
 
         print("skip:%d total:%d  toatal2:%d ;total_f1s_i_e1 %d; total_f1s_i_e2 %d ;" % (
             skip, total, total2, total_f1s_i_e1, total_f1s_i_e2))

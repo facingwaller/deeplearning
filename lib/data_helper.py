@@ -119,6 +119,9 @@ class DataClass:
         self.maybe_test_questions = []
         self.rdf_list = []
         self.mode = mode
+        self.expend_es = []
+        self.expend_score = []
+
         if mode == "test":
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
             self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
@@ -168,7 +171,7 @@ class DataClass:
                 self.synonym_train_data(config.cc_par('synonym_train_data'))
             if config.cc_compare('pool_mode', 'competing_ps'):
                 self.init_competing_model(config.cc_par('competing_ps_path'))
-            self.init_expend_es(config.cc_par('expend_es'))
+            # self.init_expend_es(config.cc_par('expend_es'))
             ct.print("load embedding ok!")
 
             return
@@ -559,7 +562,7 @@ class DataClass:
             index += 1
             if (use_property in ['num', 'special', 'maybe']) and index not in property_list:
                 continue
-            line_seg = line.split('\t')
+            line_seg = line.replace('\r','').replace('\n','').split('\t')
             answer = line_seg[1]
             entity1 = line_seg[2]
             relation1 = ct.clean_str_rel(line_seg[3].lower())  # 清洗关系
@@ -601,6 +604,24 @@ class DataClass:
             self.question_labels.append(is_train)
 
             self.question_global_index.append(index)
+
+            # 加载扩展的实体集合
+            vs = line_seg[8:]
+            index = -1
+            # d1 = dict()
+            list1 = []
+            list2 = []
+            s1 = '____'
+            for vs1 in vs:
+                index += 1
+                # d1[str(index)] = vs1[1:] # KEY=第几个，value 对应的实体
+                vs2 = str(vs1).split(s1)
+                #  截取分数之后的
+                # vs2 = vs2[2:]
+                list1.append(vs2)
+                list2.append(vs2[1])
+            self.expend_score.append(list2)
+            self.expend_es.append(list1)
 
         ct.print("entity1_list:%d " % len(self.entity1_list))
         if len(self.entity1_list) == 0:
@@ -1202,7 +1223,10 @@ class DataClass:
         top_k = [1,2,3]
         for k in top_k:
             score1 = self.expend_es[global_index][0]  # score int
-            tuple1 = self.bh.answer_get_all_neg_relations_cc(self.expend_es[global_index][k], ps_to_except1, score1)
+            # try:
+            tuple1 = self.bh.answer_get_all_neg_relations_cc(self.expend_es[global_index][k-1], ps_to_except1, score1)
+            # except Exception as e1:
+            #     print(e1)
             all_tuple.extend(tuple1)
 
 
@@ -1236,7 +1260,8 @@ class DataClass:
             ner_score_list.append(ner_score)
 
         ct.print("leave:batch_iter_cc_answer_test_one_debug")
-
+        if len(x_new) == 0 :
+            print(111)
         return np.array(x_new), np.array(y_new), [labels,es_name_labels,ner_score_list]
     # --------------------按比例分割
     def cap_nums(self, y, rate=0.8):
