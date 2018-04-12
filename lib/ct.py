@@ -1244,6 +1244,7 @@ class ct:
     def clean_str_question(string):
         s1 = str(string).strip().strip('\n').strip('\r').replace(' ', '')\
             .lower().replace('\xa0','')
+        s1 = ct.clean_str_zh2en(s1)
         return s1
 
     @staticmethod

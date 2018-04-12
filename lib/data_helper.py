@@ -168,7 +168,7 @@ class DataClass:
                 self.synonym_train_data(config.cc_par('synonym_train_data'))
             if config.cc_compare('pool_mode', 'competing_ps'):
                 self.init_competing_model(config.cc_par('competing_ps_path'))
-            self.init_expend_es(f1='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.expend.v1.txt')
+            self.init_expend_es(config.cc_par('expend_es'))
             ct.print("load embedding ok!")
 
             return

@@ -66,13 +66,13 @@ if __name__ == '__main__':  #
             f8='../data/nlpcc2016/4-ner/demo2/extract_entitys_all_tj.resort_%d.v4.8.txt' % num,
             f9='../data/nlpcc2016/4-ner/demo2/q.rdf.ms.re.top_%d.v4.10.txt' % num,
             f10='../data/nlpcc2016/4-ner/demo2/ner_%d.v4.10.txt' % num,
-            combine_idf=True,
+            combine_idf=False,
             cant_contains_others=True)
         print('==================之前的任务============')
         print('前99,get:23840   acc: 0.999748,total - skip=633 ')
         print('备注：try_test_acc_of_m1 Top3 23706,0.977567 (不互相包含23725,97.8351%) ')
         print('备注：TOP3 23706 0.993332 (不互相包含 前3,get:23706   acc: 0.994129 ')
-    if True:
+    if False:
         # 这里回归一份新的extract_entitys_all_tj.resort_3.v4.8.txt,格式会变
         print('获取扩展的实体集合,并判断是否共有属性')
         bkh.expend_es_by_dict(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
@@ -95,18 +95,20 @@ if __name__ == '__main__':  #
     #                         f2='../data/nlpcc2016/3-questions/q.rdf.m_s.suggest.txt')
     # 重写rdf_extract_property_origin
     # C1.2.1
-    if False:
+
+    # --------------  问答
+    if True:
         filter_list2 = cf.extract_property(f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
                             f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                             f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
                             skip=0,
                             skip_cant_match=True)
         print('重写q.rdf.ms.re.v1.filter.txt和rdf_extract_property_origin.txt')
-        s1 = set(filter_list1) - set(filter_list2)
-        print("%s "%' '.join(s1))
-
-        s2 = set(filter_list2) - set(filter_list1)
-        print("%s "%' '.join(s2))
+        # s1 = set(filter_list1) - set(filter_list2)
+        # print("filter_list1-filter_list2: %s "%' '.join(s1))
+        #
+        # s2 = set(filter_list2) - set(filter_list1)
+        # print("%s "%' '.join(s2))
     if False:
         # 仅用于测试
         cf.extract_property(f3='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',

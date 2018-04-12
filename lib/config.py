@@ -101,6 +101,7 @@ if testid == "cc_test":
     #
     competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
     competing_batch_size = 10 # 控制size
+
 elif testid == 'cc_debug':
     # 极限情况下调,1个问题，全关系
     epoches = 10  # 遍历多少轮
@@ -161,6 +162,7 @@ elif testid == 'cc_debug':
     #
     competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
     competing_batch_size = 5
+    expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
 else:
     epoches = 100 * 100 * 100  # 遍历多少轮
     batch_size = 10  # 1个batch的大小
@@ -249,7 +251,9 @@ cc_p = {
     'valid_only_error_test': valid_only_error_test,
     # 竞争
     'competing_ps_path': competing_ps_path,
-    'competing_batch_size':competing_batch_size
+    'competing_batch_size':competing_batch_size,
+    ## NER
+    'expend_es':expend_es
 
 }
 

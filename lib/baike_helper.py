@@ -2765,6 +2765,12 @@ class baike_test:
                 else:
                     list1_new = ct.list_no_repeat(list1)  # 去掉重复
 
+                if str(f1s[i]).split('\t')[0] in [
+                    # '请问荣耀xl是什么时候曝光的？',
+                    # '你知道创亿bx-3的适用机型是什么系列吗？',
+                    '《线性代数》这本书的出版时间是什么？'
+                ]:
+                    print(12313)
                 # 5.8.3 去掉词语包含试试 有一首歌叫	有一首歌	一首歌
                 if cant_contains_others:
                     # 能略微提高
@@ -2824,7 +2830,7 @@ class baike_test:
                     if str(f1s[i]).split('\t')[0] in [
                         # '请问荣耀xl是什么时候曝光的？',
                         # '你知道创亿bx-3的适用机型是什么系列吗？',
-                        '辣子鸡属于八大菜系中的哪一种'
+                        '《线性代数》这本书的出版时间是什么？'
                     ]:
                         print(12313)
                         # F6.1.1 找到对应的index

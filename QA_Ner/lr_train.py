@@ -18,7 +18,8 @@ lr = 0.01  # 0.001
 epochs = 100
 batch_size = 10
 # 0_1_0.898056_类型  INDEX 是否正确 分值/IDF 实体
-f1 = '../data/nlpcc2016/4-ner/demo3/q.rdf.ms.re.top_99.v4.10.txt'
+# f1 = '../data/nlpcc2016/4-ner/demo3/q.rdf.ms.re.top_99.v4.10.txt'
+f1 = '../data/nlpcc2016/4-ner/demo3/q.rdf.ms.re.top_99_full.v4.10.txt'
 # f1 = '../data/nlpcc2016/8-logistics/logistics-2018-03-20.txt_bak.txt'
 #
 lh = lr_helper(f1)
@@ -71,7 +72,7 @@ def run_step1(data, model):
     gc_valid = lh.batch_iter(data, batch_size, transform=True)
     error_count = 0
     right_count = dict()
-    top_k = [1]
+    top_k = [1,2,3]
     right_count[1] = 0
     right_count[2] = 0
     right_count[3] = 0
@@ -89,38 +90,37 @@ def run_step1(data, model):
             sess.run([z, z1, z_max, z_right, loss, w, b, accuracy, optimizer],
                      feed_dict={x: x1, y: y1, right_index: r_i})
         # _z1 是一列 ，同 y1[index][0]一起构建一个tuple
-
-
         ct.print(_w, 'w')
         ct.print(_b, 'b')
         record = True
-        if record:
-            t1 = []
-            for _index in range(len(_z1)):
-                _z1_item = _z1[_index]
-                t1.append((_z1_item, y1[_index][0], _index))
-            t2 = sorted(t1, key=lambda x: x[0], reverse=True)
-            for k in top_k:
-                _t2 = t2[0:k]
-                exist = False
-                for _t2_item in _t2:
-                    if _t2_item[1] == 1:
-                        exist = True
+
+        t1 = []
+        for _index in range(len(_z1)):
+            _z1_item = _z1[_index]
+            t1.append((_z1_item, y1[_index][0], _index))
+        t2 = sorted(t1, key=lambda x: x[0], reverse=True)
+        for k in top_k:
+            _t2 = t2[0:k]
+            exist = False
+            for _t2_item in _t2:
+                if _t2_item[1] == 1:
+                    exist = True
+                    break
+            if exist:
+                right_count[k] += 1
+                # ct.print('OK', 'error')
+            else:
+                _q = gc_valid_item[0][0]
+                _rs = []
+                for index1 in range(len(t2)):
+                    _i = t2[index1][2]
+                    _rs_1 = "%s\t%s\t%s\t%s" % (gc_valid_item[3][_i], _z1[_i]
+                                                , ' '.join([str(x) for x in gc_valid_item[1][_i]]),
+                                                ' '.join([str(x) for x in gc_valid_item[2][_i]]))
+                    _rs.append(_rs_1)
+                    if t2[_i][1] == 1:
                         break
-                if exist:
-                    right_count[k] += 1
-                    # ct.print('OK', 'error')
-                else:
-                    _q = gc_valid_item[0][0]
-                    _rs = []
-                    for index1 in range(len(t2)):
-                        _i = t2[index1][2]
-                        _rs_1 = "%s\t%s\t%s\t%s" % (gc_valid_item[3][_i], _z1[_i]
-                                                    , ' '.join([str(x) for x in gc_valid_item[1][_i]]),
-                                                    ' '.join([str(x) for x in gc_valid_item[2][_i]]))
-                        _rs.append(_rs_1)
-                        if t2[_i][1] == 1:
-                            break
+                if record:
                     msg = "top %d\n %s\n%s" % (k, _q, '\n'.join(_rs))
                     ct.print(msg, 'error')
 
@@ -138,8 +138,9 @@ def run_step1(data, model):
         if total % 1000 == 0:
             print(total / 1000)
     ct.print(
-        'model %s epoch %s   loss = %s,  acc1 = %s acc3 = %s error_count %s right_count %s total:%s' %
-        (model, epoch, total_loss / total, right_count[1] / total, right_count[3] / total, error_count, right_count,
+        'model %s epoch %s   loss = %s,  acc1 = %s acc2 = %s acc3 = %s error_count %s right_count %s total:%s' %
+        (model, epoch, total_loss / total, right_count[1] / total, right_count[2] / total, right_count[3] / total,
+         error_count, right_count,
          total),
         'debug')
     # ct.print(_w)
@@ -155,11 +156,12 @@ def test_step1(data, model, record_all=False, epoch_index=0):
 
     error_count = 0
     right_count = dict()
-    top_k = [1]
+    top_k = [1,2,3]
     right_count[1] = 0
     right_count[2] = 0
     right_count[3] = 0
     res_list = []  # 记录下来
+    res_list2 = []  # 记录下来
     for gc_valid_item in gc_valid:
         total += 1
         x1 = gc_valid_item[1]
@@ -204,19 +206,21 @@ def test_step1(data, model, record_all=False, epoch_index=0):
                         break
                 msg = "top %d\n %s\n%s" % (k, _q, '\n'.join(_rs))
                 ct.print(msg, 'error')
-            # 记录全部
-            if record_all:
-                k = 3  # 一般都是记录前3个
-                _t2 = t2[0:k]
-                _q = origin  # 全部的前缀
-                _rs = []
-                for index1 in range(len(_t2)):
-                    _i = _t2[index1][2]
-                    _rs_1 = "%s____%s" % (gc_valid_item[3][_i], _z1[_i])
-                    _rs.append(_rs_1)
-                msg = "%s\t%s" % ('\t'.join(_q), '\t'.join(_rs))
-                # ct.print(msg,'test_record')
-                res_list.append(msg)
+        # 记录全部
+        if record_all:
+            k = 3  # 一般都是记录前3个
+            _t2 = t2[0:k]
+            _q = origin  # 全部的前缀
+            _rs = []
+            for index1 in range(len(_t2)):
+                _i = _t2[index1][2]
+                _rs_1 = "%s____%s" % (gc_valid_item[3][_i], _z1[_i])
+                _rs.append(_rs_1)
+            msg = "%s\t%s" % ('\t'.join(_q), '\t'.join(_rs))
+            msg2 = '\t'.join(_rs)
+            # ct.print(msg,'test_record')
+            res_list.append(msg)
+            res_list2.append(msg2)  # 记录纯TOP3
 
         # if _accuracy:
         #     right_count += 1
@@ -237,6 +241,8 @@ def test_step1(data, model, record_all=False, epoch_index=0):
     if record_all:
         ct.file_wirte_list('../data/nlpcc2016/4-ner/demo3/q.rdf.score.top_3_%s_%d.v4.10.txt' % (model, epoch_index),
                            res_list)
+        ct.file_wirte_list('../data/nlpcc2016/4-ner/demo3/ner_3_%s_%d.v4.10.txt' % (model, epoch_index),
+                           res_list2)
     return w, b
 
 
@@ -259,8 +265,8 @@ with tf.Session() as sess:
         data_all.extend(lh.train_data)
         data_all.extend(lh.test_data)
 
-        test_step1(lh.train_data, 'only_train', record_all=False, epoch_index=epoch)
-        test_step1(lh.test_data, 'only_test', record_all=False, epoch_index=epoch)
+        # test_step1(lh.train_data, 'only_train', record_all=False, epoch_index=epoch)
+        # test_step1(lh.test_data, 'only_test', record_all=False, epoch_index=epoch)
 
         test_step1(data_all, 'all', record_all=True, epoch_index=epoch)
 

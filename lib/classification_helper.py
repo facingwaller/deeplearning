@@ -43,7 +43,7 @@ class classification:
                         print(11)
                     need_skip = False
                     # line = "".join(line.split())
-                    line_seg = line.split('\t')
+                    # line_seg = line.split('\t')
                     # if len(line_seg) < 5:
                     # print(line)
                     # line_seg[0] = ct.clean_str_question(line_seg[0])
@@ -66,8 +66,8 @@ class classification:
                         need_skip = True
 
                     # skip_cant_match
-                    _match_s = line_seg[2]
-                    _question = ct.clean_str_question(line_seg[0])
+                    _match_s = baike_helper.entity_re_extract_one_repeat(line_seg[2])
+                    _question = line_seg[0].replace(' ', '')
 
                     if skip_cant_match and ct.not_contains_match_s(line, _question, _match_s):
                         # real_s = _match_s.replace('1@@@@@@', '').replace('@@@@@@', '')
@@ -81,9 +81,13 @@ class classification:
 
                     line_seg[6] = ct.do_some_clean(line_seg[6])
                     line_seg[7] = ct.do_some_clean(line_seg[7])
+
+                    line_seg[2] = line_seg[2].replace('1@@@@@@', '').replace('@@@@@@', '')
+
                     new_line = '\t'.join(line_seg)
 
-                    if line.__contains__('@@@@@@'):
+
+                    if False and line.__contains__('@@@@@@'):
                         # line_seg
                         line_seg[2] = line_seg[2].replace('1@@@@@@', '').replace('@@@@@@', '')
                         line_seg[5] = line_seg[2]  # match s
@@ -111,13 +115,13 @@ class classification:
                         new_line = '\t'.join(line_seg)
                         print(new_line)
 
-                    if new_line.__contains__('\t♠\t'):  # 恢复是XX还是XX等
-                        _tmp_q = line_seg[0]
-                        _ms = line_seg[5]  # match s
-                        _tmp_q = _tmp_q.replace(_ms, '♠')
-                        line_seg[6] = _tmp_q  # line_seg[0].replace(line_seg[5], '♠')
-                        line_seg[7] = line_seg[6].replace(line_seg[3], '♢')
-                        new_line = '\t'.join(line_seg)
+                    # if new_line.__contains__('\t♠\t'):  # 恢复是XX还是XX等
+                    #     _tmp_q = line_seg[0]
+                    #     _ms = line_seg[5]  # match s
+                    #     _tmp_q = _tmp_q.replace(_ms, '♠')
+                    #     line_seg[6] = _tmp_q  # line_seg[0].replace(line_seg[5], '♠')
+                    #     line_seg[7] = line_seg[6].replace(line_seg[3], '♢')
+                    #     new_line = '\t'.join(line_seg)
 
                     f1s_new.append(new_line)
             except Exception as e:
@@ -152,6 +156,7 @@ class classification:
         if f4 != '':
             ct.file_wirte_list(f4, list1=f1s_new)
         ct.print('skip : %s' % (' '.join(filter_list)))
+        ct.print('剩余 : %s' % (len(f1s_new)))
         print(len(filter_list))
         return filter_list
 
