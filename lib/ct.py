@@ -1376,6 +1376,12 @@ class ct:
 
         return False
 
+    @staticmethod
+    def time_path():
+        # if out_dir!='':
+        #     return out_dir
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        return timestamp
 
 log_path = ct.log_path_static()
 

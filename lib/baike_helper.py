@@ -2578,6 +2578,7 @@ class baike_test:
     # 试试检测一下前1，前2，前3命中的概率
     # 增加别名词典匹配
     # 增加·不能被其他的包含
+    # 没有包含?？的词
     # @staticmethod
     def try_test_acc_of_m1(self, f1='../data/nlpcc2016/ner_t1/q.rdf.txt',
                            f2='../data/nlpcc2016/ner_t1/q.rdf.txt.failed4.txt',
@@ -2596,7 +2597,9 @@ class baike_test:
                            f10='',
                            f11='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt',
                            combine_idf=False,
-                           cant_contains_others=False
+                           cant_contains_others=False,
+                           test_top_1000 =False
+
                            ):
         # f1   # 输入文件
         # 《机械设计基础》	机械设计基础	设计基础	机械设计	机械	基础	这本书	作者	本书	设计	谁？	是谁
@@ -2642,8 +2645,8 @@ class baike_test:
         index = -1
         for i in range(len(f1s)):  # 遍历所有问题
             index += 1
-            # if index > 5000:
-            #      break
+            if index > 1000 and test_top_1000:
+                  break
             if index % 1000 == 0:
                 print("%d - %d" % (index / 1000, len(f1s) / 1000))
                 # break
@@ -2729,8 +2732,9 @@ class baike_test:
                             d_f4s_line[word_1] = True
                             #
 
-                # ct.print_t('候选去除前:%s' % start_list)
-                list1 = [x.lower().replace(' ', '') for x in start_list]
+                # ct.print_t('候选去除前:%s' % start_list) 过滤一些
+                list1 = [x.lower().replace(' ', '') for x in start_list if
+                         (not x.__contains__('?') and not x.__contains__('？'))]
 
                 len_list = []
                 for _ in list1:
