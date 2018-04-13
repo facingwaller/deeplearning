@@ -72,14 +72,14 @@ if __name__ == '__main__':  #
         print('前99,get:23840   acc: 0.999748,total - skip=633 ')
         print('备注：try_test_acc_of_m1 Top3 23706,0.977567 (不互相包含23725,97.8351%) ')
         print('备注：TOP3 23706 0.993332 (不互相包含 前3,get:23706   acc: 0.994129 ')
-    if False:
+    if True:
         # 这里回归一份新的extract_entitys_all_tj.resort_3.v4.8.txt,格式会变
         print('获取扩展的实体集合,并判断是否共有属性')
         bkh.expend_es_by_dict(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                               f2='../data/nlpcc2016/4-ner/extract_e/e1.dict.txt',
-                              f3='../data/nlpcc2016/4-ner/result/q.rdf.score.v1.txt',
-                              f4='../data/nlpcc2016/4-ner/result/q.rdf.score.expend.v1.txt',
-                              f5='../data/nlpcc2016/4-ner/result/expend.v1.txt',
+                              f3='../data/nlpcc2016/4-ner/demo3/q.rdf.score.top_3_all_0.v4.10.txt',
+                              f4='../data/nlpcc2016/4-ner/result/q.rdf.score.expend.v1.txt',  # 输出
+                              f5='../data/nlpcc2016/4-ner/result/expend.v1.txt',  # 输出
                               record=True,
                               compare=False)
 
@@ -97,7 +97,7 @@ if __name__ == '__main__':  #
     # C1.2.1
 
     # --------------  问答
-    if True:
+    if False:
         filter_list2 = cf.extract_property(f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
                             f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                             f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',

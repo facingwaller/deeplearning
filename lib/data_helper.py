@@ -617,9 +617,8 @@ class DataClass:
                 # d1[str(index)] = vs1[1:] # KEY=第几个，value 对应的实体
                 vs2 = str(vs1).split(s1)
                 #  截取分数之后的
-                # vs2 = vs2[2:]
-                list1.append(vs2)
                 list2.append(vs2[1])
+                list1.append(vs2[2:])
             self.expend_score.append(list2)
             self.expend_es.append(list1)
 

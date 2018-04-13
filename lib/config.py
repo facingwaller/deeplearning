@@ -123,7 +123,7 @@ elif testid == 'cc_debug':
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 2  # 重要！这个指示了训练的关系个数 4358
+    t_relation_num = 4358  # 重要！这个指示了训练的关系个数 4358
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -149,7 +149,7 @@ elif testid == 'cc_debug':
     restore_model = True
     restore_path = \
         r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_30_14_33_09_gan.v3\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
-    restore_test = False
+    restore_test = True
     # 模式
     synonym_mode = 'none'  # 属性同义词 | none
     synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
@@ -222,7 +222,9 @@ cc_p = {
     'kb-use': '../data/nlpcc2016/2-kb/kb-use.v2.txt',
     # 匹配实体和过滤后的问题集
     # 'cc_q_path': '../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
-    'cc_q_path': '../data/nlpcc2016/4-ner/demo3/q.rdf.score.top_3_all_0.v4.10.txt',
+    # 'cc_q_path': '../data/nlpcc2016/4-ner/demo3/q.rdf.score.top_3_all_0.v4.10.txt',
+    'cc_q_path': '../data/nlpcc2016/4-ner/result/q.rdf.score.expend.v1.txt',
+    # q.rdf.score.expend.v1.txt
     'real_split_train_test': True,
     'real_split_train_test_skip': 14610,
     'use_property': use_property,  # 记录进日志

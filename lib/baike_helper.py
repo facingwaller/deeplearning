@@ -1545,7 +1545,7 @@ class baike_helper:
         return r_all, a_all, right_label
 
     # 生成的是,黑桃问题-属性-属性值；
-    def answer_get_all_neg_relations_cc(self, entity_list, ps_to_except,score1):
+    def answer_get_all_neg_relations_cc(self, entity_list, ps_to_except, score1):
         # 获取所有实体和属性，将答案是正确答案的排前面
 
         all_tuple = []
@@ -1561,7 +1561,7 @@ class baike_helper:
                 result = s1[0] in ps_to_except
                 # 生成的是,实体-属性-属性值-是否是正确的属性-原始KEY；
                 entity_id_clean = baike_helper.entity_re_extract_one_repeat(entity_id)
-                all_tuple.append((entity_id_clean, s1[0], s1[1], result, entity_id,score1))
+                all_tuple.append((entity_id_clean, s1[0], s1[1], result, entity_id, score1))
         return all_tuple
 
     def read_entity_and_get_all_neg_relations_cc_len(self, entity_id, ps_to_except):
@@ -2239,14 +2239,15 @@ class baike_helper:
 
     # 根据别名字典扩展实体
     # 去掉不是实体名的别名
-    @staticmethod
-    def expend_es_by_dict(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+
+    def expend_es_by_dict(self, f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                           f2='../data/nlpcc2016/4-ner/extract_e/e1.dict.txt',
                           f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.v1.txt',
                           f4='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.expend.v1.txt',
-                          f5= '../data/nlpcc2016/4-ner/result/expend.v1.txt',
+                          f5='../data/nlpcc2016/4-ner/result/expend.v1.txt',
                           record=True,
                           compare=False):
+        self.init_spo()
         f1s = ct.file_read_all_lines_strip(f1)
         f2s = ct.file_read_all_lines_strip(f2)
         f3s = ct.file_read_all_lines_strip(f3)
@@ -2274,18 +2275,21 @@ class baike_helper:
                 # 机械设计基础____-0.7704046
                 w1_1 = str(w1).split('____')[0]
                 w1_2 = str(w1).split('____')[1]
-                w_str = "%s____%s" % (w1, '____'.join(d1[w1_1]))
+                vs = d1[w1_1]
+                vs = [_ for _ in vs if _ in self.kbqa]
+                w_str = "%s____%s" % (w1, '____'.join(vs))
                 words[index] = w_str
             f4s.append('\t'.join(words))
 
             words_part2 = words[8:]
             for index in range(len(words_part2)):
-
                 w1 = words_part2[index]
                 # 机械设计基础____-0.7704046
                 w1_1 = str(w1).split('____')[0]
                 w1_2 = str(w1).split('____')[1]
-                w_str = "%s____%s" % (w1, '____'.join(d1[w1_1]))
+                vs = d1[w1_1]
+                vs = [_ for _ in vs if _ in self.kbqa]
+                w_str = "%s____%s" % (w1, '____'.join(vs))
                 words_part2[index] = w_str
             f5s.append('\t'.join(words_part2))
         if record:

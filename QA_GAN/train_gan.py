@@ -332,6 +332,8 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
             right += 1
         else:
             wrong += 1
+    if right + wrong ==0 :
+        print(0)
     acc = right / (right + wrong)
     ct.print("right:%d wrong:%d" % (right, wrong), "debug")
     return acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list
