@@ -26,7 +26,7 @@ tf.flags.DEFINE_string("word_model", "word2vec_train", "可选有|tf_embedding|w
 
 testid = "cc_test"
 if str(myaddr) == "192.168.31.194":
-    testid = "cc_debug"
+    testid = "cc_test"
     cmd_path = r'F:\ProgramData\Anaconda2\envs\tensorflow\python.exe F:/PycharmProjects/dl2/deeplearning/QA/train.py'
 else:
     testid = "cc_test"
@@ -82,10 +82,12 @@ if testid == "cc_test":
 
     # 模型恢复
     restore_model = True
-    restore_path = \
-        r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_04_01_13_50_19_4Mv1\checkpoints\step=9_epoches=d_index=0\model.ckpt-1'
+    # restore_path = \
+    #     r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_04_01_13_50_19_4Mv1\checkpoints\step=9_epoches=d_index=0\model.ckpt-1'
     #    r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
-    # 2018_03_29_11_36_36\checkpoints\step=3_epoches=d_index=0
+    restore_path = \
+        r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_30_14_33_09_gan.v3\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
+    # 2018_03_29_11_36_36\checkpoints\step=3_epoches=d_index=05
     restore_test = True
     synonym_mode = 'none'  # 属性同义词 ps_synonym| none
     synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
@@ -107,76 +109,76 @@ if testid == "cc_test":
 elif testid == 'cc_debug':
     # 极限情况下调,1个问题，全关系
     epoches = 10  # 遍历多少轮
-    batch_size = 10  # 1个batch的大小 # 临时改了
-    evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
-    evaluate_batchsize = 999999999999999  # 验证一次的问题数目,超过则使用最大的
-    questions_len_train = 999999999999999  # 所有问题数目
-    questions_len_test = 999999999999999  # 测试的问题数目，全部
-    wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
-    total_questions = 999999999999999
-    stop_loss_zeor_count = 2000  # 2000次则停下来
-    rnn_size = 100
-    mode = "cc"
-    check = 100000
-    # 属性模式
-    use_property = 'special'
-    # 使用属性的模式做训练和测试
-    # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
-    skip_threshold = 0.02
-    t_relation_num = 4358  # 重要！这个指示了训练的关系个数 4358
-    # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
-    # 而非模拟测试的。 之前是混合在一起
-    real_split_train_test = True
-    #####
-    train_part = 'relation'  # 属性 relation |answer
-    #  IR-GAN
-    batch_size_gan = 100
-    gan_k = 10
-    sampled_temperature = 20
-    gan_learn_rate = 0.02
-    g_epoches = 1
-    d_epoches = 1
-    s_epoches = 0
-    c_epoches = 0
-    # optimizer_method = 'origin'  # origin , gan
-    #  maybe
-    keep_run = False  # 指示是否持续跑maybe里面的属性
-    optimizer_method = optimizer_m.lstm  # 优化模式 gan | lstm
-    # only_default 默认|fixed_amount 固定 | additional 默认+额外
-    pool_mode = 'only_default'
-
-    # 模型恢复
-    restore_model = True
-    restore_path = \
-        r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_30_14_33_09_gan.v3\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
-    restore_test = True
-    # 模式
-    synonym_mode = 'none'  # 属性同义词 | none
-    synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
-    # synonym S_model
-    S_model = 'none'  # S_model | none
-
-    # 只验证错误的模式 only_error|all
-    valid_model = 'all'
-    valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
-    valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
-
+    # batch_size = 10  # 1个batch的大小 # 临时改了
+    # evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
+    # evaluate_batchsize = 999999999999999  # 验证一次的问题数目,超过则使用最大的
+    # questions_len_train = 999999999999999  # 所有问题数目
+    # questions_len_test = 999999999999999  # 测试的问题数目，全部
+    # wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
+    # total_questions = 999999999999999
+    # stop_loss_zeor_count = 2000  # 2000次则停下来
+    # rnn_size = 100
+    # mode = "cc"
+    # check = 100000
+    # # 属性模式
+    # use_property = 'special'
+    # # 使用属性的模式做训练和测试
+    # # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
+    # skip_threshold = 0.02
+    # t_relation_num = 4358  # 重要！这个指示了训练的关系个数 4358
+    # # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
+    # # 而非模拟测试的。 之前是混合在一起
+    # real_split_train_test = True
+    # #####
+    # train_part = 'relation'  # 属性 relation |answer
+    # #  IR-GAN
+    # batch_size_gan = 100
+    # gan_k = 10
+    # sampled_temperature = 20
+    # gan_learn_rate = 0.02
+    # g_epoches = 1
+    # d_epoches = 1
+    # s_epoches = 0
+    # c_epoches = 0
+    # # optimizer_method = 'origin'  # origin , gan
+    # #  maybe
+    # keep_run = False  # 指示是否持续跑maybe里面的属性
+    # optimizer_method = optimizer_m.lstm  # 优化模式 gan | lstm
+    # # only_default 默认|fixed_amount 固定 | additional 默认+额外
+    # pool_mode = 'only_default'
     #
-    competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
-    competing_batch_size = 5
-    expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
+    # # 模型恢复
+    # restore_model = True
+    # restore_path = \
+    #     r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_04_01_13_50_19_4Mv1\checkpoints\step=9_epoches=d_index=0\model.ckpt-1'
+    # restore_test = True
+    # # 模式
+    # synonym_mode = 'none'  # 属性同义词 | none
+    # synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
+    # # synonym S_model
+    # S_model = 'none'  # S_model | none
+    #
+    # # 只验证错误的模式 only_error|all
+    # valid_model = 'all'
+    # valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
+    # valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
+    #
+    # #
+    # competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
+    # competing_batch_size = 5
+    # expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
 else:
-    epoches = 100 * 100 * 100  # 遍历多少轮
-    batch_size = 10  # 1个batch的大小
-    evaluate_every = 100
-    evaluate_batchsize = 100
-    questions_len_train = 800  # 应该设置大一点,2-10倍
-    questions_len_test = int(questions_len_train / 4)
-    wrong_relation_num = 99999  # 错误的关系，设置9999可以是全部的意思
-    stop_loss_zeor_count = 10000
-    rnn_size = 300
-    mode = "sq"
-    check = 999
+    # epoches = 100 * 100 * 100  # 遍历多少轮
+    # batch_size = 10  # 1个batch的大小
+    # evaluate_every = 100
+    # evaluate_batchsize = 100
+    # questions_len_train = 800  # 应该设置大一点,2-10倍
+    # questions_len_test = int(questions_len_train / 4)
+    # wrong_relation_num = 99999  # 错误的关系，设置9999可以是全部的意思
+    # stop_loss_zeor_count = 10000
+    # rnn_size = 300
+    # mode = "sq"
+    # check = 999
     raise Exception("testid 参数有误")
 
 # config.par('sq_fb_rdf_path')

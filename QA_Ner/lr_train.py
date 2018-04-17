@@ -19,8 +19,10 @@ epochs = 100
 batch_size = 10
 # 0_1_0.898056_类型  INDEX 是否正确 分值/IDF 实体
 # f1 = '../data/nlpcc2016/4-ner/demo3/q.rdf.ms.re.top_99.v4.10.txt'
-f1 = '../data/nlpcc2016/4-ner/demo3/q.rdf.ms.re.top_99_full.v4.10.txt'
+# f1 = '../data/nlpcc2016/4-ner/demo3/q.rdf.ms.re.top_99_full.v4.10.txt'
 # f1 = '../data/nlpcc2016/8-logistics/logistics-2018-03-20.txt_bak.txt'
+
+f1 = '../data/nlpcc2016/4-ner/demo2/q.rdf.ms.re.top_99_20180414_120036.v4.10.txt'
 #
 lh = lr_helper(f1)
 

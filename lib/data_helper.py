@@ -361,14 +361,16 @@ class DataClass:
             for l in range(len(self.train_question_list_index)):
                 global_index = l
                 ps_to_except1 = self.relation_path_clear_str_all[global_index]
-                rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
+                rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index],
+                                                                           ps_to_except1)
                 for r in rs:
                     neg_r_train.add(r)
 
             for l in range(len(self.test_question_list_index)):
                 global_index = l + self.padding
                 ps_to_except1 = self.relation_path_clear_str_all[global_index]
-                rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index], ps_to_except1)
+                rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(self.entity1_list[global_index],
+                                                                           ps_to_except1)
                 for r in rs:
                     neg_r_test.add(r)
 
@@ -376,12 +378,12 @@ class DataClass:
             for r in r4:
                 ct.print(r, 'train_test_q')
 
-            # print('记录所有的训练和测试的负问句')
-            # # 记录所有的训练和测试的负问句，其中测试负问句不会参与训练
-            # # (len(self.q_neg_r_tuple_train), len(self.q_neg_r_tuple_test))
-            # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_train], 'log_q_neg_r_tuple')
-            # ct.print_list(['\nTEST\n'], 'log_q_neg_r_tuple')
-            # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_test], 'log_q_neg_r_tuple')
+                # print('记录所有的训练和测试的负问句')
+                # # 记录所有的训练和测试的负问句，其中测试负问句不会参与训练
+                # # (len(self.q_neg_r_tuple_train), len(self.q_neg_r_tuple_test))
+                # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_train], 'log_q_neg_r_tuple')
+                # ct.print_list(['\nTEST\n'], 'log_q_neg_r_tuple')
+                # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_test], 'log_q_neg_r_tuple')
 
     def get_max_length(self):
         if self.mode == "cc":
@@ -562,7 +564,7 @@ class DataClass:
             index += 1
             if (use_property in ['num', 'special', 'maybe']) and index not in property_list:
                 continue
-            line_seg = line.replace('\r','').replace('\n','').split('\t')
+            line_seg = line.replace('\r', '').replace('\n', '').split('\t')
             answer = line_seg[1]
             entity1 = line_seg[2]
             relation1 = ct.clean_str_rel(line_seg[3].lower())  # 清洗关系
@@ -607,13 +609,13 @@ class DataClass:
 
             # 加载扩展的实体集合
             vs = line_seg[8:]
-            index = -1
+            _index = -1
             # d1 = dict()
             list1 = []
             list2 = []
             s1 = '____'
             for vs1 in vs:
-                index += 1
+                _index += 1
                 # d1[str(index)] = vs1[1:] # KEY=第几个，value 对应的实体
                 vs2 = str(vs1).split(s1)
                 #  截取分数之后的
@@ -1163,7 +1165,7 @@ class DataClass:
     # batch_iter_cc_answer_test_one_debug
     # 答案选择模块的产生训练或者测试的问题
     def batch_iter_cc_answer_test_one_debug(self, question_list_index, relation_list_index, model, index,
-                                     train_part='relation'):
+                                            train_part='relation'):
         """
         web questions
         生成指定batch_size的数据
@@ -1201,9 +1203,12 @@ class DataClass:
             ct.print('error ! ', 'error')
         # 获取实体名
         es_all = []
-        es_all.extend(self.expend_es[global_index][0])
-        es_all.extend(self.expend_es[global_index][1])
-        es_all.extend(self.expend_es[global_index][2])
+        try:
+            for _item in self.expend_es[global_index]:
+                if len(_item) != 0:
+                    es_all.extend(_item)
+        except Exception as e1:
+            print(e1)
         # es_all = list(set(es_all))
         # 在这里加入分数
 
@@ -1219,14 +1224,15 @@ class DataClass:
         # all_tuple = self.bh.answer_get_all_neg_relations_cc(es_all, ps_to_except1,score1)
 
         all_tuple = []
-        top_k = [1,2,3]
+        top_k = [1, 2, 3]
         for k in top_k:
             score1 = self.expend_es[global_index][0]  # score int
-            # try:
-            tuple1 = self.bh.answer_get_all_neg_relations_cc(self.expend_es[global_index][k-1], ps_to_except1, score1)
-            # except Exception as e1:
-            #     print(e1)
-            all_tuple.extend(tuple1)
+            try:
+                tuple1 = self.bh.answer_get_all_neg_relations_cc(self.expend_es[global_index][k - 1], ps_to_except1,
+                                                                 score1)
+                all_tuple.extend(tuple1)
+            except Exception as e1:
+                print(e1)
 
 
         ct.just_log2("info", "entity:%s " % name)
@@ -1251,7 +1257,7 @@ class DataClass:
             entity_name_in_kb = all_tuple[index][4]
             ner_score = all_tuple[index][5]
             q = self.question_list_origin[global_index]
-            q = str(q).replace(match_s,'♠')
+            q = str(q).replace(match_s, '♠')
             x_new.append(self.convert_str_to_indexlist(q))
             y_new.append(self.convert_str_to_indexlist(p))  # neg
             labels.append(is_right)
@@ -1259,9 +1265,10 @@ class DataClass:
             ner_score_list.append(ner_score)
 
         ct.print("leave:batch_iter_cc_answer_test_one_debug")
-        if len(x_new) == 0 :
+        if len(x_new) == 0:
             print(111)
-        return np.array(x_new), np.array(y_new), [labels,es_name_labels,ner_score_list]
+        return np.array(x_new), np.array(y_new), [labels, es_name_labels, ner_score_list]
+
     # --------------------按比例分割
     def cap_nums(self, y, rate=0.8):
         y = y.copy()
@@ -2221,20 +2228,22 @@ def test_ner():
         print(x)
         print(y)
 
+
 def test_answer():
     dh = DataClass("cc")
     train_question_list_index = None
     train_relation_list_index = None
     model = 'valid'
     index = 1
-    train_part= 'relation'
+    train_part = 'relation'
     g = dh.batch_iter_cc_answer_test_one_debug(
-            train_question_list_index, train_relation_list_index, model, index,
-                                                   train_part)
-    for x, y,z in g:
+        train_question_list_index, train_relation_list_index, model, index,
+        train_part)
+    for x, y, z in g:
         print(x)
         print(y)
         print(z)
+
 
 if __name__ == "__main__":
     # CC 部分的测试-和构建代码
