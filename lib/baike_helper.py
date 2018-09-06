@@ -1580,7 +1580,8 @@ class baike_helper:
         default = len(r1)
         return default
 
-    # 读取实体所有的实体    返回所有的关系集合
+    # 读取实体所有的属性，返回所有的关系集合
+    # 最多不超过total个
     def rs_cc_gan(self, entity_id, ps_to_except, total):
         e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
         if e_s == "":
@@ -1713,26 +1714,32 @@ class baike_helper:
         return r1, a1
 
     # 读取实体所有的属性，返回竞争PS
-    def competing_ps(self, entity_id, ps_to_except, total, competing_dict):
+    # 在C模式下，返回的是defau+全部
+    # Gan模式下，返回的是default+100
+    #  include_default = False 总数total 是否包含 default ，默认不包含,
+    def competing_ps(self, entity_id, ps_to_except, total, competing_dict,model ="C"):
         r1 = []
         a1 = []
-
         e_s = competing_dict.get(str(entity_id).replace(' ', '').lower(), "")
+        # 当获取到的数据是空的时候则考虑增加default属性
+
         if e_s == "":
             return r1, a1
 
-        for s1 in e_s:
-            if s1[0] not in ps_to_except:
-                r1.append(s1)  # 温度范围	别名	中文名	又名
-
-        random_choice = True
-        default = len(r1)
-        total += default
-
-        if len(r1) > total and random_choice:
-            # 从r1种随机挑选total个
-            r1 = random.sample(r1, total)
-
+        if model == "C":
+            for s1 in e_s:
+                if s1[0] not in ps_to_except:
+                    r1.append(s1)  # 温度范围	别名	中文名	又名
+        elif model == "G":
+            r2 = []
+            for s1 in e_s:
+                if s1[0] not in ps_to_except:
+                    r2.append(s1)  # 温度范围	别名	中文名	又名
+            if len(r2) > total :
+                # 从r1种随机挑选total个
+                r2 = random.sample(r2, total)
+            r1.extend(r2)
+            # print("G") #G
         return r1, a1
 
     @staticmethod
@@ -2331,6 +2338,56 @@ class baike_helper:
                     common_r_num += 1
             print(common_r_num)
 
+    # 将NER的结果相关的KB全部抽取出来
+    # 读取NER结果，并读取字典得到所有的实体，然后读取一遍KB，将所有可能的KB都列出来
+    def extract_kb_test(self,f1='../data/nlpcc2016/10-test/test_extract_entitys.txt',
+                        f2='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt',
+                        f3='../data/nlpcc2016/2-kb/kb.v1.txt',
+                        f4='../data/nlpcc2016/10-test/kb-test.txt'
+                        ):
+        f1s = ct.file_read_all_lines_strip(f1)  # ner
+        f2s = ct.file_read_all_lines_strip(f2)  # 字典
+
+        s1 = set()
+        for l1 in f1s:
+            l1s = l1.split('\t')
+            for l1s_one in l1s:
+                # 将NER的字过滤一下
+                l1s_one = baike_helper.entity_re_extract_one_repeat(l1s_one)
+                s1.add(l1s_one)
+        d1 = dict()
+        # 构造字典
+        for l2 in f2s:
+            _s = str(l2).split('\t')[0]
+            _ps = str(l2).split('\t')[1:]
+            d1[_s]=_ps
+
+        s_all = set()
+        for _s1 in s1:
+            s_all.add(_s1)
+            _list1 = d1[_s1]
+            for _list1_one in _list1:
+                s_all.add(_list1_one)
+        # 遍历KB
+
+        kb_new = []
+        _index = -1
+        with open(f3, mode='r', encoding='utf-8') as rf:
+            for l in rf:
+                _index += 1
+                if _index % 10000 == 0:
+                    ct.print(_index / 10000)
+                _kb_one = str(l).split('\t')
+                _s1 = _kb_one[0]
+                _s2 = ct.clean_str_s(_s1)
+                _s3= baike_helper.entity_re_extract_one_repeat(_s2)
+                _kb_one[0] = _s2
+
+                if _s3 in s_all:
+                    kb_new.append('\t'.join(_kb_one))
+        ct.file_wirte_list(f4,kb_new)
+        pass
+
 
 class baike_test:
     # 词频 (term frequency, TF) 指的是某一个给定的词语在该文件中出现的次数
@@ -2598,7 +2655,8 @@ class baike_test:
                            f11='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt',
                            combine_idf=False,
                            cant_contains_others=False,
-                           test_top_1000 =False
+                           test_top_1000 =False,
+                           is_test=False
 
                            ):
         # f1   # 输入文件
@@ -2606,6 +2664,19 @@ class baike_test:
         # f2 = f1 + '.failed.txt'  # 输出文件
         # f3= '../data/nlpcc2016/ner_t1/extract_entitys2.txt'  # 抽取的结果
         bkh = baike_helper()
+
+        bkh.init_spo()  #  载入实体
+        s1_p_in_q = []  # 属性p在q中的个数
+        s2_p_in_q = []  # 属性p在q中的个数
+        s3_p_in_q = []  # 属性p在q中的个数
+        s0_p_in_q = []  # 属性p在q中的个数
+        s_p_in_q =  [[] for i in range(4)]
+        # s_p_in_q[0]=[]
+        # s_p_in_q[1]=[]
+        # s_p_in_q[2] = []
+        # s_p_in_q[3] = []
+
+
 
         f3s = ct.file_read_all_lines_strip(f3)  # 已经抽取的实体N-GRAM
         f1s = ct.file_read_all_lines_strip(f1)  # 问题
@@ -2645,8 +2716,17 @@ class baike_test:
         index = -1
         for i in range(len(f1s)):  # 遍历所有问题
             index += 1
-            if index > 1000 and test_top_1000:
-                  break
+            # 18684 为训练 后面的是测试集
+            # is_test 区分指跑测试集还是只跑训练集
+            # test_top_1000 测试前XX
+            if False:  # 是否区分测试集合训练集
+                if is_test and test_top_1000:
+                    if index > 18684 and test_top_1000:
+                          break
+                elif test_top_1000:
+                    if index < 18684 and test_top_1000:
+                          continue
+
             if index % 1000 == 0:
                 print("%d - %d" % (index / 1000, len(f1s) / 1000))
                 # break
@@ -2692,8 +2772,10 @@ class baike_test:
                 # f8s.append('####NULL')
                 filter_list.append(str(i))
                 continue
-
             total2 += 1
+
+
+
 
             # -----------------
             f1s_i_e = str(f1s[i]).split('\t')[2]  # 答案中的实体
@@ -2833,6 +2915,44 @@ class baike_test:
                 # ct.print_t('扩展后:%s' % list1)
                 f8s.append('\t'.join(list1))
                 exist = f1s_i_e2 in list1
+
+                # ----------------S-P模板法测试
+                # 判断top 1、2、3、real 的属性是否在其中
+                # 输入问句；根据实体得到属性集
+                question1 = str(f1s[i]).split('\t')[0]
+                q1_s1 = str(f1s[i]).split('\t')[2]
+                list1_i = 1
+                if len(list1)!=3:
+                    print("len(list1)!=3 ")
+                for list1_s in list1:
+                    # s_p_in_q[list1_i] 第一个的命中
+                    list1_s_dict = bkh.kbqa.get(q1_s1,'')
+                    if list1_s_dict == '':
+                        continue
+                    temp_ks = []
+                    exist_num = 0
+                    for k, v in list1_s_dict:
+                        # temp_ks.append(k)
+                        if question1.__contains__(k):
+                            exist_num += 1
+                    # 将当前的问题的前list1_i的结果存储下来
+                    if exist_num>1:
+                        print("exist_num:"+ str(exist_num))
+                        print(f1s[i])
+                    if list1_i==1 and exist_num>=1:
+                        s1_p_in_q.append(1)
+                        # 记录处于2 3 位的
+                        if f1s_i_e2 in start_list[1:2]:
+                            s2_p_in_q.append(1)
+                    elif list1_i==2:
+                        s2_p_in_q.append(exist_num)
+                    elif list1_i == 3:
+                        s3_p_in_q.append(exist_num)
+                    # s0_p_in_q.append(exist_num)
+                    list1_i += 1
+                    break
+
+                # ----------------END S-P模板法测试
                 if exist:
                     acc[str(l_i)] += 1
                     if str(f1s[i]).split('\t')[0] in [
@@ -2841,25 +2961,6 @@ class baike_test:
                         '《线性代数》这本书的出版时间是什么？'
                     ]:
                         print(12313)
-                        # F6.1.1 找到对应的index
-                        # if get_math_subject:
-                        #     list1_index = -1
-                        #     list1_find = False
-                        #     # 重新处理一次list1
-                        #     f3s_i_list = str(f3s[i]).split('\t')
-                        #     #
-                        #     for list1_item in f3s_i_list:
-                        #         list1_index += 1
-                        #         list1_item_bak = list1_item
-                        #         list1_item = baike_helper.entity_re_extract_one_repeat(
-                        #             ct.clean_str_zh2en(list1_item.lower().replace(' ', '')))
-                        #         if list1_item == f1s_i_e2:
-                        #             list1_find = True
-                        #             break
-                        #     if list1_find:
-                        #         f7s.append(list1_item_bak)
-                        #     else:
-                        #         f7s.append('NULL')
                 elif l_i == 3 and not exist:
                     if str(f1s[i]).split('\t')[0] in ['有一本叫《毛泽东》的书是怎样装订的'
                         , '《兄弟》属于哪种小说', '《i》是什么音乐风格的？',
@@ -2894,7 +2995,8 @@ class baike_test:
             skip, total, total2, total_f1s_i_e1, total_f1s_i_e2))
 
         for k, v in acc.items():
-            print("前%s,get:%d   acc: %f,total - skip=%d  " % (k, v, v / (total - skip), skip))
+            print("前%s,get:%d   acc: %f,total ;- skip=%d ,exist_num:%d,%d,%d " %
+                  (k, v, v / (total2 ), skip,sum(s1_p_in_q),sum(s2_p_in_q),sum(s3_p_in_q)))
         print(len(record))
         # 记录出错的
         ct.file_wirte_list(f2, record)
@@ -3034,7 +3136,61 @@ class baike_test:
                 msg = "%s\t" % (l[0])
                 o1.write(msg + '\n')
         return d1
+    @staticmethod
+    def n_gram_math_all(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt",
+                        f_out='../data/nlpcc2016/result/extract_entitys2.txt',
+                        f3="../data/nlpcc2016/result/combine_e12.txt.statistics.txt",
+                        skip_no_space=False):
+        bkh = baike_helper()
+        bkh.init_ner(f_in2=f3)
 
+        index = 0
+        result = []
+        with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
+            for line in read_file:
+                index += 1
+                # if index > 10:
+                #     break
+                print(index)
+                s = line.replace("\r", "").replace("\n", "").replace(' ', '').split("\t")[0]
+                if skip_no_space:
+                    s2 = line.replace("\r", "").replace("\n", "").split("\t")[0]
+                    if s == s2:
+                        ss = ['#THE_SAME#']
+                        result.append(ss)
+                        continue
+
+                ss = bkh.ner(s)
+                if len(ss) > 0:
+                    # ct.just_log("../data/nlpcc2016/extract_entitys2.txt", '\t'.join(ss))
+                    result.append(ss)
+                else:
+                    ss = ['NULL']
+                    result.append(ss)
+                    # ct.just_log("../data/nlpcc2016/extract_entitys2.txt", "NULL")
+                print(ss)
+        # 将统计出现的次数，按出现次数少的排在前面
+        # d1 = dict()
+        # for words_list in result:
+        #     for word in words_list:
+        #         if word in d1:
+        #             d1[word] += 1
+        #         else:
+        #             d1[word] = 1
+        # # result = [x= sorted(x,key=get_total(x))  for x  in  result]
+        # bkh.d1 = d1
+        # for index in range(len(result)):
+        #     tmp = result[index]
+        #     tmp = sorted(tmp, key=bkh.get_total)
+        #     result[index] = tmp
+
+        with open(f_out, mode='w', encoding='utf-8') as o1:
+            for words_list in result:
+                # print("------")
+                # print(x)
+                o1.write("%s\n" % '\t'.join(words_list))
+                # for x1 in x :
+                #     print("%s  %s"%(x1,bkh.get_total(x1)))
 
 # F2.3 空格分割
 def seg_m():
@@ -3044,60 +3200,7 @@ def seg_m():
     bk.convert_text_to_seg(f_in, f_out, type="questions")
 
 
-def n_gram_math_all(f_in="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt",
-                    f_out='../data/nlpcc2016/result/extract_entitys2.txt',
-                    f3="../data/nlpcc2016/result/combine_e12.txt.statistics.txt",
-                    skip_no_space=False):
-    bkh = baike_helper()
-    bkh.init_ner(f_in2=f3)
 
-    index = 0
-    result = []
-    with codecs.open(f_in, mode="r", encoding="utf-8") as read_file:
-        for line in read_file:
-            index += 1
-            # if index > 10:
-            #     break
-            print(index)
-            s = line.replace("\r", "").replace("\n", "").replace(' ', '').split("\t")[0]
-            if skip_no_space:
-                s2 = line.replace("\r", "").replace("\n", "").split("\t")[0]
-                if s == s2:
-                    ss = ['#THE_SAME#']
-                    result.append(ss)
-                    continue
-
-            ss = bkh.ner(s)
-            if len(ss) > 0:
-                # ct.just_log("../data/nlpcc2016/extract_entitys2.txt", '\t'.join(ss))
-                result.append(ss)
-            else:
-                ss = ['NULL']
-                result.append(ss)
-                # ct.just_log("../data/nlpcc2016/extract_entitys2.txt", "NULL")
-            print(ss)
-    # 将统计出现的次数，按出现次数少的排在前面
-    # d1 = dict()
-    # for words_list in result:
-    #     for word in words_list:
-    #         if word in d1:
-    #             d1[word] += 1
-    #         else:
-    #             d1[word] = 1
-    # # result = [x= sorted(x,key=get_total(x))  for x  in  result]
-    # bkh.d1 = d1
-    # for index in range(len(result)):
-    #     tmp = result[index]
-    #     tmp = sorted(tmp, key=bkh.get_total)
-    #     result[index] = tmp
-
-    with open(f_out, mode='w', encoding='utf-8') as o1:
-        for words_list in result:
-            # print("------")
-            # print(x)
-            o1.write("%s\n" % '\t'.join(words_list))
-            # for x1 in x :
-            #     print("%s  %s"%(x1,bkh.get_total(x1)))
 
 
 # def find_r_all():

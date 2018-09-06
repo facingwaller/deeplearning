@@ -3,12 +3,32 @@ from lib.classification_helper import classification
 from lib.data_helper import DataClass
 from lib.config import config
 from lib.ct import ct
+from lib.pretreatment import pretreatment
 
 # 一键纠错
 if __name__ == '__main__':  #
     bkt = baike_test()
     bkh = baike_helper()
     cf = classification()
+
+    # -------------- 预处理 test 部分
+    if False:
+        pretreatment.re_write(f1='../data/nlpcc2016/10-test/nlpcc2018.kbqa.test',
+                              f2='../data/nlpcc2016/10-test/test.txt')
+    if True:
+        pretreatment.stat_all_space(f1='../data/nlpcc2016/10-test/test.txt')
+    # -------------- NER识别 （从句子中生成NER）
+    if False:
+        bkt.n_gram_math_all(f_in="../data/nlpcc2016/10-test/test.txt",
+                        f_out='../data/nlpcc2016/10-test/test_extract_entitys.txt',
+                        f3="../data/nlpcc2016/4-ner/extract_e/e1.tj.txt",
+                        skip_no_space=False)
+    # ------------- 将NER的结果相关的KB全部抽取出来
+    if False:
+        bkh.extract_kb_test(f1='../data/nlpcc2016/10-test/test_extract_entitys.txt',
+                        f2='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt',
+                        f3='../data/nlpcc2016/2-kb/kb.v1.txt',
+                        f4='../data/nlpcc2016/10-test/kb-test.v2.txt')
 
     # -------------- 清理部分 NER部分
     if False:
@@ -53,9 +73,9 @@ if __name__ == '__main__':  #
         # bkh.init_find_entity()
         # bkh.init_ner(f11)  # bkh.n_gram_dict[time] = word list
 
-    if False:
+    if True:
         time_str = ct.time_path()
-        num = 99
+        num = 1
         filter_list1 = bkt.try_test_acc_of_m1(
             f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
             f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.v1.txt',
@@ -63,19 +83,20 @@ if __name__ == '__main__':  #
             use_cx=False, use_expect=False, acc_index=[num],
             get_math_subject=True,
             f6='../data/nlpcc2016/4-ner/extract_entitys_all.txt.statistics.txt',
-            f2='../data/nlpcc2016/4-ner/demo2/q.rdf.txt.failed_v4.8_%d_%s.txt' % (num, time_str),
-            f8='../data/nlpcc2016/4-ner/demo2/extract_entitys_all_tj.resort_%d_%s.v4.8.txt' % (num, time_str),
-            f9='../data/nlpcc2016/4-ner/demo2/q.rdf.ms.re.top_%d_%s.v4.10.txt' % (num, time_str),
-            f10='../data/nlpcc2016/4-ner/demo2/ner_%d_%s.v4.10.txt' % (num, time_str),
-            combine_idf=True,
+            f2='../data/nlpcc2016/4-ner/demo_20180904/q.rdf.txt.failed_v4.8_%d_%s.txt' % (num, time_str),
+            f8='../data/nlpcc2016/4-ner/demo_20180904/extract_entitys_all_tj.resort_%d_%s.v4.8.txt' % (num, time_str),
+            f9='../data/nlpcc2016/4-ner/demo_20180904/q.rdf.ms.re.top_%d_%s.v4.10.txt' % (num, time_str),
+            f10='../data/nlpcc2016/4-ner/demo_20180904/ner_%d_%s.v4.10.txt' % (num, time_str),
+            combine_idf=False,
             cant_contains_others=True,
-            test_top_1000=False)
-        print('==================之前的任务============')
-        print('前99,get:23840   acc: 0.999748,total - skip=633 ')
-        print('备注：try_test_acc_of_m1 Top3 23706,0.977567 (不互相包含23725,97.8351%) ')
-        print('备注：TOP3 23706 0.993332 (不互相包含 前3,get:23706   acc: 0.994129 ')
+            test_top_1000=True,
+            is_test =False)
+        #print('==================之前的任务============')
+        #print('前99,get:23840   acc: 0.999748,total - skip=633 ')
+        #print('备注：try_test_acc_of_m1 Top3 23706,0.977567 (不互相包含23725,97.8351%) ')
+        #print('备注：TOP3 23706 0.993332 (不互相包含 前3,get:23706   acc: 0.994129 ')
     # 这里需要LR_TRAIN一次
-    if True:
+    if False:
         # 这里回归一份新的extract_entitys_all_tj.resort_3.v4.8.txt,格式会变
         print('获取扩展的实体集合,并判断是否共有属性')
         bkh.expend_es_by_dict(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',

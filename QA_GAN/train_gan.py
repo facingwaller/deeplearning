@@ -167,9 +167,13 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
         # 根据对应的关系数组找到对应的文字
         r1 = dh.converter.arr_to_text_no_unk(test_r[better_index])
         # ct.print(r1)
-        ct.just_log2("info", "step:%d st.index:%d,score:%f,q:%s,s:%s,ner_score:%s,r:%s" %
+        if anwser_select:
+            ct.just_log2("info", "step:%d st.index:%d,score:%f,q:%s,s:%s,ner_score:%s,r:%s" %
                      (step, st.index, st.score, question[better_index], str(es_name_labels[better_index]),
                       ner_score_list[better_index], r1))
+        else:
+            ct.just_log2("info", "step:%d st.index:%d,score:%f,q:%s,,r:%s" %
+                         (step, st.index, st.score, question[better_index],  r1))
         if not find_right:
             # 在这里改下
             if config.cc_par('synonym_mode') == 'ps_synonym':
@@ -840,12 +844,12 @@ def main():
                 run_step = -1
                 step = -1
                 if config.cc_par('restore_test'):
-                    ct.print('answer_select')
-                    answer_select(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
-                                  error_test_dict)
-                    # ct.print('elvation')
-                    # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
-                    #          error_test_dict)
+                    # ct.print('answer_select')
+                    # answer_select(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                    #               error_test_dict)
+                    ct.print('elvation')
+                    elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                              error_test_dict)
 
             train_step = 0
             for step in range(FLAGS.epoches):
@@ -870,10 +874,14 @@ def main():
                                                     dh.train_relation_list_index, model,
                                                     index, train_part, FLAGS.batch_size_gan,
                                                     config.cc_par('pool_mode'))
-                        if train_q is None:
+                        if train_q is None or r_len == 0:
+                            ct.just_log2("info", "len = 0")
                             continue
+                        if r_len > 1000:
+                            print(1)  # debug 用
                         # 启用GAN-选择高质量的neg属性
-                        if config.cc_compare('pool_mode', 'additional'):
+                        if config.cc_compare('pool_mode', 'additional') or \
+                            config.cc_compare('pool_mode', 'competing_ps') :
                             # 2 随机取100个neg
                             feed_dict = {
                                 generator.ori_input_quests: train_q,  # ori_batch
@@ -890,12 +898,14 @@ def main():
                             ct.check_inf(predicteds)
 
                             pools = train_neg
-                            gan_k = FLAGS.gan_k + r_len
+                            gan_k = FLAGS.gan_k # + r_len / 限定个数
                             if gan_k > len(pools):
                                 # raise ('从pool中取出的item数目不能超过从pool中item的总数')
                                 gan_k = len(pools)
                                 if config.cc_par('pool_mode') != 'only_default':
                                     ct.print('only_default 除非否则报错。FLAGS.gan_k > len(pools) %d ' % gan_k, 'error')
+                            elif gan_k < FLAGS.gan_k:
+                                gan_k = FLAGS.gan_k
                             neg_index = np.random.choice(np.arange(len(pools)), size=gan_k, p=prob,
                                                          replace=False)  # 生成 FLAGS.gan_k个负例
                             # 根据neg index 重新选
@@ -906,26 +916,36 @@ def main():
                                 train_neg_gan_k.append(train_neg[i])
                                 train_q_gan_k.append(train_q[i])
                                 train_pos_gan_l.append(train_pos[i])
+                            train_q = train_q_gan_k
+                            train_pos =train_pos_gan_l
+                            train_neg = train_neg_gan_k
+                        else:
+                            print("...")
+                            exit(0)
 
                         # 取出这些负样本就拿去给D判别 score12 = q_pos   score13 = q_neg
+                        # 此处修改为 使用选择后的
                         feed_dict = {
                             discriminator.ori_input_quests: train_q,  # ori_batch
                             discriminator.cand_input_quests: train_pos,  # cand_batch
                             discriminator.neg_input_quests: train_neg  # neg_batch
                         }
+
                         # 给D计算出reward
                         # reward = sess.run(discriminator.reward,
                         #                   feed_dict)  # reward= 2 * (tf.sigmoid( 0.05- (q_pos -q_neg) ) - 0.5)
+                        # try:
                         _, run_step, current_loss, accuracy = sess.run(
-                            [discriminator.train_op, discriminator.global_step, discriminator.loss,
-                             discriminator.accuracy],
-                            feed_dict)
+                                [discriminator.train_op, discriminator.global_step, discriminator.loss,
+                                 discriminator.accuracy],
+                                feed_dict)
+                        # except Exception as x:
+                        #     print(x)
 
                         line = ("%s-%s: DIS step %d, loss %f with acc %f " % (
                             train_step, len(shuffle_indices), run_step, current_loss, accuracy))
                         ct.print(line, 'loss')
                         loss_dict['loss'] += current_loss
-
                     # check
                     total = len(shuffle_indices)
                     msg = "%s\tloss=%s " % (state, loss_dict['loss'] / total)
@@ -962,6 +982,8 @@ def main():
                                                     index, train_part,
                                                     FLAGS.batch_size_gan,
                                                     config.cc_par('pool_mode'))
+                        if r_len == 0:
+                            continue
 
                         # 2 随机取100个neg
                         feed_dict = {
@@ -1066,7 +1088,7 @@ def main():
                             [generator.gan_updates, generator.global_step, generator.gan_loss, generator.positive,
                              generator.negative],  # self.prob= tf.nn.softmax( self.cos_13)
                             feed_dict)  # self.gan_loss = -tf.reduce_mean(tf.log(self.prob) * self.reward)
-                        line = ("%s-%s: GEN step %d, loss %f  positive %f negative %f" % (
+                        line = ("%s-%s: G step %d, loss %f  positive %f negative %f" % (
                             train_step, len(shuffle_indices), run_step, current_loss, positive, negative))
                         loss_dict['loss'] += current_loss
                         loss_dict['pos'] += positive
@@ -1084,7 +1106,7 @@ def main():
                     loss_dict['pos'] = 0
                     loss_dict['neg'] = 0
 
-                # --------------- S model
+                # --------------- S model 优先加入neg的同义词
                 for s_index in range(FLAGS.s_epoches):
                     q_len = len(dh.q_neg_r_tuple)
                     state = "step=%d_epoches=%s_index=%d" % (step, 's', s_index)
@@ -1119,7 +1141,7 @@ def main():
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict)
 
-                # --------------- C model
+                # --------------- C model competing_ps 竞争属性
                 for s_index in range(FLAGS.c_epoches):
                     q_len = len(dh.question_list)
                     state = "step=%d_epoches=%s_index=%d" % (step, 'c', s_index)
@@ -1166,8 +1188,57 @@ def main():
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict)
 
-            ct.print('finish epoches %d' % FLAGS.epoches)
+                # --------------- A model  additional 默认+额外
+                for s_index in range(FLAGS.a_epoches):
+                    q_len = len(dh.question_list)
+                    state = "step=%d_epoches=%s_index=%d" % (step, 'a', s_index)
+                    model_name = 'debug_batch_iter_a_model'
+                    ct.toogle_line(q_len, step, model_name)
+                    # run_step= -1
+                    # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                    #           error_test_dict)
+                    shuffle_indices = get_shuffle_indices_train(total=len(dh.question_list))
+                    loss_dict['loss'] = 0
+                    model = 'train'
+                    for index in shuffle_indices:
+                        train_step += 1
+                        gc1 = dh.batch_iter_competing_ps(model,
+                                                         index, total=config.cc_par('competing_batch_size'))
+                        if gc1 is None:
+                            continue
+                        for item in gc1:
 
+                            train_q = item[0]
+                            train_cand = item[1]
+                            train_neg = item[2]
+                            # 构建feed_dict
+                            feed_dict = {
+                                discriminator.ori_input_quests: train_q,  # KEY
+                                discriminator.cand_input_quests: train_cand,  # KEY的value
+                                discriminator.neg_input_quests: train_neg  # 其他随机KEY的value
+                            }
+                            try:
+                                _, run_step, current_loss, accuracy = sess.run(
+                                    [discriminator.train_op, discriminator.global_step, discriminator.loss,
+                                     discriminator.accuracy],
+                                    feed_dict)
+                            except Exception as ee1:
+                                print(ee1)
+                            loss_dict['loss'] += current_loss
+                            if train_step % 10 == 0:
+                                line = ("%s-%s: competing step %d, loss %f with acc %f " % (
+                                    train_step, len(shuffle_indices), run_step, loss_dict['loss'], accuracy))
+                                ct.print(line, 'loss')
+
+                                # 验证
+
+                    elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                             error_test_dict)
+
+                # --------------- A model  additional 默认+额外
+
+
+            ct.print('finish epoches %d' % FLAGS.epoches)
 
 if __name__ == '__main__':
     main()

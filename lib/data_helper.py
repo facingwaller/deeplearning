@@ -620,7 +620,8 @@ class DataClass:
                 vs2 = str(vs1).split(s1)
                 #  截取分数之后的
                 list2.append(vs2[1])
-                list1.append(vs2[2:])
+                list1.append(vs2[2:]) # 不加所有 只加1个
+                # list1.append([entity1])  # 不加所有 只加1个
             self.expend_score.append(list2)
             self.expend_es.append(list1)
 
@@ -1668,7 +1669,7 @@ class DataClass:
         elif pool_mode == 'competing_ps':
             r_pos1 = self.relation_list[global_index]
             rs, a_s = self.bh.competing_ps(r_pos1, ps_to_except1,
-                                           total, self.competing_dict)
+                                           total, self.competing_dict,"G")
             if rs is None:
                 return None, None, None, None
         else:  # 默认是additional
@@ -1704,7 +1705,7 @@ class DataClass:
             r1_text = r1
             r1_split = [r1]
             r1 = self.converter.text_to_arr_list(r1_split)
-            # r1_text = self.converter.arr_to_text_no_unk(r1)
+            r1_text = self.converter.arr_to_text_no_unk(r1)
             # ct.log3(r1_text)
             # ct.just_log2("info", "r1_neg in test %s" % r1_text)
             # ct.print(r1_text)
@@ -1713,6 +1714,9 @@ class DataClass:
             x_new.append(self.question_list_index[global_index])
             y_pos.append(self.relation_list_index[global_index])
             y_neg.append(r1)
+            # 记录
+
+            #
             # y_new.append(r1)  # neg
             # labels.append(False)
             if pool_mode in ['synonym_train_mode', 'competing_ps']:
@@ -1720,9 +1724,15 @@ class DataClass:
             else:
                 r1_msg = "r-neg: %s \t answer:%s" % (r1_text, a_s[_index])
             ct.just_log2("info", r1_msg)
+            # ct.just_log2("info", ":%s"%self.converter.arr_to_text_no_unk(r1))
+
 
         # ct.print("show shuffle_indices")
-        # ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
+        ct.just_log2("info","len: " + str(len(x_new)) + "  " + str(len(y_pos))+" "+str(len(np.array(y_neg))))
+        r_len = len(x_new)
+        if len(x_new) == 0:
+            print("bug")
+
         # ct.print("leave:batch_iter_gan_train")
         return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
 
@@ -1877,7 +1887,104 @@ class DataClass:
 
         r_pos1 = self.relation_list[global_index]
         rs, a_s = self.bh.competing_ps(r_pos1, ps_to_except1,
-                                       total, self.competing_dict)
+                                       total, self.competing_dict,"C")
+        if len(rs) == 0:
+            ct.print('%s not exist ' % r_pos1)
+            return None
+
+        # if pool_mode == 'fixed_amount':
+        #     rs, a_s = rs[0:total], a_s[0:total]
+        # ct.print("rs len: %s" % (len(rs)))
+        # r_len = self.bh.read_entity_and_get_all_neg_relations_cc_len(name, ps_to_except1)
+
+        ct.just_log2("info", "entity:%s " % name)
+
+        r1_text = self.converter.arr_to_text_no_unk(self.relation_list_index[global_index])
+        q1_text = self.converter.arr_to_text_no_unk(self.question_list_index[global_index])
+        r1_msg = "r-pos: %s \t answer:%s" % (r1_text, self.answer_list[global_index])
+        q1_msg = "q : %s" % q1_text
+        ct.just_log2("info", q1_msg)
+        ct.just_log2("info", r1_msg)
+
+        # 加入所有的
+        # todo : total is get_static_num_debug
+        if train_part == 'relation':
+            rs = rs
+        else:
+            rs = a_s
+        rs_len = len(rs)
+        num = min(config.get_static_num_debug(), rs_len)
+        rs = rs[0:num]
+        _index = -1
+        for r1 in rs:
+            _index += 1
+            r1_text = r1
+            r1_split = [r1]
+            r1 = self.converter.text_to_arr_list(r1_split)
+            r1 = ct.padding_line(r1, self.max_document_length, padding_num)
+            x_new.append(self.question_list_index[global_index])
+            y_pos.append(self.relation_list_index[global_index])
+            y_neg.append(r1)
+            r1_msg = "r-neg: %s" % (r1_text)
+            ct.just_log2("info", r1_msg)
+            if _index % total == 0 and _index != 0:
+                x_new_ret = x_new.copy()
+                y_pos_ret = y_pos.copy()
+                y_neg_ret = y_neg.copy()
+
+                x_new.clear()
+                y_pos.clear()
+                y_neg.clear()
+
+                yield np.array(x_new_ret), np.array(y_pos_ret), np.array(y_neg_ret)
+
+                # ct.print("show shuffle_indices")
+                # ct.print("len: " + str(len(x_new)) + "  " + str(len(y_pos)))
+                # ct.print("leave:batch_iter_gan_train")
+                # return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
+
+    # 产生a model下的数据
+    def batch_iter_additional_ps(self, model, index,
+                                train_part='relation', total=100, pool_mode='additional'):
+
+        # ct.print("enter:batch_iter_gan_train")
+
+        x_new = []  # 问题集合
+        y_pos = []  # 正确属性
+        y_neg = []  # 错误属性
+
+        if model == "valid" or model == "train":
+            global_index = index
+        elif model == "test":
+            global_index = index + self.padding
+            # index=global_index
+        else:
+            raise Exception("MODEL 参数出错")
+
+        # log
+        ct.just_log2("info", "\nbatch_iter_additional_ps=================================start")
+        try:
+            msg = "model=%s\tid=%s\tglobal_index=%d\tq_global_index=%d" % (
+                model, index, global_index, self.question_global_index[global_index])
+        except Exception as e2:
+            print(e2)
+        ct.print(msg)
+        ct.log3(msg)
+        ct.just_log2("info", msg)
+
+        if global_index >= len(self.entity1_list):
+            print('error ')
+            raise Exception('error')
+        name = self.entity1_list[global_index]
+
+        # todo: index should not in
+        # ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
+        ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
+        # ps_to_except1 = [ps_to_except1]
+        padding_num = self.converter.vocab_size - 1
+
+        r_pos1 = self.relation_list[global_index]
+        rs, a_s = self.bh.rs_cc_gan(r_pos1, ps_to_except1,total) # 重点
         if len(rs) == 0:
             ct.print('%s not exist ' % r_pos1)
             return None

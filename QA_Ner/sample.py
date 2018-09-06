@@ -1,3 +1,4 @@
+# 弃用
 from QA_Ner.model import CharRNN
 import os
 import codecs
