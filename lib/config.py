@@ -55,23 +55,25 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 4358  # 重要！这个指示了训练的关系个数 4358
+    t_relation_num = 20 # 4358  # 重要！这个指示了训练的关系个数 4358
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
     #####
-    train_part = 'relation'  # 属性 relation |answer
+    train_part = 'entity'  # 属性 relation |answer | entity
     #  IR-GAN
     batch_size_gan = 1000  #100 或者 1000 ,80%的竞争属性是在600
     gan_k = 10
     sampled_temperature = 20
     gan_learn_rate = 0.02
 
-    g_epoches = 1
-    d_epoches = 1
+    g_epoches = 0
+    d_epoches = 0
     s_epoches = 0
     c_epoches = 0
     a_epoches = 0
+
+    ner_epoches = 1
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
     keep_run = False  # 指示是否持续跑maybe里面的属性
@@ -102,85 +104,18 @@ if testid == "cc_test":
     valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
     valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
 
-    #
+    # 竞争属性集
     competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
     competing_batch_size = 10 # 控制size
 
     expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
 
-elif testid == 'cc_debug':
-    # 极限情况下调,1个问题，全关系
-    epoches = 10  # 遍历多少轮
-    # batch_size = 10  # 1个batch的大小 # 临时改了
-    # evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
-    # evaluate_batchsize = 999999999999999  # 验证一次的问题数目,超过则使用最大的
-    # questions_len_train = 999999999999999  # 所有问题数目
-    # questions_len_test = 999999999999999  # 测试的问题数目，全部
-    # wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
-    # total_questions = 999999999999999
-    # stop_loss_zeor_count = 2000  # 2000次则停下来
-    # rnn_size = 100
-    # mode = "cc"
-    # check = 100000
-    # # 属性模式
-    # use_property = 'special'
-    # # 使用属性的模式做训练和测试
-    # # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
-    # skip_threshold = 0.02
-    # t_relation_num = 4358  # 重要！这个指示了训练的关系个数 4358
-    # # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
-    # # 而非模拟测试的。 之前是混合在一起
-    # real_split_train_test = True
-    # #####
-    # train_part = 'relation'  # 属性 relation |answer
-    # #  IR-GAN
-    # batch_size_gan = 100
-    # gan_k = 10
-    # sampled_temperature = 20
-    # gan_learn_rate = 0.02
-    # g_epoches = 1
-    # d_epoches = 1
-    # s_epoches = 0
-    # c_epoches = 0
-    # # optimizer_method = 'origin'  # origin , gan
-    # #  maybe
-    # keep_run = False  # 指示是否持续跑maybe里面的属性
-    # optimizer_method = optimizer_m.lstm  # 优化模式 gan | lstm
-    # # only_default 默认|fixed_amount 固定 | additional 默认+额外
-    # pool_mode = 'only_default'
-    #
-    # # 模型恢复
-    # restore_model = True
-    # restore_path = \
-    #     r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_04_01_13_50_19_4Mv1\checkpoints\step=9_epoches=d_index=0\model.ckpt-1'
-    # restore_test = True
-    # # 模式
-    # synonym_mode = 'none'  # 属性同义词 | none
-    # synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
-    # # synonym S_model
-    # S_model = 'none'  # S_model | none
-    #
-    # # 只验证错误的模式 only_error|all
-    # valid_model = 'all'
-    # valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
-    # valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
-    #
-    # #
-    # competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
-    # competing_batch_size = 5
-    # expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
+    # S-NER
+    ner_model = 'cos'
+    ner_path = '../data/nlpcc2016/4-ner/extract_entitys_all_tj_sort.v1.txt'
+
 else:
-    # epoches = 100 * 100 * 100  # 遍历多少轮
-    # batch_size = 10  # 1个batch的大小
-    # evaluate_every = 100
-    # evaluate_batchsize = 100
-    # questions_len_train = 800  # 应该设置大一点,2-10倍
-    # questions_len_test = int(questions_len_train / 4)
-    # wrong_relation_num = 99999  # 错误的关系，设置9999可以是全部的意思
-    # stop_loss_zeor_count = 10000
-    # rnn_size = 300
-    # mode = "sq"
-    # check = 999
+
     raise Exception("testid 参数有误")
 
 # config.par('sq_fb_rdf_path')
@@ -227,7 +162,8 @@ cc_p = {
     # 匹配实体和过滤后的问题集
     # 'cc_q_path': '../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
     # 'cc_q_path': '../data/nlpcc2016/4-ner/demo3/q.rdf.score.top_3_all_0.v4.10.txt',
-    'cc_q_path': '../data/nlpcc2016/4-ner/result/q.rdf.score.expend.v1.txt',
+    # 'cc_q_path': '../data/nlpcc2016/4-ner/result/q.rdf.score.expend.v1.txt',
+    'cc_q_path': '../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
     # q.rdf.score.expend.v1.txt
     'real_split_train_test': True,
     'real_split_train_test_skip': 14610,
@@ -261,8 +197,9 @@ cc_p = {
     'competing_ps_path': competing_ps_path,
     'competing_batch_size':competing_batch_size,
     ## NER
-    'expend_es':expend_es
-
+    'expend_es':expend_es,
+    'ner_model' : ner_model,
+    'ner_path' : ner_path
 }
 
 if questions_len_test < evaluate_batchsize:
@@ -288,6 +225,9 @@ tf.flags.DEFINE_integer("d_epoches", d_epoches, "d_epoches")
 tf.flags.DEFINE_integer("s_epoches", s_epoches, "s_epoches")
 tf.flags.DEFINE_integer("c_epoches", c_epoches, "c_epoches")
 tf.flags.DEFINE_integer("a_epoches", a_epoches, "a_epoches")
+tf.flags.DEFINE_integer("ner_epoches", ner_epoches, "ner_epoches")
+
+
 #
 # tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
 # tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")

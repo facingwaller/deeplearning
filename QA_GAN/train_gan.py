@@ -289,9 +289,9 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
     #     step, score, str(is_right), time_elapsed))
     return is_right, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list
 
-
-def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
-                      train_relation_list_index, model, test_question_global_index, train_part, id_list, state,
+# 训练
+def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
+                      model, test_question_global_index, train_part, id_list, state,
                       anwser_select=False):
     right = 0
     wrong = 0
@@ -323,8 +323,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
             global_index = test_question_global_index[index]
         ct.print("valid_batch_debug:%s %d ,index = %d ;global_index=%d " % (model, i, index, global_index))
         test_q, test_r, labels = \
-            dh.batch_iter_wq_test_one_debug(train_question_list_index, train_relation_list_index, model, index,
-                                            train_part)
+            dh.batch_iter_wq_test_one_debug( model, index,train_part)
 
         ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = valid_step(sess, lstm, step, train_op,
                                                                                       test_q, test_r,
@@ -618,10 +617,13 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
     #   if (train_step + 1) % FLAGS.evaluate_every == 0:
     model = "valid"
     train_part = config.cc_par('train_part')
-    if train_part == 'relation':
-        train_part_1 = dh.train_relation_list_index
-    else:
-        train_part_1 = dh.train_answer_list_index
+    # if train_part == 'relation':
+    #     train_part_1 = dh.train_relation_list_index
+    # elif train_part == 'entity':
+    #     pass
+    #     # todo :2
+    # else:
+    #     train_part_1 = dh.train_answer_list_index
 
     id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
     ct.print("问题总数 %s " % len(id_list))
@@ -634,9 +636,7 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
 
     acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
         valid_batch_debug(sess, discriminator, 0, None, merged, writer,
-                          dh, test_batchsize, dh.train_question_list_index,
-                          train_part_1,
-                          model, dh.train_question_global_index, train_part, id_list, state)
+                          dh, test_batchsize,model, dh.train_question_global_index, train_part, id_list, state)
 
     msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (step, state, train_step, model, test_batchsize, acc)
     ct.print(msg)
@@ -650,17 +650,20 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
     # ============= 测试
     model = "test"
     train_part = config.cc_par('train_part')
-    if train_part == 'relation':
-        train_part_1 = dh.test_relation_list_index
-    else:
-        train_part_1 = dh.test_answer_list_index
+    # if train_part == 'relation':
+    #     train_part_1 = dh.test_relation_list_index
+    # elif train_part == 'relation':
+    #     train_part_1 = dh.test_relation_list_index
+    #     pass
+    #     # todo 1
+    # else:
+    #     train_part_1 = dh.test_answer_list_index
 
     id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
 
     acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
         valid_batch_debug(sess, discriminator, step, None, merged, writer,
-                          dh, test_batchsize, dh.test_question_list_index,
-                          train_part_1, model, dh.test_question_global_index, train_part, id_list, state)
+                          dh, test_batchsize, model, dh.test_question_global_index, train_part, id_list, state)
     # 测试 集合不做训练 但是将其记录下来
 
     # error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
@@ -682,6 +685,67 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer, v
     # ct.just_log2("info", toogle_line)
 
     checkpoint(sess, state)
+
+# def elvation_ner(state, train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict, error_test_dict):
+#     # 验证
+#     test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
+#     #   if (train_step + 1) % FLAGS.evaluate_every == 0:
+#     model = "valid"
+#     train_part = config.cc_par('train_part')
+#     train_part_1 = dh.train_relation_list_index
+#
+#     id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
+#     ct.print("问题总数 %s " % len(id_list))
+#     # todo 继续从这里改
+#     acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
+#         valid_batch_debug(sess, discriminator, 0, None, merged, writer,
+#                           dh, test_batchsize,
+#                           model, dh.train_question_global_index, train_part, id_list, state)
+#
+#     msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (step, state, train_step, model, test_batchsize, acc)
+#     ct.print(msg)
+#     ct.just_log2("valid", msg)
+#     valid_test_dict = log_error_questions(dh, model, error_test_q_list,
+#                                           error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
+#                                           maybe_list_list, acc, maybe_global_index_list)
+#     ct.print("===========step=%d" % step, "maybe_possible")
+#
+#     #  if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
+#     # ============= 测试
+#     model = "test"
+#     train_part = config.cc_par('train_part')
+#     # if train_part == 'relation':
+#     #     train_part_1 = dh.test_relation_list_index
+#     # else:
+#     #     train_part_1 = dh.test_answer_list_index
+#
+#     id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
+#
+#     acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
+#         valid_batch_debug(sess, discriminator, step, None, merged, writer,
+#                           dh, test_batchsize,  model, dh.test_question_global_index, train_part, id_list, state)
+#     # 测试 集合不做训练 但是将其记录下来
+#
+#     # error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
+#     #                                       maybe_global_index_list)
+#     error_test_dict = log_error_questions(dh, model, error_test_q_list,
+#                                           error_test_pos_r_list, error_test_neg_r_list, error_test_dict,
+#                                           maybe_list_list, acc, maybe_global_index_list)
+#
+#     _1.clear()
+#     _2.clear()
+#     _3.clear()
+#     msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (
+#         step, state, train_step, model, test_batchsize, acc)
+#     ct.print(msg)
+#     ct.just_log2("test", msg)
+#     ct.print("===========step=%d" % step, "maybe_possible")
+#     # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
+#     # ct.log3(toogle_line)
+#     # ct.just_log2("info", toogle_line)
+#
+#     checkpoint(sess, state)
+#
 
 
 # 答案选择
@@ -1235,9 +1299,44 @@ def main():
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict)
 
-                # --------------- A model  additional 默认+额外
-
-
+                # --------------- NER model 识别实体
+                for d_index in range(FLAGS.ner_epoches):
+                    toogle_line = "NER model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
+                        step, len(dh.q_neg_r_tuple))
+                    ct.log3(toogle_line)
+                    ct.just_log2("info", toogle_line)
+                    state = "step=%d_epoches=%s_index=%d" % (step, 'd', d_index)
+                    model = 'train'
+                    train_part = config.cc_par('train_part')
+                    # 1 遍历raw
+                    shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index))
+                    for index in shuffle_indices:
+                        train_step += 1
+                        # 取出一个问题的相关数据
+                        train_q, train_pos, train_neg, r_len = \
+                            dh.batch_iter_cand_s( model,index,  FLAGS.batch_size_gan)
+                        if train_q is None or r_len == 0:
+                            ct.just_log2("info", "len = 0")
+                            continue
+                        feed_dict = {
+                            discriminator.ori_input_quests: train_q,  # KEY
+                            discriminator.cand_input_quests: train_pos,  # KEY的value
+                            discriminator.neg_input_quests: train_neg  # 其他随机KEY的value
+                        }
+                        try:
+                            _, run_step, current_loss, accuracy = sess.run(
+                                [discriminator.train_op, discriminator.global_step, discriminator.loss,
+                                 discriminator.accuracy],
+                                feed_dict)
+                        except Exception as ee1:
+                            print(ee1)
+                        loss_dict['loss'] += current_loss
+                        if train_step % 10 == 0:
+                            line = ("%s-%s: competing step %d, loss %f with acc %f " % (
+                                train_step, len(shuffle_indices), run_step, loss_dict['loss'], accuracy))
+                            ct.print(line, 'loss')
+                    elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                             error_test_dict)
             ct.print('finish epoches %d' % FLAGS.epoches)
 
 if __name__ == '__main__':

@@ -14,12 +14,12 @@ import lib.my_log as mylog
 from lib.config import config
 from lib.ct import ct, log_path
 from lib.baike_helper import baike_helper
-
 # from gensim import models
-
-# ======================================================================common
 import math
 import random
+
+#20180906-1 用cos做NER
+
 
 
 class DataClass:
@@ -35,6 +35,9 @@ class DataClass:
     # ---------------------DataClass
     entity1_list = []  # id
     entity1_value_list = []  # 值
+
+    entity1_in_q_list = []  # 实体在问句的候选中的部分
+    entity1_in_q_cand_list = []  # 实体在问句的候选列表
 
     relation_list = []  # 单词版
     entity2_list = []
@@ -172,6 +175,7 @@ class DataClass:
             if config.cc_compare('pool_mode', 'competing_ps'):
                 self.init_competing_model(config.cc_par('competing_ps_path'))
             # self.init_expend_es(config.cc_par('expend_es'))
+
             ct.print("load embedding ok!")
 
             return
@@ -473,10 +477,13 @@ class DataClass:
     # -----------------cc 将问答集合，
     def init_cc_questions(self, file_name, run_type='run'):
         f1s_new = []
-        idx = 0
+        idx = -1
         # 《机械设计基础》这本书的作者是谁？    杨可桢，程光蕴，李仲生
         # 机械设计基础         作者          杨可桢，程光蕴，李仲生
         # 问题0 答案1 实体s-2 关系p-3 属性值o-4    匹配到的实体s-5
+        # 读取问答全体数据集
+
+        bad_idx = []
         with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
             try:
                 for line in read_file.readlines():
@@ -484,12 +491,16 @@ class DataClass:
                     line_seg = line.split('\t')
                     if len(line_seg) < 6 or line.__contains__('NULL'):  # todo:rewrite input file,重写输入文件
                         ct.print("bad:" + line, "bad")
+                        bad_idx.append(idx) # 记录需要跳过的index
                         continue
                     f1s_new.append(line)
             except Exception as e:
                 print(e)
                 ct.print("index = ", idx)
                 logging.error("error ", e)
+
+
+
         use_property = config.use_property()
         property_list = []
 
@@ -578,9 +589,31 @@ class DataClass:
             #     ct.print(question, 'entity_ner')
             # question = question.replace(entity_ner, '♠')
             # 改成直接取第7列
-            question = line_seg[6]
+            # 如果是测试
+            if config.cc_compare('train_part','relation'):
+                question = line_seg[6]
+            elif config.cc_compare('train_part','entity'):
+                question = line_seg[0] #
             question_origin = str(line_seg[0]).replace(' ', '').lower()
 
+            #
+            real_entity_index = line_seg[8]
+            cand_entity = line_seg[9:]
+            if real_entity_index == '-1':
+                # f1s_remove_item = str(l1).split('\t')[1:][f1s_index]
+                # if len(self.entity1_list) > idx2:
+                self.entity1_in_q_list.append(entity1)  # 不存在的时候用实体替代
+                # else:
+                #     self.entity1_in_q_list.append('####')  # 不存在的时候用实体替代
+                self.entity1_in_q_cand_list.append(cand_entity)
+            else:
+                real_entity_index = int(real_entity_index)
+                f1s_remove_item = cand_entity[real_entity_index]
+                self.entity1_in_q_list.append(f1s_remove_item)
+                _1 = cand_entity
+                _1.remove(f1s_remove_item)
+                self.entity1_in_q_cand_list.append(_1)
+            #
             self.entity1_list.append(entity1)
             self.relation_list.append(relation1)
             self.entity2_list.append(entity2)
@@ -608,22 +641,50 @@ class DataClass:
             self.question_global_index.append(index)
 
             # 加载扩展的实体集合
-            vs = line_seg[8:]
-            _index = -1
-            # d1 = dict()
-            list1 = []
-            list2 = []
-            s1 = '____'
-            for vs1 in vs:
-                _index += 1
-                # d1[str(index)] = vs1[1:] # KEY=第几个，value 对应的实体
-                vs2 = str(vs1).split(s1)
-                #  截取分数之后的
-                list2.append(vs2[1])
-                list1.append(vs2[2:]) # 不加所有 只加1个
-                # list1.append([entity1])  # 不加所有 只加1个
-            self.expend_score.append(list2)
-            self.expend_es.append(list1)
+            # if False:
+            #     vs = line_seg[8:]
+            #     _index = -1
+            #     # d1 = dict()
+            #     list1 = []
+            #     list2 = []
+            #     s1 = '____'
+            #     for vs1 in vs:
+            #         _index += 1
+            #         # d1[str(index)] = vs1[1:] # KEY=第几个，value 对应的实体
+            #         vs2 = str(vs1).split(s1)
+            #         #  截取分数之后的
+            #         list2.append(vs2[1])
+            #         list1.append(vs2[2:]) # 不加所有 只加1个
+            #         # list1.append([entity1])  # 不加所有 只加1个
+            #     self.expend_score.append(list2)
+            #     self.expend_es.append(list1)
+
+
+        # 20180906-1 增加读取NER的结果---start
+        # f1s = ct.file_read_all_lines_strip(config.cc_par('ner_path'))
+        # idx2 = -1
+        # for l1 in f1s:
+        #     idx2 += 1
+        #     #     if idx2 in bad_idx:
+        #     #         continue # 如果是上面要求跳过的，则这里也跳过
+        #     # 已经跳过了
+        #     f1s_index = str(l1).split('\t')[0]
+        #     # 对于没有识别出的，先不管他
+        #     if f1s_index == '-1':
+        #         # f1s_remove_item = str(l1).split('\t')[1:][f1s_index]
+        #         if len(self.entity1_list)>idx2:
+        #             self.entity1_in_q_list.append(self.entity1_list[idx2])  # 不存在的时候用实体替代
+        #         else:
+        #             self.entity1_in_q_list.append('####') # 不存在的时候用实体替代
+        #         self.entity1_in_q_cand_list.append(str(l1).split('\t')[1:])
+        #     else:
+        #         f1s_index = int(f1s_index)
+        #         f1s_remove_item = str(l1).split('\t')[1:][f1s_index]
+        #         self.entity1_in_q_list.append(f1s_remove_item)
+        #         _1 = str(l1).split('\t')[1:]
+        #         _1.remove(f1s_remove_item)
+        #         self.entity1_in_q_cand_list.append(_1)
+        # 20180906-1 增加读取NER的结果---end
 
         ct.print("entity1_list:%d " % len(self.entity1_list))
         if len(self.entity1_list) == 0:
@@ -1009,14 +1070,9 @@ class DataClass:
         ct.print("leave:batch_iter_wq_debug")
         return np.array(x_new), np.array(y_new), np.array(z_new)
 
-    def batch_iter_wq_test_one_debug(self, question_list_index, relation_list_index, model, index,
-                                     train_part='relation'):
-        """
-        web questions
-        生成指定batch_size的数据
-        :param batch_size:
-        :return:
-        """
+    # 在用 生成随机的
+    def batch_iter_wq_test_one_debug(self,  model, index,train_part='relation'):
+
         ct.print("enter:batch_iter_wq_test_one_debug")
 
         x_new = []  # 问题集合
@@ -1056,7 +1112,11 @@ class DataClass:
         # ps_to_except1 数组组合
         # padding_num = self.converter.vocab_size - 1
 
-        rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
+        if train_part == 'relation':
+            rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
+        else:
+            cand_s = self.entity1_in_q_cand_list[global_index]
+            rs = self.bh.rs_cc_subject(cand_s, 100)
 
         #  增加synonym模式
         if config.cc_par('synonym_mode') == 'ps_synonym':
@@ -1097,8 +1157,9 @@ class DataClass:
             x_new.append(self.question_list_index[global_index])
             if train_part == 'relation':
                 y_new.append(self.relation_list_index[global_index])
-            else:
-                y_new.append(self.answer_list_index[global_index])
+            else: # 20180906-1 用cos做NER
+                y_new.append(self.convert_str_to_indexlist(self.entity1_in_q_list[global_index]))
+                # y_new.append(self.answer_list_index[global_index])
             labels.append(True)
 
         # entity_name_text = "entity:%s " % name
@@ -1106,7 +1167,10 @@ class DataClass:
         part4 = "%s " % name
 
         # ct.print(y[index])
-        r1_text = self.converter.arr_to_text_no_unk(self.relation_list_index[global_index])
+        if train_part == 'relation':
+            r1_text = self.converter.arr_to_text_no_unk(self.relation_list_index[global_index])
+        else:
+            r1_text = self.entity1_in_q_list[global_index]
         q1_text = self.converter.arr_to_text_no_unk(self.question_list_index[global_index])
         r1_msg = "r-pos: %s \t answer:%s" % (r1_text, self.answer_list[global_index])
         q1_msg = "q : %s" % q1_text
@@ -1116,10 +1180,10 @@ class DataClass:
         part3 = "%s\t%s" % (r1_text, self.answer_list[global_index])
         ct.just_log3("test_check", "%s\t%s\t%s\t%s\t" % (part1, part2, part4, part3))
 
-        if train_part == 'relation':
-            rs = rs
-        else:
-            rs = a_s
+        # if train_part == 'relation':
+        #     rs = rs
+        # else:
+        #     rs = a_s
         rs_len = len(rs)
         num = min(ct.get_static_num_debug(), rs_len)
         rs = rs[0:num]
@@ -1736,6 +1800,127 @@ class DataClass:
         # ct.print("leave:batch_iter_gan_train")
         return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
 
+
+
+    # 20180906-1 生成待训练的CAND_S
+    def batch_iter_cand_s(self,model, index,total=100):
+
+        x_new = []  # 问题集合
+        y_pos = []  # 正确属性
+        y_neg = []  # 错误属性
+
+        if model == "valid" or model == "train":
+            global_index = index
+        elif model == "test":
+            global_index = index + self.padding
+        else:
+            raise Exception("MODEL 参数出错")
+
+        # log
+        ct.just_log2("info", "\nbatch_iter_cand_s=================================start")
+        try:
+            msg = "model=%s\tid=%s\tglobal_index=%d\tq_global_index=%d" % (
+                model, index, global_index, self.question_global_index[global_index])
+        except Exception as e2:
+            print(e2)
+        ct.print(msg)
+        ct.log3(msg)
+        ct.just_log2("info", msg)
+
+        if global_index >= len(self.entity1_list):
+            print('error ')
+            raise Exception('error')
+        name = self.entity1_list[global_index]
+        # ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
+        # padding_num = self.converter.vocab_size - 1
+
+
+        # if pool_mode == 'only_default':
+        #     rs, a_s = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name, ps_to_except=ps_to_except1)
+        # elif pool_mode == 'synonym_train_mode':
+        #     r_pos1 = self.relation_list[global_index]
+        #     rs, a_s = self.bh.rs_gan_synonym(name, ps_to_except1,
+        #                                      total, r_pos1, self.synonym_dict)
+        # elif pool_mode == 'competing_ps':
+        #     r_pos1 = self.relation_list[global_index]
+        #     rs, a_s = self.bh.competing_ps(r_pos1, ps_to_except1,
+        #                                    total, self.competing_dict,"G")
+        #     if rs is None:
+        #         return None, None, None, None
+        # else:  # 默认是additional
+        #     rs, a_s = self.bh.rs_cc_gan(entity_id=name, ps_to_except=ps_to_except1,
+        #                                 total=total)
+
+        # 这里改成 rs 是 错误的候选实体
+        # global_index
+        # ps_to_except1 = [name] ?
+        cand_s = self.entity1_in_q_cand_list[global_index]
+        rs = self.bh.rs_cc_subject( cand_s,total)
+
+
+        # if pool_mode == 'fixed_amount':
+        #     rs, a_s = rs[0:total], a_s[0:total]
+        # ct.print("rs len: %s" % (len(rs)))
+        # r_len = self.bh.read_entity_and_get_all_neg_relations_cc_len(name, ps_to_except1)
+
+        ct.just_log2("info", "entity:%s " % name)
+
+        # 正确的
+        s1_in_q = self.entity1_in_q_list[global_index]
+        r1_text = s1_in_q # self.converter.arr_to_text_no_unk(s1_in_q)
+        # 问题
+        q1_text = self.converter.arr_to_text_no_unk(self.question_list_index[global_index])
+        r1_msg = "r-pos: %s \t answer:%s" % (r1_text, self.answer_list[global_index])
+        q1_msg = "q : %s" % q1_text
+        ct.just_log2("info", q1_msg)
+        ct.just_log2("info", r1_msg)
+
+        # 加入所有的
+        # todo : total is get_static_num_debug
+        # if train_part == 'relation':
+        #     rs = rs
+        # else:
+        #     rs = a_s
+        rs_len = len(rs)
+        num = min(config.get_static_num_debug(), rs_len)
+        rs = rs[0:num]
+        _index = -1
+        for r1 in rs:
+            _index += 1
+            r1_text = r1
+            r1_split = [r1]
+            # r1 = self.converter.text_to_arr_list(r1_split)
+            # r1_text = self.converter.arr_to_text_no_unk(r1)
+            # ct.log3(r1_text)
+            # ct.just_log2("info", "r1_neg in test %s" % r1_text)
+            # ct.print(r1_text)
+            # ct.just_log2("info","neg-r test:" + r1_text)
+
+            # r1 = ct.padding_line(r1, self.max_document_length, padding_num)
+            r1 = self.convert_str_to_indexlist(r1_split)
+
+            x_new.append(self.question_list_index[global_index])
+            y_pos.append(self.relation_list_index[global_index])
+            y_neg.append(r1)
+            # 记录
+
+            #
+            # y_new.append(r1)  # neg
+            # labels.append(False)
+            # if pool_mode in ['synonym_train_mode', 'competing_ps']:
+            r1_msg = "r-neg: %s" % (r1_text)
+            # else:
+            #     r1_msg = "r-neg: %s \t answer:%s" % (r1_text, a_s[_index])
+            ct.just_log2("info", r1_msg)
+            # ct.just_log2("info", ":%s"%self.converter.arr_to_text_no_unk(r1))
+        # ct.print("show shuffle_indices")
+        ct.just_log2("info","len: " + str(len(x_new)) + "  " + str(len(y_pos))+" "+str(len(np.array(y_neg))))
+        r_len = len(x_new)
+        if len(x_new) == 0:
+            print("bug")
+        # ct.print("leave:batch_iter_gan_train")
+        return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
+
     # 同义词模块
     def init_synonym(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.v3.txt',
                      f2='../data/nlpcc2016/5-class/demo1/same_p_tj_clear_dict.txt'):
@@ -1844,6 +2029,13 @@ class DataClass:
             v1 = str(l1).split('\t')[1:]
             competing_dict[k1] = set(v1)
         self.competing_dict = competing_dict
+
+    # # 20180906-1 用cos做NER
+    # def init_cos_ner_model(self, f1='ner_path'):
+    #     self.cand_s = []
+    #     f1s = ct.file_read_all_lines_strip(f1)
+    #     for l1 in f1s:
+    #         self.cand_s.append(str(l1).split('\t'))
 
     # 产生c model下的数据
     def batch_iter_competing_ps(self, model, index,
@@ -2351,7 +2543,19 @@ def test_answer():
         print(y)
         print(z)
 
-
+def test_ner_entitiy():
+    dh = DataClass("cc")
+    train_question_list_index = None
+    train_relation_list_index = None
+    model = 'valid'
+    index = 1
+    train_part = 'entity'
+    g = dh.batch_iter_cand_s(model, index,10)
+    for x, y, z,m in g:
+        print(x)
+        print(y)
+        print(z)
+    pass
 if __name__ == "__main__":
     # CC 部分的测试-和构建代码
     #    init_cc()
@@ -2359,8 +2563,8 @@ if __name__ == "__main__":
     # test_random_choose_indexs_debug()
     # test_random_choose_indexs_debug()
     # test_cc()
-    test_answer()
-
+    # test_answer()
+    test_ner_entitiy()
     # 测试生成
 
     # test_random_choose_indexs_debug()

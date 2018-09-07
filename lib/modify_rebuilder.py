@@ -15,7 +15,7 @@ if __name__ == '__main__':  #
     if False:
         pretreatment.re_write(f1='../data/nlpcc2016/10-test/nlpcc2018.kbqa.test',
                               f2='../data/nlpcc2016/10-test/test.txt')
-    if True:
+    if False:
         pretreatment.stat_all_space(f1='../data/nlpcc2016/10-test/test.txt')
     # -------------- NER识别 （从句子中生成NER）
     if False:
@@ -87,6 +87,8 @@ if __name__ == '__main__':  #
             f8='../data/nlpcc2016/4-ner/demo_20180904/extract_entitys_all_tj.resort_%d_%s.v4.8.txt' % (num, time_str),
             f9='../data/nlpcc2016/4-ner/demo_20180904/q.rdf.ms.re.top_%d_%s.v4.10.txt' % (num, time_str),
             f10='../data/nlpcc2016/4-ner/demo_20180904/ner_%d_%s.v4.10.txt' % (num, time_str),
+            # f12='../data/nlpcc2016/4-ner/extract_entitys_all_tj_sort.v1.txt',
+            f12='../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
             combine_idf=False,
             cant_contains_others=True,
             test_top_1000=True,

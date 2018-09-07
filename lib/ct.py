@@ -965,7 +965,7 @@ class ct:
     def file_wirte_list(path, list1):
         with open(path, mode='w', encoding='utf-8') as o1:
             for item in list1:
-                o1.write(item + '\n')
+                o1.write(str(item) + '\n')
 
     @staticmethod
     def list_safe_sub(list1, min1):

@@ -1634,6 +1634,16 @@ class baike_helper:
         # a1 = a1[0:total]
         return r1, a1
 
+    # 读取实体的候选实体集合，
+    # 最多不超过total个
+    def rs_cc_subject(self,  cand_s, total):
+
+        total = min(total,len(cand_s))
+        if len(cand_s)>total:
+            cand_s = random.sample(cand_s, total)
+        return cand_s
+
+
     # 读取实体所有的实体    返回所有的关系集合
     def rs_gan_synonym(self, entity_id, ps_to_except, total, r_pos, synonym_dict):
         e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
@@ -2653,6 +2663,7 @@ class baike_test:
                            f9='',
                            f10='',
                            f11='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt',
+                           f12='',
                            combine_idf=False,
                            cant_contains_others=False,
                            test_top_1000 =False,
@@ -2665,7 +2676,7 @@ class baike_test:
         # f3= '../data/nlpcc2016/ner_t1/extract_entitys2.txt'  # 抽取的结果
         bkh = baike_helper()
 
-        bkh.init_spo()  #  载入实体
+        # bkh.init_spo()  #  载入实体
         s1_p_in_q = []  # 属性p在q中的个数
         s2_p_in_q = []  # 属性p在q中的个数
         s3_p_in_q = []  # 属性p在q中的个数
@@ -2688,6 +2699,8 @@ class baike_test:
         f9s = []
         f10s = []
         f11s = ct.file_read_all_lines_strip(f11)
+        f12s = [] # 记录候选信息
+        f12s_right_index = []
         filter_list = []
 
         f6s = f6s[1:]
@@ -2916,6 +2929,17 @@ class baike_test:
                 f8s.append('\t'.join(list1))
                 exist = f1s_i_e2 in list1
 
+                # 记录位置
+                # f12s_right_index.append(list1.index(start_list))
+                f12s_temp = []
+                if start_list.__contains__(f1s_i_e2):
+                    f12s_temp.append(str(start_list.index(f1s_i_e2)))
+                else:
+                    f12s_temp.append('-1')
+                f12s_temp.extend(start_list)
+                f12s.append( '%s\t%s'%(f1s[i],'\t'.join(f12s_temp)))
+                # 记录起所在的index
+
                 # ----------------S-P模板法测试
                 # 判断top 1、2、3、real 的属性是否在其中
                 # 输入问句；根据实体得到属性集
@@ -2924,7 +2948,8 @@ class baike_test:
                 list1_i = 1
                 if len(list1)!=3:
                     print("len(list1)!=3 ")
-                for list1_s in list1:
+                if False:
+                # for list1_s in list1:
                     # s_p_in_q[list1_i] 第一个的命中
                     list1_s_dict = bkh.kbqa.get(q1_s1,'')
                     if list1_s_dict == '':
@@ -3013,6 +3038,10 @@ class baike_test:
         print(len(f8s))
         # for _ in filter_list:
         print(' '.join(filter_list))
+
+        # 记录带正确实体的候选的实体集合
+        ct.file_wirte_list(f12, f12s)
+
         return filter_list
 
     # 一次性 合并
