@@ -73,10 +73,11 @@ if __name__ == '__main__':  #
         # bkh.init_find_entity()
         # bkh.init_ner(f11)  # bkh.n_gram_dict[time] = word list
 
-    if True:
+    if False:
         time_str = ct.time_path()
         num = 1
         filter_list1 = bkt.try_test_acc_of_m1(
+            #   q.rdf.ms.re.v1.txt
             f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
             f3='../data/nlpcc2016/4-ner/extract_entitys_all_tj.v1.txt',
             # extract_entitys_v3                extract_entitys_all
@@ -124,15 +125,21 @@ if __name__ == '__main__':  #
 
     # --------------  问答
     if False:
-        filter_list2 = cf.extract_property(f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
-                                           f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+        filter_list2 = cf.extract_property(f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
+                                           f4='../data/nlpcc2016/3-questions/q.rdf.ms.re.v2.filter.txt',
                                            f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
                                            skip=0,
                                            skip_cant_match=True)
-        print('重写q.rdf.ms.re.v1.filter.txt和rdf_extract_property_origin.txt')
+        print('重写q.rdf.ms.re.v1.filter.txt和')
+    if False:
+        # "rdf_extract_property_origin.txt"
+        filter_list3 = cf.extract_property2(f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
+                                           f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
+                                           )
+        pass
         # s1 = set(filter_list1) - set(filter_list2)
         # print("filter_list1-filter_list2: %s "%' '.join(s1))
-        #
+        # 作者	30	0	75	212	1397	1511	1692	2969
         # s2 = set(filter_list2) - set(filter_list1)
         # print("%s "%' '.join(s2))
     if False:

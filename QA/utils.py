@@ -146,8 +146,9 @@ def cal_loss_and_acc_try(ori_cand, ori_neg):
     return loss, acc, loss_tmp
 
 
-def get_feature(input_q, input_a, att_W):
+def get_feature(input_q, input_a, att_W,weight_dict):
     """
+     weight_array = [ 'Wam','Wqm','Wms']
     步骤4中，计算Attention权值。这里对问题特征进行max-pooling计算最大特征，
     然后用这个特征去和答案特征计算Attention权值，然后将Attention权值应用在答案特征之上，
     最后再取max-pooling。（论文中采用取平均，但是本人实验时效果不佳）
@@ -171,10 +172,10 @@ def get_feature(input_q, input_a, att_W):
     reshape_q = tf.reshape(reshape_q, [-1, w])
     # Tensor("att_weight/Reshape_1:0", shape=(?, 600), dtype=float32)
     reshape_a = tf.reshape(input_a, [-1, w])
-    # Tensor("att_weight/Reshape_2:0", shape=(?, 600), dtype=float32)
-    M = tf.tanh(tf.add(tf.matmul(reshape_q, att_W['Wqm']), tf.matmul(reshape_a, att_W['Wam'])))
+    # Tensor("att_weight/Reshape_2:0", shape=(?, 600), dtype=float32) 'Wqm'\
+    M = tf.tanh(tf.add(tf.matmul(reshape_q, att_W[weight_dict['Wqm']]), tf.matmul(reshape_a, att_W[weight_dict['Wam']])))
     # Tensor("att_weight/Tanh:0", shape=(?, 93), dtype=float32)
-    M = tf.matmul(M, att_W['Wms'])
+    M = tf.matmul(M, att_W[weight_dict['Wms']])
     # Tensor("att_weight/MatMul_2:0", shape=(?, 1), dtype=float32)
     S = tf.reshape(M, [-1, h_a])
     # Tensor("att_weight/Reshape_3:0", shape=(?, 11), dtype=float32)

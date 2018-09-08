@@ -34,11 +34,11 @@ else:
 print("%s\t%s" % (myaddr, testid))
 
 # ==正常调参
-mark = '...答案选择系列实验中...'
+mark = '...NER实验中...'
 
 if testid == "cc_test":
     # 极限情况下调,1个问题，全关系
-    epoches = 10  # 遍历多少轮
+    epoches = 10  # 10  # 遍历多少轮
     batch_size = 10  # 1个batch的大小 # 临时改了
     evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
     evaluate_batchsize = 999999999999999  # 验证一次的问题数目,超过则使用最大的
@@ -55,12 +55,14 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 20 # 4358  # 重要！这个指示了训练的关系个数 4358
+    t_relation_num = 4358 # 4358  # 重要！这个指示了训练的关系个数 4358
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
     #####
-    train_part = 'entity'  # 属性 relation |answer | entity
+    # train_part = 'relation'  # 属性 relation |answer | entity  |  entity_relation
+    loss_part = 'entity'  # entity_relation_transE |  relation | entity | transE
+    loss_margin = 0.05  # 简书上是0.05，liu kang 那边是 0.6
     #  IR-GAN
     batch_size_gan = 1000  #100 或者 1000 ,80%的竞争属性是在600
     gan_k = 10
@@ -72,8 +74,8 @@ if testid == "cc_test":
     s_epoches = 0
     c_epoches = 0
     a_epoches = 0
-
     ner_epoches = 1
+
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
     keep_run = False  # 指示是否持续跑maybe里面的属性
@@ -84,7 +86,7 @@ if testid == "cc_test":
     pool_mode = 'competing_ps'
 
     # 模型恢复
-    restore_model = True
+    restore_model = False
     restore_path = \
          r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
     #     r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
@@ -141,10 +143,10 @@ sq_p = {
 
 cc_p = {
     # 'q.rdf': '../data/nlpcc2016/ner_t1/q.rdf.txt',  # 原始的
-    'q.rdf.m_s': '../data/nlpcc2016/3-questions/q.rdf.m_s.txt',  # 带RDF，识别出的实体的RDF
-    'q.rdf.m_s.filter': '../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',  # 且过滤掉不能使用的方便查找
+    # 'q.rdf.m_s': '../data/nlpcc2016/3-questions/q.rdf.m_s.txt',  # 带RDF，识别出的实体的RDF
+    # 'q.rdf.m_s.filter': '../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',  # 且过滤掉不能使用的方便查找
     # 'q.rdf.txt.math_s': '../data/nlpcc2016/ner_t1/q.rdf.txt.math_s.txt',  # 匹配到S的文件
-    'q.final': '../data/nlpcc2016/3-questions/q.rdf.m_s.filter.suggest.txt',  # 带RDF，识别出的实体的RDF
+    # 'q.final': '../data/nlpcc2016/3-questions/q.rdf.m_s.filter.suggest.txt',  # 带RDF，识别出的实体的RDF
     'rdf_extract_property': '../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',  # 包含属性及其对应的index
     'rdf_extract_property_test': '../data/nlpcc2016/5-class/rdf_extract_property_origin_test.txt',  # 包含属性及其对应的index
     'rdf_maybe_property': '../data/nlpcc2016/5-class/maybe_possible.txt',
@@ -168,7 +170,9 @@ cc_p = {
     'real_split_train_test': True,
     'real_split_train_test_skip': 14610,
     'use_property': use_property,  # 记录进日志
-    'train_part': train_part,  # 属性 relation |answer
+    # 'train_part': train_part,  # 属性 relation |answer
+    'loss_part': loss_part,  # 属性 relation |answer
+    'loss_margin': loss_margin,
     'combine': '../data/nlpcc2016/9-combine/step.txt',
     'combine_test': '../data/nlpcc2016/9-combine/step_test.txt',
     'test_ps': '../data/nlpcc2016/5-class/test_ps.txt',

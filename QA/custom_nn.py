@@ -47,6 +47,8 @@ class CustomNetwork:
         with tf.name_scope('inputs_%d' % self.num):
             # print(self.timesteps)
             self.ori_input_quests_tmp = tf.placeholder(tf.int32, [None, self.timesteps])  # 临时
+            self.ner_ori_input_quests_tmp = tf.placeholder(tf.int32, [None, self.timesteps])  # 临时
+
             self.ori_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 问题
             self.cand_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 正确答案
             self.neg_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 错误答案
@@ -55,6 +57,14 @@ class CustomNetwork:
             self.test_input_q = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试问题
             self.test_input_r = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试关系
             # [num_seqs,num_steps] 等价于 [timesteps, num_input]
+
+            # 20180906-1--start 用cos做NER
+            self.ner_ori_input_quests =  tf.placeholder(tf.int32, [None, self.timesteps])  # ner的问题
+            self.ner_cand_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 正确答案
+            self.ner_neg_input_quests = tf.placeholder(tf.int32, [None, self.timesteps])  # 错误答案
+            self.ner_test_input_q = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试问题
+            self.ner_test_input_r = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试关系
+            # 20180906-1--end
 
         with tf.device("/cpu:0"), tf.name_scope("embedding_layer"):
             if word_model == "tf_embedding":
@@ -71,12 +81,23 @@ class CustomNetwork:
             # embeddings = [vob_size * word_d]
             # W = tf.Variable(tf.to_float(self.embeddings), trainable=True, name="W")
             self.ori_quests_tmp = tf.nn.embedding_lookup(self.embedding, self.ori_input_quests_tmp)
+            self.ner_ori_quests_tmp = tf.nn.embedding_lookup(self.embedding, self.ori_input_quests_tmp)
+
             self.ori_quests = tf.nn.embedding_lookup(self.embedding, self.ori_input_quests)
             self.cand_quests = tf.nn.embedding_lookup(self.embedding, self.cand_input_quests)
             self.neg_quests = tf.nn.embedding_lookup(self.embedding, self.neg_input_quests)
 
             self.test_q = tf.nn.embedding_lookup(self.embedding, self.test_input_q)
             self.test_r = tf.nn.embedding_lookup(self.embedding, self.test_input_r)
+
+            # 20180906-1--start 用cos做NER
+            self.ner_ori_quests = tf.nn.embedding_lookup(self.embedding, self.ner_ori_input_quests)
+            self.ner_cand_quests = tf.nn.embedding_lookup(self.embedding, self.ner_cand_input_quests)
+            self.ner_neg_quests = tf.nn.embedding_lookup(self.embedding, self.ner_neg_input_quests)
+
+            self.ner_test_q = tf.nn.embedding_lookup(self.embedding, self.ner_test_input_q)
+            self.ner_test_r = tf.nn.embedding_lookup(self.embedding, self.ner_test_input_r)
+            # 20180906-1--end
 
             tf.summary.histogram("embedding", self.embedding)  # 可视化观看变量
 
@@ -87,7 +108,6 @@ class CustomNetwork:
 
 
         with tf.variable_scope("LSTM_scope%d" % self.num, reuse=None) as scop1:
-            dsadasda = 1  # 下面全部重用
             # self.ori_quests_tmp
             self.ori_q1 = biLSTM(self.ori_quests_tmp, self.rnn_size)  # embedding size 之前设定是300
         with tf.variable_scope("LSTM_scope%d" % self.num, reuse=True) as scop2:
@@ -107,7 +127,24 @@ class CustomNetwork:
             # print(self.test_r_out)
             # print("build_LSTM_network<<<<<<<<<<<<<<<<<")
 
+            # 20180906-1--start 用cos做NER
+        with tf.variable_scope("LSTM_scope_ner_%d" % self.num, reuse=None) as scop_ner1:
+            # self.ori_quests_tmp
+            self.ner_ori_q1 = biLSTM(self.ner_ori_quests_tmp, self.rnn_size)  # embedding size 之前设定是300
+            pass
+        with tf.variable_scope("LSTM_scope_ner_%d" % self.num, reuse=True) as scop_ner3:
+            self.ner_ori_q = biLSTM(self.ner_ori_quests, self.rnn_size)  # embedding size 之前设定是300
+            self.ner_cand_a = biLSTM(self.ner_cand_quests, self.rnn_size)
+            self.ner_neg_a = biLSTM(self.ner_neg_quests, self.rnn_size)
+            self.ner_test_q_out = biLSTM(self.ner_test_q, self.rnn_size)
+            self.ner_test_r_out = biLSTM(self.ner_test_r, self.rnn_size)
+            # 20180906-1--end
+
     def max_pooling(self):
+        '''
+        弃用
+        :return:
+        '''
         self.ori_q = max_pooling(self.ori_q)
         self.cand_a = max_pooling(self.cand_a)
         self.neg_a = max_pooling(self.neg_a)
@@ -132,13 +169,32 @@ class CustomNetwork:
             # print(self.ori_q)
             # self.ori_q_feat, self.cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W)
             # self.ori_nq_feat, self.neg_q_feat = get_feature(self.ori_q, self.neg_a, att_W)
-            self.ori_q_feat, self.cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W)
-            self.ori_nq_feat, self.neg_q_feat = get_feature(self.ori_q, self.neg_a, att_W)
-            self.test_q_out, self.test_r_out = get_feature(self.test_q_out, self.test_r_out, att_W)
+            weight_dict = dict() # [ 'Wam','Wqm','Wms']
+            weight_dict['Wam']='Wam'
+            weight_dict['Wqm'] = 'Wqm'
+            weight_dict['Wms'] = 'Wms'
+            self.ori_q_feat, self.cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W,weight_dict)
+            self.ori_nq_feat, self.neg_q_feat = get_feature(self.ori_q, self.neg_a, att_W,weight_dict)
+            self.test_q_out, self.test_r_out = get_feature(self.test_q_out, self.test_r_out, att_W,weight_dict)
 
-            # print(self.ori_q_feat)
-            # self.test_q_out, self.test_a_out = get_feature(self.test_q_out, self.test_a_out, att_W)
-            # print("cal_attention")
+            # 20180906-1--start 用cos做NER
+            ner_att_W = {
+                'ner_Wam': tf.Variable(tf.truncated_normal(
+                    [2 * self.rnn_size, self.attention_matrix_size], stddev=0.1)),
+                'ner_Wqm': tf.Variable(tf.truncated_normal(
+                    [2 * self.rnn_size, self.attention_matrix_size], stddev=0.1)),
+                'ner_Wms': tf.Variable(tf.truncated_normal(
+                    [self.attention_matrix_size, 1], stddev=0.1))
+            }
+            weight_dict = dict() # [ 'Wam','Wqm','Wms']
+            weight_dict['Wam']='ner_Wam'
+            weight_dict['Wqm'] = 'ner_Wqm'
+            weight_dict['Wms'] = 'ner_Wms'
+            # 获取特征
+            self.ner_ori_q_feat, self.ner_cand_q_feat = get_feature(self.ner_ori_q, self.ner_cand_a, ner_att_W,weight_dict)
+            self.ner_ori_nq_feat, self.ner_neg_q_feat = get_feature(self.ner_ori_q, self.ner_neg_a, ner_att_W,weight_dict)
+            self.ner_test_q_out, self.ner_test_r_out = get_feature(self.ner_test_q_out, self.ner_test_r_out, ner_att_W,weight_dict)
+            # 20180906-1--end
 
     def cos_sim(self):
 
@@ -146,8 +202,15 @@ class CustomNetwork:
         if self.need_cal_attention:
             self.ori_cand = feature2cos_sim(self.ori_q_feat, self.cand_q_feat)
             self.ori_neg = feature2cos_sim(self.ori_q_feat, self.neg_q_feat)
-            self.loss, self.acc = cal_loss_and_acc(self.ori_cand, self.ori_neg)
+            self.r_loss, self.acc = cal_loss_and_acc(self.ori_cand, self.ori_neg)
             self.test_q_r = feature2cos_sim(self.test_q_out, self.test_r_out)
+
+            # 20180906-1--start 用cos做NER
+            self.ner_ori_cand = feature2cos_sim(self.ner_ori_q_feat, self.ner_cand_q_feat)
+            self.ner_ori_neg = feature2cos_sim(self.ner_ori_q_feat, self.ner_neg_q_feat)
+            self.ner_loss, self.ner_acc = cal_loss_and_acc(self.ner_ori_cand, self.ner_ori_neg)
+            self.ner_test_q_r = feature2cos_sim(self.ner_test_q_out, self.ner_test_r_out)
+            # 20180906-1--end
         else:
             self.ori_cand = feature2cos_sim(self.ori_q, self.cand_a)
             self.ori_neg = feature2cos_sim(self.ori_q, self.neg_a)
@@ -157,9 +220,16 @@ class CustomNetwork:
             # self.ori_neg = feature2cos_sim(self.ori_q_feat, self.neg_q_feat)
             # print("ori_neg-----------")
             # print(self.ori_neg)
-            self.loss, self.acc, self.loss_tmp = cal_loss_and_acc_try(self.ori_cand, self.ori_neg)
+            self.r_loss, self.acc, self.loss_tmp = cal_loss_and_acc_try(self.ori_cand, self.ori_neg)
             # 计算问题和关系的相似度
             self.test_q_r = feature2cos_sim(self.test_q_out, self.test_r_out)
+
+            # 20180906-1--start 用cos做NER
+            self.ner_ori_cand = feature2cos_sim(self.ner_ori_q, self.ner_cand_a)
+            self.ner_ori_neg = feature2cos_sim(self.ner_ori_q, self.ner_neg_a)
+            self.ner_loss, self.ner_acc, self.ner_loss_tmp = cal_loss_and_acc_try(self.ner_ori_cand, self.ner_ori_neg)
+            self.ner_test_q_r = feature2cos_sim(self.ner_test_q_out, self.ner_test_r_out)
+            # 20180906-1--end
 
         # 输出供计算
         if self.need_gan:
@@ -169,10 +239,25 @@ class CustomNetwork:
             self.positive = tf.reduce_mean(self.score12)
             self.negative = tf.reduce_mean(self.score13)
 
-        tf.summary.histogram("loss", self.loss)  # 可视化观看变量
+
+            # 20180906-1--start 用cos做NER
+            self.ner_score12 = self.ner_ori_cand
+            self.ner_score13 = self.ner_ori_neg
+            self.ner_gan_score1 = tf.subtract(self.ner_ori_neg, self.ner_ori_cand)
+            self.ner_positive = tf.reduce_mean(self.ner_score12)
+            self.ner_negative = tf.reduce_mean(self.ner_score13)
+            # 20180906-1--end
+
+
+
+        tf.summary.histogram("r_loss", self.r_loss)  # 可视化观看变量
         tf.summary.histogram("acc", self.acc)  # 可视化观看变量
 
     def ap_attention(self):
+        '''
+        未启用
+        :return:
+        '''
         rnn_size = self.rnn_size
         ori_q = self.ori_q
         test_q = self.test_q

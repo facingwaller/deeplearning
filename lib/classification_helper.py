@@ -160,6 +160,34 @@ class classification:
         print(len(filter_list))
         return filter_list
 
+    def extract_property2(self,f1,f_out):
+        f3s = ct.file_read_all_lines_strip(f1)
+        print(len(f3s))
+        d_f3s = dict()
+        d_line_f3s = dict()
+
+        index = -1
+        for x in f3s:
+            index += 1
+            x1 = str(x).split('\t')
+            x1_3 = ct.clean_str_rel(x1[3].lower())
+            if x1_3 in d_f3s:
+                d_f3s[x1_3] += 1
+                s1 = d_line_f3s[x1_3]
+                s1.append(str(index))
+                d_line_f3s[x1_3] = s1
+            else:
+                d_f3s[x1_3] = 1
+                # 吧index 存进去
+                s1 = []
+                s1.append(str(index))
+                d_line_f3s[x1_3] = s1
+        tp = ct.sort_dict(d_f3s, True)
+        with codecs.open(f_out, mode="w", encoding="utf-8") as out:
+            for t in tp:
+                msg = '\t'.join(d_line_f3s[t[0]])
+                out.write("%s\t%s\t%s\n" % (t[0], t[1], msg))
+
 
     def pattern_class1(self, f1='../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt'):
         # 1         从答案入手做一次标注

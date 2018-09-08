@@ -6,27 +6,45 @@ import pickle
 from QA.custom_nn import CustomNetwork as bilstm
 from lib.config import config,optimizer_m,FLAGS
 
-
+'''
+#20180906-1 用cos做NER，增加对应的部分
+'''
 class Discriminator(bilstm):
     def __init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
                  need_cal_attention, need_max_pooling, word_model, embedding_weight, need_gan, first):
         bilstm.__init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
                         need_cal_attention, need_max_pooling, word_model, embedding_weight, need_gan, first)
         self.model_type = "Dis"
-        self.learning_rate = FLAGS.gan_learn_rate
-
         with tf.name_scope("output"):
             # 这个是普通的loss函数：  max( 0,0.05 -(pos-neg) )
-            self.losses = tf.maximum(0.0, tf.subtract(0.05, tf.subtract(self.score12, self.score13)))
-            self.loss = tf.reduce_sum(self.losses)  # + self.l2_reg_lambda * self.l2_loss
-
-            self.reward = 2.0 * (tf.sigmoid(tf.subtract(0.05, tf.subtract(self.score12, self.score13))) - 0.5)  # no log
-            self.positive = tf.reduce_mean(self.score12)  # cosine(q,pos)
-            self.negative = tf.reduce_mean(self.score13)  # cosine(q,neg)
+            loss_margin = float(config.cc_par('loss_margin'))
+            self.losses = tf.maximum(0.0, tf.subtract(loss_margin, tf.subtract(self.score12, self.score13)))
+            # 20180906-1--start 用cos做NER
+            self.ner_losses = tf.maximum(0.0, tf.subtract(loss_margin, tf.subtract(self.ner_score12, self.ner_score13)))
+            # 20180906-1--end
+            self.loss = 0
+            if config.cc_par('loss_part').__contains__('relation'):
+                self.loss += tf.reduce_sum(self.losses)  # + self.l2_reg_lambda * self.l2_loss
+            if config.cc_par('loss_part').__contains__('entity'):
+                self.loss += tf.reduce_sum(self.ner_losses)
+            if config.cc_par('loss_part').__contains__('transE'):
+                # self.loss += tf.reduce_sum(self.losses)
+                pass
 
             self.correct = tf.equal(0.0, self.losses)
             self.accuracy = tf.reduce_mean(tf.cast(self.correct, "float"), name="accuracy")
+
+            self.ner_correct = tf.equal(0.0, self.ner_losses)
+            self.ner_accuracy = tf.reduce_mean(tf.cast(self.ner_correct, "float"), name="ner_accuracy")
+
+            # 下面是gan的部分
+            self.reward = 2.0 * (tf.sigmoid(tf.subtract(loss_margin, tf.subtract(self.score12, self.score13))) - 0.5)  # no log
+            self.positive = tf.reduce_mean(self.score12)  # cosine(q,pos)
+            self.negative = tf.reduce_mean(self.score13)  # cosine(q,neg)
+
+
         if config.cc_par('optimizer_method') == optimizer_m.gan:
+                self.learning_rate = FLAGS.gan_learn_rate  # 仅用于 gan部分
                 self.global_step = tf.Variable(0, name="global_step", trainable=False)
                 optimizer = tf.train.AdamOptimizer(self.learning_rate) # 使用Adam 算法的Optimizer
                 grads_and_vars = optimizer.compute_gradients(self.loss)
