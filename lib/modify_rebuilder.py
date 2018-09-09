@@ -73,7 +73,7 @@ if __name__ == '__main__':  #
         # bkh.init_find_entity()
         # bkh.init_ner(f11)  # bkh.n_gram_dict[time] = word list
 
-    if False:
+    if True:
         time_str = ct.time_path()
         num = 1
         filter_list1 = bkt.try_test_acc_of_m1(
@@ -88,7 +88,7 @@ if __name__ == '__main__':  #
             f8='../data/nlpcc2016/4-ner/demo_20180904/extract_entitys_all_tj.resort_%d_%s.v4.8.txt' % (num, time_str),
             f9='../data/nlpcc2016/4-ner/demo_20180904/q.rdf.ms.re.top_%d_%s.v4.10.txt' % (num, time_str),
             f10='../data/nlpcc2016/4-ner/demo_20180904/ner_%d_%s.v4.10.txt' % (num, time_str),
-            # f12='../data/nlpcc2016/4-ner/extract_entitys_all_tj_sort.v1.txt',
+            f13='../data/nlpcc2016/4-ner/extract_entitys_all_tj.v2.txt',
             f12='../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
             combine_idf=False,
             cant_contains_others=True,
@@ -130,8 +130,8 @@ if __name__ == '__main__':  #
                                            f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
                                            skip=0,
                                            skip_cant_match=True)
-        print('重写q.rdf.ms.re.v1.filter.txt和')
-    if False:
+        print('重写q.rdf.ms.re.v1.filter.txt')
+    if True:
         # "rdf_extract_property_origin.txt"
         filter_list3 = cf.extract_property2(f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
                                            f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
@@ -155,9 +155,9 @@ if __name__ == '__main__':  #
         # F0.1.3
         # bkh.init_spo(config.cc_par('kb')) # 加载全部
         bkh.extract_kb_possible(f1='../data/nlpcc2016/2-kb/kb.v1.txt',
-                                f2="../data/nlpcc2016/2-kb/kb-use.v1[20180408].txt",
+                                f2="../data/nlpcc2016/2-kb/kb-use.v1[20180908].txt",
                                 f3='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
-                                f4='../data/nlpcc2016/4-ner/extract_entitys_all_tj.resort_3.expend.v1.txt')
+                                f4='../data/nlpcc2016/4-ner/extract_entitys_all_tj.v2.txt')
         print('根据答案抽取出精简的KB kb-use.v2.txt')
     # 怪物(2014年李民基主演韩国电影)
     # 符号(2009年松本人志执导日本电影)

@@ -1496,11 +1496,12 @@ class baike_helper:
     #         # msg = "%s %s" % ('end', str(v_base))
     #         # ct.just_log(f1 + "wiki.vector2", msg)
 
-    # 读取实体所有的实体    返回所有的关系集合
-    def read_entity_and_get_all_neg_relations_cc(self, entity_id, ps_to_except):
-        e_s = self.kbqa.get(str(entity_id).replace(' ', '').lower(), "")
+    # 读取实体的去掉指定属性的其他属性
+    def read_entity_and_get_all_neg_relations_cc(self, entity_id, ps_to_except=[]):
+        # clean_str_s
+        e_s = self.kbqa.get(ct.clean_str_s(entity_id),"")
         if e_s == "":
-            print(entity_id)
+            ct.print("cant find key:  %s " % entity_id)
             # raise Exception('entity cant find')
             ct.print(str(entity_id).replace(' ', '').lower()
                      , 'read_entity_and_get_all_neg_relations_cc')
@@ -2664,6 +2665,7 @@ class baike_test:
                            f10='',
                            f11='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt',
                            f12='',
+                           f13='',
                            combine_idf=False,
                            cant_contains_others=False,
                            test_top_1000 =False,
@@ -2699,8 +2701,9 @@ class baike_test:
         f9s = []
         f10s = []
         f11s = ct.file_read_all_lines_strip(f11)
-        f12s = [] # 记录候选信息
-        f12s_right_index = []
+        f12s = []  # 记录候选信息
+        f13s = []  # 记录候选信息
+
         filter_list = []
 
         f6s = f6s[1:]
@@ -2937,7 +2940,11 @@ class baike_test:
                 else:
                     f12s_temp.append('-1')
                 f12s_temp.extend(start_list)
-                f12s.append( '%s\t%s'%(f1s[i],'\t'.join(f12s_temp)))
+                # 去掉人工标注的符号
+                f12s.append( '%s\t%s'%(
+                    ct.clean_str_s(f1s[i].replace('1@@@@@@', '').replace('@@@@@@', ''))
+                    ,'\t'.join(f12s_temp)))
+                f13s.append('\t'.join(f12s_temp))
                 # 记录起所在的index
 
                 # ----------------S-P模板法测试
@@ -3041,6 +3048,7 @@ class baike_test:
 
         # 记录带正确实体的候选的实体集合
         ct.file_wirte_list(f12, f12s)
+        ct.file_wirte_list(f13, f13s)
 
         return filter_list
 

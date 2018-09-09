@@ -10,6 +10,8 @@ from lib.config import config,optimizer_m,FLAGS
 #20180906-1 用cos做NER，增加对应的部分
 '''
 class Discriminator(bilstm):
+
+
     def __init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
                  need_cal_attention, need_max_pooling, word_model, embedding_weight, need_gan, first):
         bilstm.__init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
@@ -18,20 +20,22 @@ class Discriminator(bilstm):
         with tf.name_scope("output"):
             # 这个是普通的loss函数：  max( 0,0.05 -(pos-neg) )
             loss_margin = float(config.cc_par('loss_margin'))
-            self.losses = tf.maximum(0.0, tf.subtract(loss_margin, tf.subtract(self.score12, self.score13)))
+            self.rel_loss = tf.maximum(0.0, tf.subtract(loss_margin, tf.subtract(self.score12, self.score13)))
             # 20180906-1--start 用cos做NER
             self.ner_losses = tf.maximum(0.0, tf.subtract(loss_margin, tf.subtract(self.ner_score12, self.ner_score13)))
             # 20180906-1--end
             self.loss = 0
             if config.cc_par('loss_part').__contains__('relation'):
-                self.loss += tf.reduce_sum(self.losses)  # + self.l2_reg_lambda * self.l2_loss
+                self.loss += tf.reduce_sum(self.rel_loss)  # + self.l2_reg_lambda * self.l2_loss
             if config.cc_par('loss_part').__contains__('entity'):
                 self.loss += tf.reduce_sum(self.ner_losses)
             if config.cc_par('loss_part').__contains__('transE'):
+
                 # self.loss += tf.reduce_sum(self.losses)
                 pass
+            print(self.loss)
 
-            self.correct = tf.equal(0.0, self.losses)
+            self.correct = tf.equal(0.0, self.rel_loss)
             self.accuracy = tf.reduce_mean(tf.cast(self.correct, "float"), name="accuracy")
 
             self.ner_correct = tf.equal(0.0, self.ner_losses)

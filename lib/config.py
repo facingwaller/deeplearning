@@ -3,6 +3,7 @@ config all par
 配置所有的参数。
 author:ender
 data:2018.1.22
+♠黑桃 ♢方块
 """
 import socket
 import tensorflow as tf
@@ -55,13 +56,13 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 4358 # 4358  # 重要！这个指示了训练的关系个数 4358
+    t_relation_num = 100 # 4358  # 重要！这个指示了训练的关系个数 4358
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
     #####
     # train_part = 'relation'  # 属性 relation |answer | entity  |  entity_relation
-    loss_part = 'entity'  # entity_relation_transE |  relation | entity | transE
+    loss_part = 'entity_relation'  # entity_relation_transE |  relation | entity | transE
     loss_margin = 0.05  # 简书上是0.05，liu kang 那边是 0.6
     #  IR-GAN
     batch_size_gan = 1000  #100 或者 1000 ,80%的竞争属性是在600
@@ -115,9 +116,8 @@ if testid == "cc_test":
     # S-NER
     ner_model = 'cos'
     ner_path = '../data/nlpcc2016/4-ner/extract_entitys_all_tj_sort.v1.txt'
-
+    ner_top_cand = 2  # 训练取2，测试取3
 else:
-
     raise Exception("testid 参数有误")
 
 # config.par('sq_fb_rdf_path')
@@ -203,7 +203,9 @@ cc_p = {
     ## NER
     'expend_es':expend_es,
     'ner_model' : ner_model,
-    'ner_path' : ner_path
+    'ner_path' : ner_path,
+    'ner_top_cand':ner_top_cand
+
 }
 
 if questions_len_test < evaluate_batchsize:
@@ -404,5 +406,7 @@ class config:
 
 if __name__ == "__main__":
     # print(config.get_model())
+    s1 = "《点石成金》是谁写的？".replace('点石成金','???')
+    print(s1)
     print(config.cc_par('train_part'))
     print(use_property)

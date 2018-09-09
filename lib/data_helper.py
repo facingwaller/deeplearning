@@ -38,6 +38,7 @@ class DataClass:
 
     entity1_in_q_list = []  # 实体在问句的候选中的部分
     entity1_in_q_cand_list = []  # 实体在问句的候选列表
+    entity1_in_q_cand_list_origin = [] # 候选实体的原始
 
     relation_list = []  # 单词版
     entity2_list = []
@@ -125,27 +126,27 @@ class DataClass:
         self.expend_es = []
         self.expend_score = []
 
-        if mode == "test":
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_valid.txt")
-            self.init_fb("../data/freebase/")
-        elif mode == "small":
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-small.txt")
-            # self.init_fb("../data/freebase/")
-        elif mode == "wq":
-            self.init_web_questions()
-            ct.print("init_web_questions finish.")
-            self.init_fb("../data/freebase/")
-            ct.print("init_fb finish.")
-            # 初始化排除的关系
-            # self.init_filter_relations()
-        elif mode == "sq":
-            self.init_simple_questions(config.par('sq_q_path'))
-            ct.print("init_simple_questions finish.")
-            self.init_fb(config.par('sq_fb_path'))
-            ct.print("init_fb finish.")
-        elif mode == "cc":
+        # if mode == "test":
+        #     self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train.txt")
+        #     self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_test.txt")
+        #     self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_valid.txt")
+        #     self.init_fb("../data/freebase/")
+        # elif mode == "small":
+        #     self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-small.txt")
+        #     # self.init_fb("../data/freebase/")
+        # elif mode == "wq":
+        #     self.init_web_questions()
+        #     ct.print("init_web_questions finish.")
+        #     self.init_fb("../data/freebase/")
+        #     ct.print("init_fb finish.")
+        #     # 初始化排除的关系
+        #     # self.init_filter_relations()
+        # elif mode == "sq":
+        #     self.init_simple_questions(config.par('sq_q_path'))
+        #     ct.print("init_simple_questions finish.")
+        #     self.init_fb(config.par('sq_fb_path'))
+        #     ct.print("init_fb finish.")
+        if mode == "cc":
 
             need_load_kb = True
             if need_load_kb:
@@ -177,58 +178,55 @@ class DataClass:
             # self.init_expend_es(config.cc_par('expend_es'))
 
             ct.print("load embedding ok!")
-
             return
-        elif mode == 'ner':
-            need_load_kb = True
-            if need_load_kb:
-                self.bh = baike_helper()
-                self.bh.init_spo(f_in=config.cc_par('kb-use'))
+        # # elif mode == 'ner':
+        # #     need_load_kb = True
+        # #     if need_load_kb:
+        # #         self.bh = baike_helper()
+        # #         self.bh.init_spo(f_in=config.cc_par('kb-use'))
+        # #
+        # #     self.init_cc_questions(config.cc_par('cc_q_path'), run_type)
+        # #     ct.print("init_cc_questions finish.")
+        # #     self.build_vocab_ner()
+        # #     # self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'), type="zh-cn")
+        # #     if run_type == 'init':  # 初始化
+        # #         return
+        # #     msg = 'questions_len_train:%s\t wrong_relation_num:%s\t' % (
+        # #         config.get_static_q_num_debug(), config.get_static_num_debug())
+        # #     ct.print(msg, 'debug')
+        # #
+        # #     self.load_all_q_r_tuple(config.get_static_q_num_debug(), config.get_static_num_debug(), is_record=True)
+        # #     self.get_max_length()
+        # #     self.q_r_2_arrary_and_padding()
+        # #     # 按比例分割训练和测试集
+        # #     self.division_data(0.8, config.cc_par('real_split_train_test'))
+        # #     self.build_embedding_weight(config.wiki_vector_path(mode))
+        #     # 加载
+        #     # if config.cc_par('synonym_mode') == 'ps_synonym':
+        #     #     self.init_synonym(config.cc_par('synonym_words'))
+        #     # if config.cc_compare('S_model', 'S_model'):
+        #     #     self.synonym_train_data(config.cc_par('synonym_train_data'))
+        #     # if config.cc_compare('pool_mode', 'competing_ps'):
+        #     #     self.init_competing_model(config.cc_par('competing_ps_path'))
+        #
+        # else:
+        #     self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
+        #     self.init_fb("../data/freebase/fb_1000/")
 
-            self.init_cc_questions(config.cc_par('cc_q_path'), run_type)
-            ct.print("init_cc_questions finish.")
-            self.build_vocab_ner()
-            # self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'), type="zh-cn")
-            if run_type == 'init':  # 初始化
-                return
-            msg = 'questions_len_train:%s\t wrong_relation_num:%s\t' % (
-                config.get_static_q_num_debug(), config.get_static_num_debug())
-            ct.print(msg, 'debug')
-
-            self.load_all_q_r_tuple(config.get_static_q_num_debug(), config.get_static_num_debug(), is_record=True)
-            self.get_max_length()
-            self.q_r_2_arrary_and_padding()
-            # 按比例分割训练和测试集
-            self.division_data(0.8, config.cc_par('real_split_train_test'))
-            self.build_embedding_weight(config.wiki_vector_path(mode))
-            # 加载
-            # if config.cc_par('synonym_mode') == 'ps_synonym':
-            #     self.init_synonym(config.cc_par('synonym_words'))
-            # if config.cc_compare('S_model', 'S_model'):
-            #     self.synonym_train_data(config.cc_par('synonym_train_data'))
-            # if config.cc_compare('pool_mode', 'competing_ps'):
-            #     self.init_competing_model(config.cc_par('competing_ps_path'))
-            ct.print("load embedding ok!")
-
-            return
-        else:
-            self.init_simple_questions(file_name="../data/simple_questions/annotated_fb_data_train-1.txt")
-            self.init_fb("../data/freebase/fb_1000/")
-
-        # 建造词汇表
-        self.build_vocab()
-        # 获取最大长度
-        self.get_max_length()
-        # 问题和关系都转换成array形式，并padding问题
-        self.q_r_2_arrary_and_padding()
-        # 按比例分割训练和测试集
-        self.division_data()
-
-        self.build_embedding_weight(config.wiki_vector_path(mode))
-        ct.print("load embedding ok!")
-
-        self.build_all_q_r_tuple(config.get_static_q_num_debug(),
-                                 config.get_static_num_debug(), is_record=False)
+        # # 建造词汇表
+        # self.build_vocab()
+        # # 获取最大长度
+        # self.get_max_length()
+        # # 问题和关系都转换成array形式，并padding问题
+        # self.q_r_2_arrary_and_padding()
+        # # 按比例分割训练和测试集
+        # self.division_data()
+        #
+        # self.build_embedding_weight(config.wiki_vector_path(mode))
+        # ct.print("load embedding ok!")
+        #
+        # self.build_all_q_r_tuple(config.get_static_q_num_debug(),
+        #                          config.get_static_num_debug(), is_record=False)
 
         # self.load_all_q_r_tuple(config.get_static_q_num_debug(),
         #                         config.get_static_num_debug(), is_record=False)
@@ -398,7 +396,8 @@ class DataClass:
             max_document_length2 = max([len(x) for x in self.question_list])  # 获取单行的最大的长度
         else:
             # 将问题/关系转换成index的系列表示
-            max_document_length1 = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
+            max_document_length1 = max([len(x.split(" ")) for x in self.question_list_origin])  # 获取单行的最大的长度
+            # max_document_length1 = max([len(x.split(" ")) for x in self.question_list])  # 获取单行的最大的长度
             max_document_length2 = max([len(x.split(" ")) for x in self.relation_list])  # 获取单行的最大的长度
         # gth = []
         # for x in self.relation_path_clear_str_all:
@@ -606,13 +605,16 @@ class DataClass:
                 # else:
                 #     self.entity1_in_q_list.append('####')  # 不存在的时候用实体替代
                 self.entity1_in_q_cand_list.append(cand_entity)
+                self.entity1_in_q_cand_list_origin.append(cand_entity)
             else:
                 real_entity_index = int(real_entity_index)
                 f1s_remove_item = cand_entity[real_entity_index]
                 self.entity1_in_q_list.append(f1s_remove_item)
-                _1 = cand_entity
+                _1 = cand_entity.copy()
                 _1.remove(f1s_remove_item)
                 self.entity1_in_q_cand_list.append(_1)
+                self.entity1_in_q_cand_list_origin.append(cand_entity)
+
             #
             self.entity1_list.append(entity1)
             self.relation_list.append(relation1)
@@ -988,7 +990,7 @@ class DataClass:
                 z_new.clear()
                 yield x_return, y_return, z_return
 
-    # 在用 生成随机的
+    # 在用，valid_batch_debug-> 生成一个问题的相关信息
     def batch_iter_wq_test_one_debug(self,  model, index,train_part='relation'):
 
         ct.print("enter:batch_iter_wq_test_one_debug")
@@ -1140,6 +1142,123 @@ class DataClass:
             return np.array(x_new), np.array(y_new), [labels, synonym_score]
         else:
             return np.array(x_new), np.array(y_new), labels
+
+    # 在用，valid_batch_debug-> 生成一个问题的相关信息
+    # 专门用于 entity_relation，同时生成候选实体和候选属性
+    # 去掉 yield 改成 一次返回完全 todo
+    def batch_iter_cc_ner_entitiy_test_one(self,  model, index,total=100):
+        x_new = []  # 问题集合
+        x_new_e = []  # 用于训练属性的问题集合（剔除实体）
+        x_new_p = []  # 用于训练实体的问题集合（剔除属性）
+        y_pos = []  # 正确的实体
+        y_neg = []  # 错误的实体
+        p_pos = []  # 正确的属性
+        p_neg = []  # 错误的属性
+
+        if model == "valid":
+            global_index = index
+        elif model == "test":
+            global_index = index + self.padding
+        else:
+            raise Exception("MODEL 参数出错")
+        if global_index >= len(self.entity1_list):
+            raise Exception('error')
+
+        # elif model == "test":
+        #     global_index = index + self.padding
+        # else:
+        #     raise Exception("MODEL 参数出错")
+
+        # log
+        ct.just_log2("info", "\nbatch_iter_cc_ner_entitiy_test_one=================================start")
+        msg = "model=%s\tid=%s\tglobal_index=%d\tq_global_index=%d" % (
+                model, index, global_index, self.question_global_index[global_index])
+        ct.print(msg)
+        ct.log3(msg)
+        ct.just_log2("info", msg)
+
+        entity1 = self.entity1_list[global_index]  # 正确的实体(别名词典中的)-字符串
+        s1_in_q = self.entity1_in_q_list[global_index]  # 正确的实体(问句中的)-字符串
+        # 测试的时候应该遵循真实顺序，而非强行加入
+        # cand_s = self.entity1_in_q_cand_list[global_index]  # 正确的实体-字符串
+        # cand_s_neg = self.bh.rs_cc_subject(cand_s, total)  # 错误的实体-字符串
+        all_cands = self.entity1_in_q_cand_list_origin[global_index]  # 正确的实体-字符串
+        all_cands = all_cands[0:3]  # 我们使用前3个来做训练
+        # all_cands = [s1_in_q] #
+        # all_cands .extend( cand_s.copy()[0:config.cc_par('ner_top_cand')]  ) # 前3占了 99%
+
+        # all_cands.append(s1_in_q)  # 全体的候选实体
+        q_current = self.question_list_origin[global_index]  # 原始的问题(未处理)-字符串
+        r_pos1 = self.relation_list[global_index]  # 正确的属性
+        ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 错误的属性
+        labels = []  # 标签
+        # 增加选出候选的neg属性
+        # 得出正确实体的错误属性 和 错误实体的全部属性
+        # cand_ps_neg = []
+        # cand_ps_neg.extend(ps_to_except1)
+        # for cand_s_neg_item in cand_s_neg:
+        #     # 得到所有可能的错误属性
+        #     temp = self.bh.read_entity_and_get_all_neg_relations_cc(cand_s_neg_item)
+        #     cand_ps_neg.extend(temp)
+        # cand_ps_neg = list(set(cand_ps_neg))
+
+        r1_msg = "r-pos: %s \t answer:%s" % (s1_in_q, self.answer_list[global_index])
+        q1_msg = "q : %s" % q_current
+        ct.just_log2("info", "s1_in_q:%s\tentity1:%s" % (s1_in_q,entity1))
+        ct.just_log2("info", q1_msg)
+        ct.just_log2("info", r1_msg)
+
+
+        _index = 0
+        for cand_s_neg_item in all_cands:
+            if s1_in_q == cand_s_neg_item :
+                d_key = entity1
+            else:
+                d_key = cand_s_neg_item
+            temp_cand_ps_neg,_as = \
+                self.bh.read_entity_and_get_all_neg_relations_cc(d_key)
+            for temp_cand_ps_neg_item in temp_cand_ps_neg:
+
+                _index += 1
+                # 使用原始的问句来避免跟验证属性的冲突
+                x_new.append(self.convert_str_to_indexlist(q_current))  # 待增加模式替换对应S
+                q_current_for_p = q_current.replace(cand_s_neg_item,'♠')  # 去掉实体的问句,用于属性训练
+                x_new_e.append(self.convert_str_to_indexlist(q_current_for_p))
+                x_new_p.append(self.convert_str_to_indexlist(q_current))
+
+                # q_current_for_e = str(q_current).replace('♠', s1_in_q)  # 去掉属性的问句,用于实体训练
+                # 问题 question_list_index[global_index]
+                # y_pos.append(self.relation_list_index[global_index])
+                y_pos.append(self.convert_str_to_indexlist(s1_in_q))  # 正确的实体
+                y_neg.append(self.convert_str_to_indexlist(cand_s_neg_item))  # 候选的实体
+                # 增加选出候选的neg属性
+                # 得出正确实体的错误属性 和 错误实体的全部属性
+                p_pos.append(self.convert_str_to_indexlist(r_pos1))
+
+                # 如果实体和属性都是正确的，则跳过
+                if cand_s_neg_item == s1_in_q and temp_cand_ps_neg_item == r_pos1:
+                    # ct.print("check: %s - %s"%(cand_s_neg_item,temp_cand_ps_neg_item))
+                    # continue
+                    labels.append(True)
+                else:
+                    labels.append(False)
+                p_neg.append(self.convert_str_to_indexlist(temp_cand_ps_neg_item))
+                r1_msg = "s-neg,r-neg: %s - %s \t q_current_for_p:%s "% \
+                         (cand_s_neg_item,temp_cand_ps_neg_item,q_current_for_p)
+                ct.just_log2("info", r1_msg)
+
+
+        # end for
+        d1 = dict()
+        d1['x_new'] = np.array(x_new)   # 0
+        d1['x_new_e'] = np.array(x_new_e)   # 1 # 用于训练属性的问题集合（无实体）
+        d1['x_new_p'] = np.array(x_new_p)   # 2
+        d1['y_pos'] = np.array(y_pos)   # 3
+        d1['y_neg'] = np.array(y_neg)   # 4
+        d1['p_pos'] = np.array(p_pos)   # 5
+        d1['p_neg'] = np.array(p_neg)   # 6
+        d1['labels'] = labels # 7
+        return d1
 
     # batch_iter_cc_answer_test_one_debug
     # 答案选择模块的产生训练或者测试的问题
@@ -1768,16 +1887,6 @@ class DataClass:
         _index = -1
         for r1 in rs:
             _index += 1
-            # r1_text = r1
-            # r1_split = [r1]
-            # r1 = self.converter.text_to_arr_list(r1_split)
-            # r1_text = self.converter.arr_to_text_no_unk(r1)
-            # ct.log3(r1_text)
-            # ct.just_log2("info", "r1_neg in test %s" % r1_text)
-            # ct.print(r1_text)
-            # ct.just_log2("info","neg-r test:" + r1_text)
-
-            # r1 = ct.padding_line(r1, self.max_document_length, padding_num)
 
             # 使用原始的问句来避免跟验证属性的冲突
             x_new.append(self.convert_str_to_indexlist(self.question_list_origin[global_index]))
@@ -1803,6 +1912,144 @@ class DataClass:
         #     print("bug")
         # ct.print("leave:batch_iter_gan_train")
         return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
+
+    # 20180906-1 生成待训练的CAND_S对应的P
+    def batch_iter_cand_s_p(self,model, index,total=100):
+
+        x_new = []  # 问题集合
+        x_new_e = []  # 用于训练实体的问题集合
+        x_new_p = []  # 用于训练属性的问题集合
+        y_pos = []  # 正确的实体
+        y_neg = []  # 错误的实体
+        p_pos = []  # 正确的属性
+        p_neg = []  # 错误的属性
+
+        # if model == "valid" or model == "train":
+        global_index = index
+        if global_index >= len(self.entity1_list):
+            raise Exception('error')
+
+        # elif model == "test":
+        #     global_index = index + self.padding
+        # else:
+        #     raise Exception("MODEL 参数出错")
+
+        # log
+        ct.just_log2("info", "\nbatch_iter_cand_s_p=================================start")
+        msg = "model=%s\tid=%s\tglobal_index=%d\tq_global_index=%d" % (
+                model, index, global_index, self.question_global_index[global_index])
+        ct.print(msg)
+        ct.log3(msg)
+        ct.just_log2("info", msg)
+
+        entity1 = self.entity1_list[global_index]  # 正确的实体(别名词典中的)-字符串
+        s1_in_q = self.entity1_in_q_list[global_index]  # 正确的实体(问句中的)-字符串
+        cand_s = self.entity1_in_q_cand_list[global_index]  # 候选/错误的实体-list
+        # cand_s_neg = self.bh.rs_cc_subject(cand_s, total)  # 错误的实体-字87
+        all_cands = [s1_in_q]
+        all_cands .extend( cand_s.copy()[0:config.cc_par('ner_top_cand')]) # 前3占了 99%
+        # all_cands.append(s1_in_q)  # 全体的候选实体
+        q_current = self.question_list_origin[global_index]  # 原始的问题(未处理)-字符串
+        r_pos1 = self.relation_list[global_index]  # 正确的属性
+        ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 错误的属性
+        # 增加选出候选的neg属性
+        # 得出正确实体的错误属性 和 错误实体的全部属性
+        # cand_ps_neg = []
+        # cand_ps_neg.extend(ps_to_except1)
+        # for cand_s_neg_item in cand_s_neg:
+        #     # 得到所有可能的错误属性
+        #     temp = self.bh.read_entity_and_get_all_neg_relations_cc(cand_s_neg_item)
+        #     cand_ps_neg.extend(temp)
+        # cand_ps_neg = list(set(cand_ps_neg))
+
+        r1_msg = "e/r-pos: %s %s \t answer:%s" % (s1_in_q,r_pos1, self.answer_list[global_index])
+        q1_msg = "q : %s" % q_current
+        ct.just_log2("info", "s1_in_q:%s\tentity1:%s" % (s1_in_q,entity1))
+        ct.just_log2("info", q1_msg)
+        ct.just_log2("info", r1_msg)
+
+        # 加入所有的
+        # todo : total is get_static_num_debug
+        # if train_part == 'relation':
+        #     rs = rs
+        # else:
+        #     rs = a_s
+        # rs_len = len(cand_s_neg)
+        # num = min(config.get_static_num_debug(), rs_len)
+        # cand_s_neg = cand_s_neg[0:num]
+
+        _index = 0
+        for cand_s_neg_item in all_cands:
+            # 增加选出候选的neg属性
+            # 得出正确实体的错误属性 和 错误实体的全部属性
+            # key 是指存在于字典中的KEY
+            if s1_in_q == cand_s_neg_item :
+                d_key = entity1
+            else:
+                d_key = cand_s_neg_item
+            temp_cand_ps_neg,_as = \
+                self.bh.read_entity_and_get_all_neg_relations_cc(d_key)
+
+            for temp_cand_ps_neg_item in temp_cand_ps_neg:
+                # 如果实体和属性都是正确的，则跳过
+                if cand_s_neg_item == s1_in_q and temp_cand_ps_neg_item == r_pos1:
+                    # ct.print("check: %s - %s"%(cand_s_neg_item,temp_cand_ps_neg_item))
+                    continue
+                _index += 1
+                # 使用原始的问句来避免跟验证属性的冲突
+                x_new.append(self.convert_str_to_indexlist(q_current))  # 待增加模式替换对应S
+                q_current_for_p = q_current.replace(cand_s_neg_item, '♠')  # 去掉实体的问句,用于属性训练
+                x_new_e.append(self.convert_str_to_indexlist(q_current_for_p))
+                # q_current_for_e = str(q_current).replace('♠', s1_in_q)  # 去掉属性的问句,用于实体训练
+                # 问题 question_list_index[global_index]
+                # y_pos.append(self.relation_list_index[global_index])
+                y_pos.append(self.convert_str_to_indexlist(s1_in_q))  # 正确的实体
+                y_neg.append(self.convert_str_to_indexlist(cand_s_neg_item))  # 候选的实体
+                p_pos.append(self.convert_str_to_indexlist(r_pos1))
+                p_neg.append(self.convert_str_to_indexlist(temp_cand_ps_neg_item))
+                r1_msg = "s-neg,r-neg: %s - %s ;q: %s" % \
+                         (cand_s_neg_item,temp_cand_ps_neg_item,q_current_for_p)
+                ct.just_log2("info", r1_msg)
+
+                if _index % total == 0 and _index != 0:
+                    # x_new = []  # 问题集合
+                    # x_new_e = []  # 用于训练实体的问题集合
+                    # x_new_p = []  # 用于训练属性的问题集合
+                    # y_pos = []  # 正确的实体
+                    # y_neg = []  # 错误的实体
+                    # p_pos = []  # 正确的属性
+                    # p_neg = []  # 错误的属性
+                    d1 = dict()
+                    d1['x_new'] = np.array(x_new)   # 0
+                    d1['x_new_e'] = np.array(x_new_e)   # 1
+                    d1['x_new_p'] = np.array(x_new_p)   # 2
+                    d1['y_pos'] = np.array(y_pos)   # 3
+                    d1['y_neg'] = np.array(y_neg)   # 4
+                    d1['p_pos'] = np.array(p_pos)   # 5
+                    d1['p_neg'] = np.array(p_neg)   # 6
+                    x_new.clear()
+                    x_new_e.clear()
+                    x_new_p.clear()
+                    y_pos.clear()
+                    y_neg.clear()
+                    p_pos.clear()
+                    p_neg.clear()
+                    yield d1
+                    #  d1['x_new'],d1['x_new_e'], d1['x_new_p'], d1['y_pos'],d1['y_neg'],d1['p_pos'],d1['p_neg']
+        # ct.just_log2("info","len: " + str(len(x_new)) + "  " + str(len(y_pos))+" "+str(len(np.array(y_neg))))
+        # r_len = len(x_new)
+        #
+        # return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
+
+            # if len(x_new)>0: # 把剩下的也返回回去
+            #     d1['x_new'] = np.array(x_new)  # 0
+            #     d1['x_new_e'] = np.array(x_new_e)  # 1
+            #     d1['x_new_p'] = np.array(x_new_p)  # 2
+            #     d1['y_pos'] = np.array(y_pos)  # 3
+            #     d1['y_neg'] = np.array(y_neg)  # 4
+            #     d1['p_pos'] = np.array(p_pos)  # 5
+            #     d1['p_neg'] = np.array(p_neg)  # 6
+            #     yield d1
 
     # 同义词模块
     def init_synonym(self, f1='../data/nlpcc2016/5-class/demo1/same_p_tj.v3.txt',

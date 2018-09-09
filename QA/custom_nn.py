@@ -67,12 +67,21 @@ class CustomNetwork:
             # 20180906-1--end
 
         with tf.device("/cpu:0"), tf.name_scope("embedding_layer"):
-            if word_model == "tf_embedding":
+            # if word_model == "tf_embedding":
                 # 方法1，char-rnn中的办法,如果报错就改成方法2，随机初始化一个W / embedding
-                self.embedding = tf.get_variable('embedding', [self.embedding_size, self.word_dimension],
-                                                 trainable=True)
-            elif word_model == "word2vec_train":
-                self.embedding = tf.Variable(tf.to_float(embedding_weight), trainable=True, name="W")
+            # 目前只使用这个办法,考虑NER和REL使用两套向量，理由是他们每个的侧重点不一致。20180909
+            # self.embedding = tf.get_variable('embedding', [self.embedding_size, self.word_dimension],
+            #                                      trainable=True)
+            # 临时测试
+            # self.ner_embedding = tf.get_variable('ner_embedding', [self.embedding_size, self.word_dimension],
+            #                                  trainable=True)
+
+            #
+            # elif word_model == "word2vec_train":
+            self.embedding = tf.Variable(tf.to_float(embedding_weight), trainable=True, name="W")
+            # 临时测试
+            self.ner_embedding = tf.Variable(tf.to_float(embedding_weight), trainable=True, name="ner_W")
+
                 # W = tf.Variable(tf.to_float(self.embeddings), trainable=True, name="W")
                 # self.embedding_weight = tf.get_variable('embedding', embedding_weight, trainable=True)
             # embedding = tf.Variable(tf.random_normal([self.num_classes, self.embedding_size]))
@@ -91,12 +100,12 @@ class CustomNetwork:
             self.test_r = tf.nn.embedding_lookup(self.embedding, self.test_input_r)
 
             # 20180906-1--start 用cos做NER
-            self.ner_ori_quests = tf.nn.embedding_lookup(self.embedding, self.ner_ori_input_quests)
-            self.ner_cand_quests = tf.nn.embedding_lookup(self.embedding, self.ner_cand_input_quests)
-            self.ner_neg_quests = tf.nn.embedding_lookup(self.embedding, self.ner_neg_input_quests)
+            self.ner_ori_quests = tf.nn.embedding_lookup(self.ner_embedding, self.ner_ori_input_quests)
+            self.ner_cand_quests = tf.nn.embedding_lookup(self.ner_embedding, self.ner_cand_input_quests)
+            self.ner_neg_quests = tf.nn.embedding_lookup(self.ner_embedding, self.ner_neg_input_quests)
 
-            self.ner_test_q = tf.nn.embedding_lookup(self.embedding, self.ner_test_input_q)
-            self.ner_test_r = tf.nn.embedding_lookup(self.embedding, self.ner_test_input_r)
+            self.ner_test_q = tf.nn.embedding_lookup(self.ner_embedding, self.ner_test_input_q)
+            self.ner_test_r = tf.nn.embedding_lookup(self.ner_embedding, self.ner_test_input_r)
             # 20180906-1--end
 
             tf.summary.histogram("embedding", self.embedding)  # 可视化观看变量
@@ -130,10 +139,10 @@ class CustomNetwork:
             # 20180906-1--start 用cos做NER
         with tf.variable_scope("LSTM_scope_ner_%d" % self.num, reuse=None) as scop_ner1:
             # self.ori_quests_tmp
-            self.ner_ori_q1 = biLSTM(self.ner_ori_quests_tmp, self.rnn_size)  # embedding size 之前设定是300
+            self.ner_ori_q1 = biLSTM(self.ner_ori_quests_tmp, self.rnn_size)
             pass
-        with tf.variable_scope("LSTM_scope_ner_%d" % self.num, reuse=True) as scop_ner3:
-            self.ner_ori_q = biLSTM(self.ner_ori_quests, self.rnn_size)  # embedding size 之前设定是300
+        with tf.variable_scope("LSTM_scope_ner_%d" % self.num, reuse=True) as scop_ner2:
+            self.ner_ori_q = biLSTM(self.ner_ori_quests, self.rnn_size)
             self.ner_cand_a = biLSTM(self.ner_cand_quests, self.rnn_size)
             self.ner_neg_a = biLSTM(self.ner_neg_quests, self.rnn_size)
             self.ner_test_q_out = biLSTM(self.ner_test_q, self.rnn_size)
@@ -202,7 +211,7 @@ class CustomNetwork:
         if self.need_cal_attention:
             self.ori_cand = feature2cos_sim(self.ori_q_feat, self.cand_q_feat)
             self.ori_neg = feature2cos_sim(self.ori_q_feat, self.neg_q_feat)
-            self.r_loss, self.acc = cal_loss_and_acc(self.ori_cand, self.ori_neg)
+            self.r_loss, self.r_acc = cal_loss_and_acc(self.ori_cand, self.ori_neg)
             self.test_q_r = feature2cos_sim(self.test_q_out, self.test_r_out)
 
             # 20180906-1--start 用cos做NER
@@ -210,6 +219,7 @@ class CustomNetwork:
             self.ner_ori_neg = feature2cos_sim(self.ner_ori_q_feat, self.ner_neg_q_feat)
             self.ner_loss, self.ner_acc = cal_loss_and_acc(self.ner_ori_cand, self.ner_ori_neg)
             self.ner_test_q_r = feature2cos_sim(self.ner_test_q_out, self.ner_test_r_out)
+            self.q_r_ner_cosine = tf.add(self.test_q_r,self.ner_test_q_r)
             # 20180906-1--end
         else:
             self.ori_cand = feature2cos_sim(self.ori_q, self.cand_a)
@@ -229,7 +239,7 @@ class CustomNetwork:
             self.ner_ori_neg = feature2cos_sim(self.ner_ori_q, self.ner_neg_a)
             self.ner_loss, self.ner_acc, self.ner_loss_tmp = cal_loss_and_acc_try(self.ner_ori_cand, self.ner_ori_neg)
             self.ner_test_q_r = feature2cos_sim(self.ner_test_q_out, self.ner_test_r_out)
-            # 20180906-1--end
+
 
         # 输出供计算
         if self.need_gan:
@@ -250,8 +260,24 @@ class CustomNetwork:
 
 
 
-        tf.summary.histogram("r_loss", self.r_loss)  # 可视化观看变量
-        tf.summary.histogram("acc", self.acc)  # 可视化观看变量
+        tf.summary.histogram("loss", self.r_loss)  # 可视化观看变量
+        tf.summary.histogram("ner_loss", self.ner_loss)  # 可视化观看变量
+        tf.summary.histogram("r_acc", self.r_acc)  # 可视化观看变量
+
+    def transe_calculate_loss(self, distance_pos, distance_neg, margin):
+        # distance_pos = head_pos + relation_pos - tail_pos
+        # distance_neg = head_neg + relation_neg - tail_neg
+        self.score_func = 'L1'
+        with tf.name_scope('transe_loss'):
+            if self.score_func == 'L1':  # L1 score
+                score_pos = tf.reduce_sum(tf.abs(distance_pos), axis=1)
+                score_neg = tf.reduce_sum(tf.abs(distance_neg), axis=1)
+            else:  # L2 score
+                score_pos = tf.reduce_sum(tf.square(distance_pos), axis=1)
+                score_neg = tf.reduce_sum(tf.square(distance_neg), axis=1)
+            loss = tf.reduce_sum(tf.nn.relu(margin + score_pos - score_neg), name='max_margin_loss')
+            # 即 max(features, 0)。即将矩阵中每行的非最大值置0。
+        return loss
 
     def ap_attention(self):
         '''
