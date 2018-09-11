@@ -1145,15 +1145,18 @@ class DataClass:
 
     # 在用，valid_batch_debug-> 生成一个问题的相关信息
     # 专门用于 entity_relation，同时生成候选实体和候选属性
-    # 去掉 yield 改成 一次返回完全 todo
+    # 去掉 yield 改成 一次返回完全
     def batch_iter_cc_ner_entitiy_test_one(self,  model, index,total=100):
-        x_new = []  # 问题集合
-        x_new_e = []  # 用于训练属性的问题集合（剔除实体）
-        x_new_p = []  # 用于训练实体的问题集合（剔除属性）
-        y_pos = []  # 正确的实体
-        y_neg = []  # 错误的实体
+        q_ = []  # 问题集合
+        q_p = []  # 用于训练属性的问题集合（剔除实体）
+        q_s = []  # 用于训练实体的问题集合（剔除属性）
+        q_a = []
+        s_pos = []  # 正确的实体
+        s_neg = []  # 错误的实体
         p_pos = []  # 正确的属性
         p_neg = []  # 错误的属性
+        a_pos = []  # 正确的答案
+        a_neg = []  # 错误的答案
 
         if model == "valid":
             global_index = index
@@ -1192,6 +1195,8 @@ class DataClass:
         r_pos1 = self.relation_list[global_index]  # 正确的属性
         ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 错误的属性
         labels = []  # 标签
+        a_in_q_pos = self.answer_list[global_index]
+
         # 增加选出候选的neg属性
         # 得出正确实体的错误属性 和 错误实体的全部属性
         # cand_ps_neg = []
@@ -1202,7 +1207,7 @@ class DataClass:
         #     cand_ps_neg.extend(temp)
         # cand_ps_neg = list(set(cand_ps_neg))
 
-        r1_msg = "r-pos: %s \t answer:%s" % (s1_in_q, self.answer_list[global_index])
+        r1_msg = "r-pos: %s \t answer:%s" % (r_pos1, a_in_q_pos)
         q1_msg = "q : %s" % q_current
         ct.just_log2("info", "s1_in_q:%s\tentity1:%s" % (s1_in_q,entity1))
         ct.just_log2("info", q1_msg)
@@ -1215,49 +1220,59 @@ class DataClass:
                 d_key = entity1
             else:
                 d_key = cand_s_neg_item
-            temp_cand_ps_neg,_as = \
+            temp_cand_ps_neg,temp_cand_as_neg = \
                 self.bh.read_entity_and_get_all_neg_relations_cc(d_key)
-            for temp_cand_ps_neg_item in temp_cand_ps_neg:
+            for _cand_ps_neg_item,_as in \
+                    zip(temp_cand_ps_neg,temp_cand_as_neg):
 
                 _index += 1
                 # 使用原始的问句来避免跟验证属性的冲突
-                x_new.append(self.convert_str_to_indexlist(q_current))  # 待增加模式替换对应S
+                q_.append(self.convert_str_to_indexlist(q_current))  # 待增加模式替换对应S
                 q_current_for_p = q_current.replace(cand_s_neg_item,'♠')  # 去掉实体的问句,用于属性训练
-                x_new_e.append(self.convert_str_to_indexlist(q_current_for_p))
-                x_new_p.append(self.convert_str_to_indexlist(q_current))
+                q_p.append(self.convert_str_to_indexlist(q_current_for_p))
+                q_s.append(self.convert_str_to_indexlist(q_current))
+                q_current_for_a = q_current_for_p.replace(_cand_ps_neg_item, '♢')  # 去掉属性的问句,用于属性训练
+                q_a.append(self.convert_str_to_indexlist(q_current_for_a))
 
                 # q_current_for_e = str(q_current).replace('♠', s1_in_q)  # 去掉属性的问句,用于实体训练
                 # 问题 question_list_index[global_index]
                 # y_pos.append(self.relation_list_index[global_index])
-                y_pos.append(self.convert_str_to_indexlist(s1_in_q))  # 正确的实体
-                y_neg.append(self.convert_str_to_indexlist(cand_s_neg_item))  # 候选的实体
+                s_pos.append(self.convert_str_to_indexlist(s1_in_q))  # 正确的实体
+                s_neg.append(self.convert_str_to_indexlist(cand_s_neg_item))  # 候选的实体
                 # 增加选出候选的neg属性
                 # 得出正确实体的错误属性 和 错误实体的全部属性
                 p_pos.append(self.convert_str_to_indexlist(r_pos1))
-
+                p_neg.append(self.convert_str_to_indexlist(_cand_ps_neg_item))
+                a_pos.append(self.convert_str_to_indexlist(a_in_q_pos))
+                a_neg.append(self.convert_str_to_indexlist(_as))
                 # 如果实体和属性都是正确的，则跳过
-                if cand_s_neg_item == s1_in_q and temp_cand_ps_neg_item == r_pos1:
+                if cand_s_neg_item == s1_in_q and _cand_ps_neg_item == r_pos1:
+                        # and _as == a_in_q_pos:
                     # ct.print("check: %s - %s"%(cand_s_neg_item,temp_cand_ps_neg_item))
                     # continue
                     labels.append(True)
                 else:
                     labels.append(False)
-                p_neg.append(self.convert_str_to_indexlist(temp_cand_ps_neg_item))
-                r1_msg = "s-neg,r-neg: %s - %s \t q_current_for_p:%s "% \
-                         (cand_s_neg_item,temp_cand_ps_neg_item,q_current_for_p)
+                r1_msg = "s-neg,r-neg,a-neg: %s - %s - %s \t q_current_for_a:%s " % \
+                         (cand_s_neg_item,_cand_ps_neg_item,_as,q_current_for_a)
                 ct.just_log2("info", r1_msg)
-
-
         # end for
         d1 = dict()
-        d1['x_new'] = np.array(x_new)   # 0
-        d1['x_new_e'] = np.array(x_new_e)   # 1 # 用于训练属性的问题集合（无实体）
-        d1['x_new_p'] = np.array(x_new_p)   # 2
-        d1['y_pos'] = np.array(y_pos)   # 3
-        d1['y_neg'] = np.array(y_neg)   # 4
+        d1['q_'] = np.array(q_)   # 0
+        d1['q_p'] = np.array(q_p)   # 1 # 用于训练属性的问题集合（无实体）
+        d1['q_s'] = np.array(q_s)   # 2
+        d1['q_a'] = np.array(q_a)  #
+        d1['s_pos'] = np.array(s_pos)   # 3
+        d1['s_neg'] = np.array(s_neg)   # 4
         d1['p_pos'] = np.array(p_pos)   # 5
         d1['p_neg'] = np.array(p_neg)   # 6
-        d1['labels'] = labels # 7
+        d1['labels'] = labels  # 7
+        d1['a_pos'] = np.array(a_pos)  # 5
+        d1['a_neg'] = np.array(a_neg)  # 6
+
+        # assert labels.__contains__(True) # 必须包含一个正确的答案?
+        if not labels.__contains__(True):
+            ct.print('%s\t%s\t%s '%(q_current,r_pos1,a_in_q_pos),'bad_q')
         return d1
 
     # batch_iter_cc_answer_test_one_debug
@@ -1916,13 +1931,16 @@ class DataClass:
     # 20180906-1 生成待训练的CAND_S对应的P
     def batch_iter_cand_s_p(self,model, index,total=100):
 
-        x_new = []  # 问题集合
-        x_new_e = []  # 用于训练实体的问题集合
-        x_new_p = []  # 用于训练属性的问题集合
-        y_pos = []  # 正确的实体
-        y_neg = []  # 错误的实体
+        q_ = []  # 问题集合  q_
+        q_p = []  # 用于训练属性的问题集合 q_p
+        q_s = []  # 用于训练的实体问题集合 q_s
+        q_a = []  # 用于答案属性的问题集合
+        s_pos = []  # 正确的实体 s_pos
+        s_neg = []  # 错误的实体 s_neg
         p_pos = []  # 正确的属性
         p_neg = []  # 错误的属性
+        a_pos = []  # 正确的答案
+        a_neg = []  # 错误的答案
 
         # if model == "valid" or model == "train":
         global_index = index
@@ -1952,6 +1970,7 @@ class DataClass:
         q_current = self.question_list_origin[global_index]  # 原始的问题(未处理)-字符串
         r_pos1 = self.relation_list[global_index]  # 正确的属性
         ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 错误的属性
+        a_in_q_pos = self.answer_list[global_index]
         # 增加选出候选的neg属性
         # 得出正确实体的错误属性 和 错误实体的全部属性
         # cand_ps_neg = []
@@ -1962,7 +1981,7 @@ class DataClass:
         #     cand_ps_neg.extend(temp)
         # cand_ps_neg = list(set(cand_ps_neg))
 
-        r1_msg = "e/r-pos: %s %s \t answer:%s" % (s1_in_q,r_pos1, self.answer_list[global_index])
+        r1_msg = "e/r-pos: %s %s \t answer:%s" % (s1_in_q,r_pos1, a_in_q_pos)
         q1_msg = "q : %s" % q_current
         ct.just_log2("info", "s1_in_q:%s\tentity1:%s" % (s1_in_q,entity1))
         ct.just_log2("info", q1_msg)
@@ -1987,55 +2006,63 @@ class DataClass:
                 d_key = entity1
             else:
                 d_key = cand_s_neg_item
-            temp_cand_ps_neg,_as = \
+            temp_cand_ps_neg,temp_cand_as_neg = \
                 self.bh.read_entity_and_get_all_neg_relations_cc(d_key)
 
-            for temp_cand_ps_neg_item in temp_cand_ps_neg:
+            for _cand_ps_neg_item,_as in \
+                    zip(temp_cand_ps_neg,temp_cand_as_neg):
                 # 如果实体和属性都是正确的，则跳过
-                if cand_s_neg_item == s1_in_q and temp_cand_ps_neg_item == r_pos1:
+                if cand_s_neg_item == s1_in_q and _cand_ps_neg_item == r_pos1:
                     # ct.print("check: %s - %s"%(cand_s_neg_item,temp_cand_ps_neg_item))
+                    continue
+                if _as == a_pos:
                     continue
                 _index += 1
                 # 使用原始的问句来避免跟验证属性的冲突
-                x_new.append(self.convert_str_to_indexlist(q_current))  # 待增加模式替换对应S
+                q_.append(self.convert_str_to_indexlist(q_current))  # 待增加模式替换对应S
                 q_current_for_p = q_current.replace(cand_s_neg_item, '♠')  # 去掉实体的问句,用于属性训练
-                x_new_e.append(self.convert_str_to_indexlist(q_current_for_p))
+                q_p.append(self.convert_str_to_indexlist(q_current_for_p))
+                q_current_for_a = q_current_for_p.replace(_cand_ps_neg_item, '♢')  # 去掉属性的问句,用于属性训练
+                q_a.append(self.convert_str_to_indexlist(q_current_for_a))
                 # q_current_for_e = str(q_current).replace('♠', s1_in_q)  # 去掉属性的问句,用于实体训练
                 # 问题 question_list_index[global_index]
                 # y_pos.append(self.relation_list_index[global_index])
-                y_pos.append(self.convert_str_to_indexlist(s1_in_q))  # 正确的实体
-                y_neg.append(self.convert_str_to_indexlist(cand_s_neg_item))  # 候选的实体
+                s_pos.append(self.convert_str_to_indexlist(s1_in_q))  # 正确的实体
+                s_neg.append(self.convert_str_to_indexlist(cand_s_neg_item))  # 候选的实体
                 p_pos.append(self.convert_str_to_indexlist(r_pos1))
-                p_neg.append(self.convert_str_to_indexlist(temp_cand_ps_neg_item))
-                r1_msg = "s-neg,r-neg: %s - %s ;q: %s" % \
-                         (cand_s_neg_item,temp_cand_ps_neg_item,q_current_for_p)
+                p_neg.append(self.convert_str_to_indexlist(_cand_ps_neg_item))
+                a_pos.append(self.convert_str_to_indexlist(a_in_q_pos))
+                a_neg.append(self.convert_str_to_indexlist(_as))
+
+                r1_msg = "s-neg,r-neg,a-neg: %s - %s - %s \t q_current_for_a:%s " % \
+                         (cand_s_neg_item,_cand_ps_neg_item,_as,q_current_for_a)
                 ct.just_log2("info", r1_msg)
 
                 if _index % total == 0 and _index != 0:
-                    # x_new = []  # 问题集合
-                    # x_new_e = []  # 用于训练实体的问题集合
-                    # x_new_p = []  # 用于训练属性的问题集合
-                    # y_pos = []  # 正确的实体
-                    # y_neg = []  # 错误的实体
-                    # p_pos = []  # 正确的属性
-                    # p_neg = []  # 错误的属性
                     d1 = dict()
-                    d1['x_new'] = np.array(x_new)   # 0
-                    d1['x_new_e'] = np.array(x_new_e)   # 1
-                    d1['x_new_p'] = np.array(x_new_p)   # 2
-                    d1['y_pos'] = np.array(y_pos)   # 3
-                    d1['y_neg'] = np.array(y_neg)   # 4
+                    d1['q_'] = np.array(q_)   # 0
+                    d1['q_p'] = np.array(q_p)   # 1
+                    d1['q_s'] = np.array(q_s)   # 2
+                    d1['q_a'] = np.array(q_a)  # 2
+                    d1['s_pos'] = np.array(s_pos)   # 3
+                    d1['s_neg'] = np.array(s_neg)   # 4
                     d1['p_pos'] = np.array(p_pos)   # 5
                     d1['p_neg'] = np.array(p_neg)   # 6
-                    x_new.clear()
-                    x_new_e.clear()
-                    x_new_p.clear()
-                    y_pos.clear()
-                    y_neg.clear()
+                    d1['a_pos'] = np.array(a_pos)  # 5
+                    d1['a_neg'] = np.array(a_neg)  # 6
+                    q_.clear()
+                    q_p.clear()
+                    q_s.clear()
+                    q_a.clear()
+                    s_pos.clear()
+                    s_neg.clear()
                     p_pos.clear()
                     p_neg.clear()
+                    a_pos.clear()
+                    a_neg.clear()
+                    
                     yield d1
-                    #  d1['x_new'],d1['x_new_e'], d1['x_new_p'], d1['y_pos'],d1['y_neg'],d1['p_pos'],d1['p_neg']
+        #  d1['x_new'],d1['x_new_e'], d1['x_new_p'], d1['y_pos'],d1['y_neg'],d1['p_pos'],d1['p_neg']
         # ct.just_log2("info","len: " + str(len(x_new)) + "  " + str(len(y_pos))+" "+str(len(np.array(y_neg))))
         # r_len = len(x_new)
         #

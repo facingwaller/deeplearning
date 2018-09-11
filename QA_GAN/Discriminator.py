@@ -23,17 +23,25 @@ class Discriminator(bilstm):
             self.rel_loss = tf.maximum(0.0, tf.subtract(loss_margin, tf.subtract(self.score12, self.score13)))
             # 20180906-1--start 用cos做NER
             self.ner_losses = tf.maximum(0.0, tf.subtract(loss_margin, tf.subtract(self.ner_score12, self.ner_score13)))
+            self.ans_losses = tf.maximum(0.0, tf.subtract(loss_margin, tf.subtract(self.ans_score12, self.ans_score13)))
             # 20180906-1--end
             self.loss = 0
-            if config.cc_par('loss_part').__contains__('relation'):
-                self.loss += tf.reduce_sum(self.rel_loss)  # + self.l2_reg_lambda * self.l2_loss
-            if config.cc_par('loss_part').__contains__('entity'):
-                self.loss += tf.reduce_sum(self.ner_losses)
-            if config.cc_par('loss_part').__contains__('transE'):
-
-                # self.loss += tf.reduce_sum(self.losses)
-                pass
-            print(self.loss)
+            print(config.cc_par('loss_part'))
+            # if config.cc_par('loss_part').__contains__('relation'):
+            self.loss_rel = tf.reduce_sum(self.rel_loss)  # + self.l2_reg_lambda * self.l2_loss
+            self.loss_ner = tf.reduce_sum(self.ner_losses)
+            # if config.cc_par('loss_part').__contains__('entity'):
+            self.loss_e_r = tf.reduce_sum(self.ner_losses)+tf.reduce_sum(self.rel_loss)
+            # if config.cc_par('loss_part').__contains__('answer'):
+            #     self.loss += tf.reduce_sum(self.ans_losses)
+            self.loss_ans = tf.reduce_sum(self.ans_losses)
+            # if config.cc_par('loss_part').__contains__('transE'):
+            self.loss_transe = tf.reduce_sum(self.transe_loss)
+            self.loss_e_r_transe = tf.reduce_sum(self.ner_losses)+tf.reduce_sum(self.rel_loss)+\
+                            tf.reduce_sum(self.transe_loss)
+            # print('当前使用了3个loss')
+                # self.transe_loss
+            # print(self.loss)
 
             self.correct = tf.equal(0.0, self.rel_loss)
             self.accuracy = tf.reduce_mean(tf.cast(self.correct, "float"), name="accuracy")
@@ -66,12 +74,23 @@ class Discriminator(bilstm):
                 capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in grads_and_vars if grad is not None]
                 self.train_op = optimizer.apply_gradients(capped_gvs, global_step=self.global_step)
         else:  # origin
-                self.global_step = tf.Variable(0, name="globle_step", trainable=False)
-                tvars = tf.trainable_variables()
-                grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars),
-                                                  FLAGS.max_grad_norm)
-                optimizer = tf.train.GradientDescentOptimizer(1e-1)
-                optimizer.apply_gradients(zip(grads, tvars))
-                self.train_op = optimizer.apply_gradients(zip(grads, tvars), global_step=self.global_step)
+            self.global_step = tf.Variable(0, name="globle_step", trainable=False)
+            self.train_op = self.train_op1(self.loss_e_r,self.global_step)
+            self.train_op_transe = self.train_op1(self.loss_transe, self.global_step)
+            # tvars = tf.trainable_variables()
+            # grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, tvars),
+            #                                   FLAGS.max_grad_norm)
+            # optimizer = tf.train.GradientDescentOptimizer(1e-1)
+            # optimizer.apply_gradients(zip(grads, tvars))
+            # self.train_op = optimizer.apply_gradients(zip(grads, tvars), global_step=self.global_step)
 
-            # 构造同义词相关的计算
+
+    def train_op1(self,loss,global_step):
+        tvars = tf.trainable_variables()
+        grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars),
+                                          FLAGS.max_grad_norm)
+        optimizer = tf.train.GradientDescentOptimizer(1e-1)
+        optimizer.apply_gradients(zip(grads, tvars))
+        return optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
+
+

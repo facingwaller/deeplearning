@@ -42,7 +42,7 @@ if testid == "cc_test":
     epoches = 10  # 10  # 遍历多少轮
     batch_size = 10  # 1个batch的大小 # 临时改了
     evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
-    evaluate_batchsize = 999999999999999  # 验证一次的问题数目,超过则使用最大的
+    evaluate_batchsize = 9999  # 验证一次的问题数目,超过则使用最大的
     questions_len_train = 999999999999999  # 所有问题数目
     questions_len_test = 999999999999999  # 测试的问题数目，全部
     wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
@@ -56,14 +56,14 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 100 # 4358  # 重要！这个指示了训练的关系个数 4358
+    t_relation_num = 1 # 4358  # 重要！这个指示了训练的关系个数 4358
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
     #####
     # train_part = 'relation'  # 属性 relation |answer | entity  |  entity_relation
-    loss_part = 'entity_relation'  # entity_relation_transE |  relation | entity | transE
-    loss_margin = 0.05  # 简书上是0.05，liu kang 那边是 0.6
+    loss_part = 'entity_relation_transE-2'  # entity_relation_transE|  entity_relation_answer_transE |  relation | entity | transE
+    loss_margin = 0.05  # 简书上是0.05，liu kang 那边是 0.6 也有0.02
     #  IR-GAN
     batch_size_gan = 1000  #100 或者 1000 ,80%的竞争属性是在600
     gan_k = 10
@@ -204,7 +204,8 @@ cc_p = {
     'expend_es':expend_es,
     'ner_model' : ner_model,
     'ner_path' : ner_path,
-    'ner_top_cand':ner_top_cand
+    'ner_top_cand':ner_top_cand,
+    't_relation_num':t_relation_num
 
 }
 

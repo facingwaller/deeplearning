@@ -181,3 +181,4 @@ if __name__ == '__main__':  #
     if False:
         cf.build_competing_ps(f1='../data/nlpcc2016/5-class/test_ps.v4.txt',
                               f2='../data/nlpcc2016/5-class/competing_ps.v1.txt')
+    #
