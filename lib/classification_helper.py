@@ -711,21 +711,22 @@ class classification:
                             "====\t====\t====\t====\t====\t====\t====")
 
     def build_test_ps(self, f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
-                      f2='../data/nlpcc2016/5-class/test_ps.txt', skip=14610):
+                      f2='../data/nlpcc2016/5-class/test_ps.txt', skip=14097):
         f1s = ct.file_read_all_lines_strip(f1)
-        bkh = baike_helper()
-        bkh.init_spo()
+        bkh = baike_helper(config.cc_par('alias_dict'))
+        bkh.init_spo(config.cc_par('kb-use'))
         pos_set = set()
         index = -1
+        # 收集所有的pos-p
         for f1l in f1s:
             index += 1
             train = True
             if index > skip:
-                train = False
                 break
-            if train:
-                pos = str(f1l).split('\t')[3]
-                pos_set.add(pos)
+                # train = False
+                # break
+            pos = str(f1l).split('\t')[3]
+            pos_set.add(pos)
         # 遍历
         index = -1
         msg_list = []
@@ -733,22 +734,28 @@ class classification:
         for f1l in f1s:
             index += 1
             train = True
-            if index <= skip:
-                continue
+            if index > skip:
+                break
             # 开始检测
             q1 = str(f1l).split('\t')[0]
-            s1 = str(f1l).split('\t')[2]
+            s1 = str(f1l).split('\t')[2] # 取在句子中的实体部分
             p1 = str(f1l).split('\t')[3]
-            vs = bkh.kbqa.get(s1, '')
+            # 获取属性集合 需要改成 获取 别名字典的所有的属性
+            # vs = bkh.kbqa.get(s1, '')
+            s1 = bkh.entity_re_extract_one_repeat(s1)
+            vs , _ = bkh.kb_get_p_o_by_s(s1,'')
             line_ps = []
             # exist = False
             exist = p1 in pos_set
+            # 遍历该实体的所有属性
             for po in vs:
-                if po[0] in pos_set:
-                    line_ps.append(po[0])
+                if po in pos_set:
+                    line_ps.append(po)
 
             # msg = "%s\t%s\t%s\t%d\t%s" % (q1, p1, exist, index, '\t'.join(line_ps))
             tp = (q1, p1, exist, index, '\t'.join(line_ps))
+            # 这段代码的意思是 后面index的会添加进前面的index
+            # 且只会加到第一个
             for i in range(len(tp_list)):
                 # for _tp in tp_list:
                 _tp = tp_list[i]
@@ -756,11 +763,6 @@ class classification:
                     _tp_3 = "%s_%s" % (tp[3], _tp[3])
                     tp_list[i] = (_tp[0], _tp[1], _tp[2], _tp_3, _tp[4])  # _tp
                     break
-            # tp_list.remove(_tp)
-            # tp[3] = "%s_%s"%(tp[3],_tp[3])
-            # tp_list.append(_tp)
-
-
             tp_list.append(tp)
             # msg_list.append(msg)
         msg_list = ["%s_%s_%s\t%s\t%s" % (x[0], x[1], x[2], x[3], x[4]) for x in tp_list]
@@ -769,17 +771,20 @@ class classification:
         # 00: 04:34: 22438   公司性质          公司口号         公司类型
 
 
-        print(1)
 
     # 读取出所有NEG的PS
     def build_competing_ps(self, f1='../data/nlpcc2016/5-class/test_ps.txt',
-                           f2='../data/nlpcc2016/5-class/competing_ps.txt'):
+                           f2='../data/nlpcc2016/5-class/competing_ps.txt',
+                           f3=''):
         f1s = ct.file_read_all_lines_strip(f1)
-        bkh = baike_helper()
-        bkh.init_spo()
+        # bkh = baike_helper()
+        # bkh.init_spo()
 
         index = -1
         d1 = dict()  # KEY=P VALUE = 竞争的P
+        d2 = dict() # key =  w1_w2 , value = 次数
+        d3 = dict() # key = w1 , value = 次数
+        import itertools
         for f1l in f1s:
             index += 1
 
@@ -788,18 +793,40 @@ class classification:
 
             # 每行互为K-V
             l1 = str(f1l).split('\t')[2:]
-            for w1 in l1:
-                for w2 in l1:
-                    if w1 == w2:
-                        continue
-                    d1 = ct.dict_add(d1, w1, w2)
+            for w in itertools.permutations(l1,2):
+                w1 = w[0]
+                w2 = w[1]
+                d1 = ct.dict_add(d1, w1, w2)
+                d2 = ct.dict_add_tj(d2, w1, w2)
+            # for w in l1:
+                d3 = ct.dict_add_tj_w1(d3, w1)
+                # d3 = ct.dict_add_tj_w1(d3, w2)
+
+
+            # for w1 in l1:
+            #     for w2 in l1:
+            #         if w1 == w2:
+            #             continue
+            #         d1 = ct.dict_add(d1, w1, w2)
+            #         d2 = ct.dict_add_tj(d2,w1,w2)
+            #         d3 = ct.dict_add_tj_w1(d3,w1)
+
         msg_list = []
-        for k1 in d1.keys():
-            vs = d1[k1]
+        for k1,vs in d1.items():
+            # vs = d1[k1]
             msg = "%s\t%s" % (k1, '\t'.join(vs))
             msg_list.append(msg)
-
         ct.file_wirte_list(f2, msg_list)
+
+        msg_list = []
+        for k1,vs in d2.items():
+            # vs = d1[k1]
+            w1 = str(k1).split('_')[0]
+            w2 = str(k1).split('_')[1]
+            v1  = d3[w1] # 总次数
+            msg = "%s\t%s\t%d\t%d\t%f" % (w1,w2, vs,v1,vs/v1)
+            msg_list.append(msg)
+        ct.file_wirte_list(f3, msg_list)
 
     # 找到同实体不同属性名，但是属性值一样的
     def class_p_by_o_kb(self, f1='../data/nlpcc2016/2-kb/kb.v1.txt',
@@ -1436,6 +1463,64 @@ class classification:
 
         a2 = (set(all) & set(all_test)) - set(all)
         ct.file_wirte_list(f2, list(a2))
+
+    # 竞争属性相关
+    #  去掉 upload.wikimedia.org
+    # .png .jpg
+    def build_competing_p_in_kb(self,f1='',f2='',kb_path=''):
+        index = -1
+
+        p_dict = dict() # key = p , value = s
+        with open(kb_path, mode='r', encoding='utf-8') as rf:
+
+            for l1 in rf:
+                index += 1
+                if index % 10000 == 0:
+                    print("%s %s" % (index / 10000, 4300))
+                l1_split = l1.split('\t')
+                s = ct.clean_str_s(l1_split[0])
+                p = ct.clean_str_rel(l1_split[1])
+                o = ct.clean_str_answer(l1_split[2])
+                # 过滤掉P =0的
+                if p == o or l1_split[1] == l1_split[2]:
+                    # ct.print("%s\t%s"%(p,o))
+                    continue
+                # 过滤掉 S=P的 或者S=O的
+                # e.g 林芷筠	林芷筠	safina 林芷筠	外文名	safina
+                if s == p or s == o:
+                    continue
+                if  p.__contains__('.jpg') or p.__contains__('.jpeg') or p.__contains__('.png'):
+                    continue
+                s_set = p_dict.get(p, "")
+                if s_set=="": # 不包含则添加
+                    s_set = set()
+                s_set.add(s)
+                p_dict[p] = s_set
+        # ct.file_wirte_list(f3, f3s)
+        # ct.file_wirte_list(f4, f4s)
+        self.bh = baike_helper(config.cc_par('alias_dict'))
+        self.bh.init_spo(kb_path) #  kb
+        p_p_dict = dict() # key = p , values = p
+        for _p, _s_set in p_dict.items():
+            p_p_dict_set = []
+            for _s_set_item in _s_set:
+                _rs,_as = self.bh.read_entity_and_get_all_neg_relations_cc(_s_set_item,[_p])
+                p_p_dict_set.extend(_rs)
+            p_p_dict[_p]=list(set(p_p_dict_set))
+
+        out = []
+        for _p, _s_set in p_p_dict.items():
+            msg = "%s\t%s"%(_p,'\t'.join(_s_set))
+            out.append(msg)
+        ct.file_wirte_list(f1,out)
+
+        out.clear()
+        for _p, _s_set in p_dict.items():
+            msg = "%s\t%s"%(_p,'\t'.join(list(_s_set)))
+            out.append(msg)
+        ct.file_wirte_list(f2,out)
+
+        pass
 
 
 if __name__ == '__main__':

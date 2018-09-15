@@ -621,6 +621,7 @@ class ct:
             .replace("【", "[").replace("】", "]") \
             .replace('，', ',').replace("”", '"').replace('“', '"') \
             .replace('）', ')').replace('（', '(').replace('／', '/') \
+            .replace('(','(').replace(')',')') \
             .replace('！','!').replace(" ", "").lower()
 
     @staticmethod
@@ -756,6 +757,13 @@ class ct:
     def get_key(st):
         return st.score
 
+    @staticmethod
+    def get_r_key(st):
+        return st.r_score
+
+    @staticmethod
+    def get_ner_key(st):
+        return st.ner_score
     # -------------------------------
     @staticmethod
     def get_key_matix(st):
@@ -821,7 +829,6 @@ class ct:
     # 自定义打印什么级别的
     @staticmethod
     def print(msg="", m="none"):
-
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         ms = config.get_print_type()
         if m in ms:
@@ -869,6 +876,15 @@ class ct:
                     print("%s * 100" % (index / 10000))
                 lines.append(line.replace("\n", "").replace("\r", "").strip())
 
+        return lines
+
+    @staticmethod
+    def file_read_all_lines_strip_no_tips(file_name):
+        lines = []
+        with open(file_name, mode='r', encoding='utf-8') as read_file:
+            # with codecs.open(file_name, mode="r", encoding="utf-8") as read_file:
+            for line in read_file:
+                lines.append(line.replace("\n", "").replace("\r", "").strip())
         return lines
 
     @staticmethod
@@ -1239,7 +1255,15 @@ class ct:
         s2 = ct.clean_str_zh2en(s1)  # 符号转换
         return s2
 
-    # 清理问句，去除空格
+    # 清理实体名
+    @staticmethod
+    def clean_str_o(string):
+
+        s1 = str(string).strip().strip('\n').strip('\r').replace(' ', '').lower().replace('\xa0','')
+        s2 = ct.clean_str_zh2en(s1)  # 符号转换
+        return s2
+
+    # 清理O
     @staticmethod
     def clean_str_question(string):
         s1 = str(string).strip().strip('\n').strip('\r').replace(' ', '')\
@@ -1268,15 +1292,37 @@ class ct:
     def reset_log_path_static():
         log_path = ct.log_path_static()
 
+    # k1 = key  k2 = value
     @staticmethod
     def dict_add(d1, k1, k2):
         if k1 in d1:
             s1 = d1[k1]
             s1.add(k2)
+            d1[k1] = s1
         else:
             s1 = set()
             s1.add(k2)
             d1[k1] = s1
+        return d1
+
+    # k1 = key  k2 = value
+    @staticmethod
+    def dict_add_tj(d1, k1, k2):
+        key = "%s_%s"%(k1,k2)
+        if key in d1:
+            d1[key]+=1
+        else:
+            d1[key]=1
+        return d1
+
+    # k1 = key  k2 = value
+    @staticmethod
+    def dict_add_tj_w1(d1, k1):
+        key = k1
+        if key in d1:
+            d1[key]+=1
+        else:
+            d1[key]=1
         return d1
 
     # 同义词

@@ -8,7 +8,7 @@ from lib.pretreatment import pretreatment
 # 一键纠错
 if __name__ == '__main__':  #
     bkt = baike_test()
-    bkh = baike_helper()
+    bkh = baike_helper(config.cc_par('alias_dict'))
     cf = classification()
 
     # -------------- 预处理 test 部分
@@ -25,10 +25,19 @@ if __name__ == '__main__':  #
                         skip_no_space=False)
     # ------------- 将NER的结果相关的KB全部抽取出来
     if False:
-        bkh.extract_kb_test(f1='../data/nlpcc2016/10-test/test_extract_entitys.txt',
+        # 补全字典 ，根据漏掉的key从基本的字典中补全
+        bkh.extract_kb_test2(f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
+                             f2='../data/nlpcc2016/4-ner/extract_e/e1.dict.txt',
+                             f3='../data/nlpcc2016/2-kb/kb.v1.txt',
+                             f_out='../data/nlpcc2016/10-test/kb-bu-4.txt',
+                             )
+
+    if False:
+        bkh.extract_kb_test( f1='../data/nlpcc2016/10-test/test_extract_entitys.txt',
                         f2='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt',
                         f3='../data/nlpcc2016/2-kb/kb.v1.txt',
-                        f4='../data/nlpcc2016/10-test/kb-test.v2.txt')
+                        f4='../data/nlpcc2016/10-test/kb-test.txt'
+                        )
 
     # -------------- 清理部分 NER部分
     if False:
@@ -73,7 +82,7 @@ if __name__ == '__main__':  #
         # bkh.init_find_entity()
         # bkh.init_ner(f11)  # bkh.n_gram_dict[time] = word list
 
-    if True:
+    if False:
         time_str = ct.time_path()
         num = 1
         filter_list1 = bkt.try_test_acc_of_m1(
@@ -131,7 +140,7 @@ if __name__ == '__main__':  #
                                            skip=0,
                                            skip_cant_match=True)
         print('重写q.rdf.ms.re.v1.filter.txt')
-    if True:
+    if False:
         # "rdf_extract_property_origin.txt"
         filter_list3 = cf.extract_property2(f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
                                            f_out='../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',
@@ -166,19 +175,39 @@ if __name__ == '__main__':  #
     if False:
         bkh.clean_baike_kb_repeat(f1="../data/nlpcc2016/2-kb/kb-use.v2.txt",
                                   f2="../data/nlpcc2016/2-kb/kb-use.v3.txt")
-        print('替换指定属性')
+        print('替换指定属性 后缀1 2 3 4 ')
     # 重写q.txt        # 3 生成新的训练文件
     if False:
         dh = DataClass(mode="cc", run_type='init')
         dh.build_all_q_r_tuple(99999999999999,
                                99999999999999, is_record=True)
         print('重新生成训练文件q_neg_r_tuple.v1')
+
+    # ============================================================
+    # 竞争属性部分
+    # ============================================================
     # 重生成所有测试集的候选属性
+    # 1 构造KB中的可能的竞争子集合
+    if False:
+        kb_path = config.cc_par('kb')
+        cf.build_competing_p_in_kb('../data/nlpcc2016/13-competing/competing_p_in_kb.v2.txt',
+                                   '../data/nlpcc2016/13-competing/competing_s_in_kb.v2.txt',
+                                   kb_path)
     if False:
         #  读取问题
-        cf.build_test_ps(f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
-                         f2='../data/nlpcc2016/5-class/test_ps.v4.txt', skip=14610)
-    if False:
-        cf.build_competing_ps(f1='../data/nlpcc2016/5-class/test_ps.v4.txt',
-                              f2='../data/nlpcc2016/5-class/competing_ps.v1.txt')
-    #
+        f1 = config.cc_par('cc_q_path')
+        skip = config.cc_par('real_split_train_test_skip_v2')
+        cf.build_test_ps(f1=f1,
+                         f2='../data/nlpcc2016/13-competing/train_ps.v1.txt', skip=skip)
+
+    if True:
+        cf.build_competing_ps(f1='../data/nlpcc2016/13-competing/train_ps.v1.txt',
+                              f2='../data/nlpcc2016/13-competing/competing_ps.v1.txt',
+                              f3='../data/nlpcc2016/13-competing/competing_ps_tj.v2.txt')
+
+
+
+
+
+
+

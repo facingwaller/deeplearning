@@ -56,7 +56,7 @@ if testid == "cc_test":
     # 使用属性的模式做训练和测试
     # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
     skip_threshold = 0.02
-    t_relation_num = 1 # 4358  # 重要！这个指示了训练的关系个数 4358
+    t_relation_num = 100 # 4358  # 重要！这个指示了训练的关系个数 4358
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
@@ -108,7 +108,8 @@ if testid == "cc_test":
     valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
 
     # 竞争属性集
-    competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
+    # competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
+    competing_ps_path = '../data/nlpcc2016/13-competing/competing_ps.v1.txt'
     competing_batch_size = 10 # 控制size
 
     expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
@@ -117,6 +118,8 @@ if testid == "cc_test":
     ner_model = 'cos'
     ner_path = '../data/nlpcc2016/4-ner/extract_entitys_all_tj_sort.v1.txt'
     ner_top_cand = 2  # 训练取2，测试取3
+    alias_dict = '../data/nlpcc2016/4-ner/extract_e/e1.dict.txt'
+    use_alias_dict = True
 else:
     raise Exception("testid 参数有误")
 
@@ -168,7 +171,8 @@ cc_p = {
     'cc_q_path': '../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
     # q.rdf.score.expend.v1.txt
     'real_split_train_test': True,
-    'real_split_train_test_skip': 14610,
+    'real_split_train_test_skip': 14097, # 14610
+    'real_split_train_test_skip_v2': 14097,
     'use_property': use_property,  # 记录进日志
     # 'train_part': train_part,  # 属性 relation |answer
     'loss_part': loss_part,  # 属性 relation |answer
@@ -205,7 +209,9 @@ cc_p = {
     'ner_model' : ner_model,
     'ner_path' : ner_path,
     'ner_top_cand':ner_top_cand,
-    't_relation_num':t_relation_num
+    't_relation_num':t_relation_num,
+    'alias_dict':alias_dict,
+    'use_alias_dict':use_alias_dict
 
 }
 

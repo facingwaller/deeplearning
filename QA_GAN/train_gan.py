@@ -306,6 +306,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
 
 def valid_step_e_r(sess, lstm, step,  item,  dh, model, global_index, state,):
     q_origin = item['q_']
+    q_origin_for_s = item['q_s']
     q_origin_for_r = item['q_p']
     q_origin_for_a = item['q_a']
     p_pos = item['p_pos']
@@ -315,12 +316,14 @@ def valid_step_e_r(sess, lstm, step,  item,  dh, model, global_index, state,):
     labes = item['labels']  # 候选的实体
     a_pos = item['a_pos']  # 正确的答案
     a_neg = item['a_neg']  # 候选的答案
-
+    ner_labels = item['ner_labels']
+    rel_labels = item['rel_labels']
+    right_spo = []
 
     feed_dict= dict()
     feed_dict[lstm.test_input_q] = q_origin_for_r  # 属性的
     feed_dict[lstm.test_input_r] = p_neg
-    feed_dict[lstm.ner_test_input_q] = q_origin
+    feed_dict[lstm.ner_test_input_q] = q_origin_for_s # 用于实体识别的
     feed_dict[lstm.ner_test_input_r] = s_neg
     feed_dict[lstm.ans_test_input_q] = q_origin_for_a
     feed_dict[lstm.ans_test_input_r] = a_neg
@@ -353,14 +356,13 @@ def valid_step_e_r(sess, lstm, step,  item,  dh, model, global_index, state,):
     elif config.cc_par('loss_part').__contains__('transE-2'):
         test_q_r_cosin,\
             _1,_2,_3,_4,_transe_score,_6,_7,_8,\
-            _9,_10, _11,_12,_13 \
+            _test_q_r, _ner_test_q_r \
             = sess.run([lstm.q_r_ner_cosine,
                         lstm.ner_test_r_out,lstm.distance_test,
                         lstm.ner_test_r_out,lstm.test_r_out,
                         lstm.transe_score,lstm.distance_test,# 5 6
                         lstm.ner_test_r_out ,lstm.test_r_out,
-                        lstm.test_q_r,lstm.ner_test_q_r,
-                        lstm.q_r_ner_cosine,lstm.temp1,lstm.temp2
+                        lstm.test_q_r,lstm.ner_test_q_r
                         ], feed_dict=feed_dict)
         mean_num = 2
 
@@ -370,29 +372,46 @@ def valid_step_e_r(sess, lstm, step,  item,  dh, model, global_index, state,):
 
     st_list = []  # 各个关系的得分
 
+    # 构建得分结构体
     for i in range(0, len(test_q_r_cosin)):
         st = ct.new_struct()
         st.index = i
         st.label = labes[i] # 对错
+        st.ner_label = ner_labels
+        st.rel_label = rel_labels
         st.cosine_matix = test_q_r_cosin[i]
-        ori_cand_score_mean =  np.mean(test_q_r_cosin[i])/mean_num
+        st.score = test_q_r_cosin[i]/mean_num
+
         # if len(_transe_score)>0 :
         #     st.transe_score1 = np.mean(_transe_score[i])
         #     st.transe_score2 = np.sum(_transe_score[i])
         #     st.transe_score3 = np.sum(_transe_score[i])/len(_transe_score[i])
-        st.score = ori_cand_score_mean
+        st.r_score = _test_q_r[i]
+        st.ner_score = _ner_test_q_r[i]
         st_list.append(st)
         # ct.print(ori_cand_score_mean)
+
     # 将得分和index结合，然后得分排序
     st_list.sort(key=ct.get_key)
     st_list.reverse()
     st_list_sort = st_list  # 取全部 st_list[0:5]
 
+    # 判断NER 和R的准确率
+    ner_stlist = st_list.copy()
+    ner_stlist.sort(key=ct.get_ner_key)
+    ner_stlist.reverse()
+    ner_ok= ner_stlist[0].ner_label
+
+    r_stlist = st_list.copy()
+    r_stlist.sort(key=ct.get_r_key)
+    r_stlist.reverse()
+    r_ok = r_stlist[0].rel_label
+
     ct.just_log2("info", "\n ##3 score")
+    # 遍历输出
     score_list = []
     test_check_msg_list = []
     find_right = False
-
     index = -1
     is_correct = False
     # 加入问题的信息
@@ -430,7 +449,8 @@ def valid_step_e_r(sess, lstm, step,  item,  dh, model, global_index, state,):
 
         if st.label : # 如果当前标记是 true ，说明该项是正确答案
             find_right = True
-            if index == 0:  # 如果第一个位置就是正确的 则该题答对
+            right_spo = ( s_neg[ st.index],p_neg[ st.index],a_neg[ st.index] )
+            if index == 0:  # 如果第一个位置(得分最高)就是正确的 则该题答对
                 is_correct = True
             if st.index == 0:
                 _tmp_right = 1
@@ -444,8 +464,8 @@ def valid_step_e_r(sess, lstm, step,  item,  dh, model, global_index, state,):
 
     ct.just_log3("test_check", '\t'.join(test_check_msg_list))
     is_right = False
-    msg = " win r =%d  " % st_list_sort[0].index
-    ct.log3(msg)
+    # msg = " win r =%d  " % st_list_sort[0].index
+    # ct.log3(msg)
     if is_correct:  # st_list_sort[0].index == 0:
         is_right = True
         ct.just_log3("test_check", "\t@@right@@\n")
@@ -467,13 +487,23 @@ def valid_step_e_r(sess, lstm, step,  item,  dh, model, global_index, state,):
     maybe_list= []
 
 
-    return is_right, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list
+    return is_right,ner_ok,r_ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list
 # 训练
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
                       model, test_question_global_index, train_part, id_list, state,
                       anwser_select=False):
-    right = 0
-    wrong = 0
+    # 分析 NER+R 和 NER R 的@1 准确率
+    tj = dict()
+    tj['f_right'] = 0
+    tj['f_wrong'] = 0
+    tj['r_right'] = 0
+    tj['r_wrong'] = 0
+    tj['n_right'] = 0
+    tj['n_wrong'] = 0
+    # 分析 Precision 和 Recall
+    tj['tp'] = 0
+    tj['fp'] = 0
+    tj['fn'] = 0
     # 产生随机的index给debug那边去获得index
     # 仅供现在验证用
     # if model == "valid":
@@ -505,39 +535,77 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
         # 训练实体 属性 或者 实体+属性 采用不同的生成办法
         # 在此生成问题的相关信息
         if train_part == 'relation' or train_part == 'entity':
-            test_q, test_r, labels = \
-                dh.batch_iter_wq_test_one_debug( model, index,train_part)
-
-            ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = \
-                valid_step(sess, lstm, step, train_op,test_q, test_r,
-                                                      labels, merged, writer, dh, model,
-                                                      global_index, state,
-                                                      anwser_select)
+            # test_q, test_r, labels = \
+            #     dh.batch_iter_wq_test_one_debug( model, index,train_part)
+            #
+            # ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = \
+            #     valid_step(sess, lstm, step, train_op,test_q, test_r,
+            #                                           labels, merged, writer, dh, model,
+            #                                           global_index, state,
+            #                                           anwser_select)
+            raise Exception('此路不通')
         elif train_part == 'entity_relation':
             item = dh.batch_iter_cc_ner_entitiy_test_one( model, index)
             if item['labels'] == None or len(item['labels']) == 0:
-                wrong += 1
+                tj['f_wrong'] += 1
+                tj['r_wrong'] += 1
+                tj['n_wrong'] += 1
                 continue
-            ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = \
+            ok,ner_ok,r_ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = \
                 valid_step_e_r(sess, lstm,  step,item,  dh, model,global_index, state)
-            pass
         else:
             pass
 
         error_test_q_list.extend(error_test_q)
         error_test_pos_r_list.extend(error_test_pos_r)
         error_test_neg_r_list.extend(error_test_neg_r)
-        maybe_list_list.append(maybe_list)
-        maybe_global_index_list.append(global_index)
+        # maybe_list_list.append(maybe_list)
+        # maybe_global_index_list.append(global_index)
         if ok:
-            right += 1
+            tj['f_right'] += 1
         else:
-            wrong += 1
-    if right + wrong == 0:
-        print(0)
-    acc = right / (right + wrong)
-    ct.print("right:%d wrong:%d" % (right, wrong), "debug")
-    return acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list
+            tj['f_wrong'] += 1
+        if ner_ok:
+            tj['n_right'] += 1
+        else:
+            tj['n_wrong'] += 1
+        if r_ok:
+            tj['r_right'] += 1
+        else:
+            tj['r_wrong'] += 1
+        #   统计P和R
+        tp, tp2, fn = dh.get_o_from_kb(model, index)
+        if ok: # 正例被检测为真
+            tj['tp'] += 1 # len(tp)
+            # tj['fp'] += len(tp2)
+            for _tp in tp:
+                ct.print("%d\ttp:%s"%(index,_tp),"tp")
+            # fp_msg = []
+            for _fp in tp2:
+                # fp_msg.append(str(_fp))
+                ct.print("%d\tfp:%s"%(index,_fp),"tp_ans")
+            ct.print("", "tpfpfn")
+        else:
+            tj['fp'] += 1 # 负类判定为正类
+            tj['fn'] += 1 # 正类判定为负类
+            ct.print("%d\tfn:%s"% fn,"fn")
+    p1 = tj['tp'] / (tj['tp']+ tj['fp'])
+    recall1 = tj['tp'] /(tj['tp']+ tj['fn'])
+    f1 = 2 * p1 * recall1 /(p1+recall1)
+    acc = tj['f_right'] / (tj['f_right'] + tj['f_wrong'])
+    ner_acc = tj['n_right'] / (tj['n_right'] + tj['n_wrong'])
+    r_acc = tj['r_right'] / (tj['r_right'] + tj['r_wrong'])
+
+    ct.print("right:%d wrong:%d " % (tj['f_right'], tj['f_wrong']), "debug")
+    msg1 = "%s\t%s_batchsize:%d\tacc:%f\tner:%f\tr:%f" % ( state,  model, batchsize, acc,ner_acc,r_acc)
+    msg2 = "p1:%f\tr1:%f\tf1:%f  tp:%d\tfp:%d\tfn:%d"%(p1,recall1,f1,tj['tp'],tj['fp'],tj['fn'])
+    ct.just_log2("result", msg1)
+    ct.just_log2("result", msg2)
+
+    ct.print("%s" % (state), "tp")
+
+    ct.print("%s" % (state), "tpfpfn")
+    return acc,ner_acc,r_acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list
 
 
 # answer_valid_batch_debug
@@ -816,12 +884,11 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer,
     id_list = get_shuffle_indices_test(dh, step, None, model, train_step)
     ct.print("问题总数 %s " % len(id_list))
 
-    acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
+    acc, ner_acc, r_acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
         valid_batch_debug(sess, discriminator, 0, None, merged, writer,
                           dh, test_batchsize,model, dh.train_question_global_index, train_part, id_list, state)
-    msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (step, state, train_step, model, test_batchsize, acc)
-    ct.print(msg)
-    ct.just_log2("valid", msg)
+    # msg = "%s\t%s_batchsize:%d\tacc:%f\tner:%f\tr:%f" % ( state,  model, test_batchsize, acc,ner_acc,r_acc)
+    # ct.just_log2("valid", msg)
     log_error_questions(dh, model, error_test_q_list,
                                           error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
                                           maybe_list_list, acc, maybe_global_index_list)
@@ -831,7 +898,7 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer,
     # ============= 测试
     model = "test"
     id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
-    acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
+    acc, ner_acc, r_acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
         valid_batch_debug(sess, discriminator, step, None, merged, writer,
                           dh, test_batchsize, model, dh.test_question_global_index, train_part, id_list, state)
     # 测试 集合不做训练 但是将其记录下来
@@ -844,91 +911,89 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer,
     _1.clear()
     _2.clear()
     _3.clear()
-    msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (
-        step, state, train_step, model, test_batchsize, acc)
-    ct.print(msg)
-    ct.just_log2("test", msg)
+    # msg = "%s\t%s_batchsize:%d\tacc:%f\tner:%f\tr:%f" % (state, model, test_batchsize, acc, ner_acc, r_acc)
+    # ct.just_log2("test", msg)
     # ct.print("===========step=%d" % step, "maybe_possible")
     # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
     # ct.log3(toogle_line)
     # ct.just_log2("info", toogle_line)
     checkpoint(sess, state)
     ct.just_log3("test_check",
-                 "mode\tid\tglobal_id\tglobal_id_in_origin\tquestion\tentity\tpos\tanswer\tr1\tr2\tr3\n")
+                 "\nmode\tid\tglobal_id\tglobal_id_in_origin\tquestion\tentity\tpos\tanswer\tr1\tr2\tr3\n\t@@err")
 
 
-def answer_select(state, train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict):
-    test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
-
-    if False:
-        # 验证
-
-        #   if (train_step + 1) % FLAGS.evaluate_every == 0:
-        model = "valid"
-        train_part = config.cc_par('train_part')
-        if train_part == 'relation':
-            train_part_1 = dh.train_relation_list_index
-        else:
-            train_part_1 = dh.train_answer_list_index
-
-        id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
-        ct.print("问题总数 %s " % len(id_list))
-        # if model == "valid":
-        #     id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
-        # else:
-        #     id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
-
-        # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
-
-        acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
-            answer_valid_batch_debug(sess, discriminator, 0, None, merged, writer,
-                                     dh, test_batchsize, dh.train_question_list_index,
-                                     train_part_1,
-                                     model, dh.train_question_global_index, train_part, id_list, state)
-        msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (
-        step, state, train_step, model, test_batchsize, acc)
-        ct.print(msg)
-        ct.just_log2("valid", msg)
-        valid_test_dict = log_error_questions(dh, model, error_test_q_list,
-                                              error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
-                                              maybe_list_list, acc, maybe_global_index_list)
-        ct.print("===========step=%d" % step, "maybe_possible")
-    # if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
-    # ============= 测试
-    model = "test"
-    train_part = config.cc_par('train_part')
-    if train_part == 'relation':
-        train_part_1 = dh.test_relation_list_index
-    else:
-        train_part_1 = dh.test_answer_list_index
-
-    id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
-
-    acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
-        answer_valid_batch_debug(sess, discriminator, step, None, merged, writer,
-                                 dh, test_batchsize, dh.test_question_list_index,
-                                 train_part_1, model, dh.test_question_global_index, train_part, id_list, state)
-    # 测试 集合不做训练 但是将其记录下来
-
-    # error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
-    #                                       maybe_global_index_list)
-    # error_test_dict = log_error_questions(dh, model, error_test_q_list,
-    #                                       error_test_pos_r_list, error_test_neg_r_list, error_test_dict,
-    #                                       maybe_list_list, acc, maybe_global_index_list)
-
-    _1.clear()
-    _2.clear()
-    _3.clear()
-    msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (
-        step, state, train_step, model, test_batchsize, acc)
-    ct.print(msg)
-    ct.just_log2("test", msg)
-    ct.print("===========step=%d" % step, "maybe_possible")
-    # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
-    # ct.log3(toogle_line)
-    # ct.just_log2("info", toogle_line)
-
-    checkpoint(sess, state)
+# def answer_select(state, train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict):
+#     test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
+#
+#     if False:
+#         # 验证
+#
+#         #   if (train_step + 1) % FLAGS.evaluate_every == 0:
+#         model = "valid"
+#         train_part = config.cc_par('train_part')
+#         if train_part == 'relation':
+#             train_part_1 = dh.train_relation_list_index
+#         else:
+#             train_part_1 = dh.train_answer_list_index
+#
+#         id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
+#         ct.print("问题总数 %s " % len(id_list))
+#         # if model == "valid":
+#         #     id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
+#         # else:
+#         #     id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+#
+#         # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+#
+#         acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
+#             answer_valid_batch_debug(sess, discriminator, 0, None, merged, writer,
+#                                      dh, test_batchsize, dh.train_question_list_index,
+#                                      train_part_1,
+#                                      model, dh.train_question_global_index, train_part, id_list, state)
+#         msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (
+#         step, state, train_step, model, test_batchsize, acc)
+#         ct.print(msg)
+#         ct.just_log2("valid", msg)
+#         valid_test_dict = log_error_questions(dh, model, error_test_q_list,
+#                                               error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
+#                                               maybe_list_list, acc, maybe_global_index_list)
+#         ct.print("===========step=%d" % step, "maybe_possible")
+#     # if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
+#     # ============= 测试
+#     model = "test"
+#     train_part = config.cc_par('train_part')
+#     if train_part == 'relation':
+#         train_part_1 = dh.test_relation_list_index
+#     else:
+#         train_part_1 = dh.test_answer_list_index
+#
+#     id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
+#
+#     acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
+#         answer_valid_batch_debug(sess, discriminator, step, None, merged, writer,
+#                                  dh, test_batchsize, dh.test_question_list_index,
+#                                  train_part_1, model, dh.test_question_global_index, train_part, id_list, state)
+#     # 测试 集合不做训练 但是将其记录下来
+#
+#     # error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
+#     #                                       maybe_global_index_list)
+#     # error_test_dict = log_error_questions(dh, model, error_test_q_list,
+#     #                                       error_test_pos_r_list, error_test_neg_r_list, error_test_dict,
+#     #                                       maybe_list_list, acc, maybe_global_index_list)
+#
+#     _1.clear()
+#     _2.clear()
+#     _3.clear()
+#     msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (
+#         step, state, train_step, model, test_batchsize, acc)
+#     ct.print(msg)
+#     ct.just_log2("test", msg)
+#     ct.print("===========step=%d" % step, "maybe_possible")
+#     # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
+#     # ct.log3(toogle_line)
+#     # ct.just_log2("info", toogle_line)
+#
+#     checkpoint(sess, state)
 
 
 # 主流程
@@ -943,8 +1008,8 @@ def main():
         ct.print("tf:%s should be 1.2.1 model:%s " % (str(tf.__version__), model))  # 1.2.1
         ct.print("mark:%s " % config.cc_par('mark'), 'mark')  # 1.2.1
         ct.just_log2("info", now)
-        ct.just_log2("valid", now)
-        ct.just_log2("test", now)
+        ct.just_log2("result", now)
+        # ct.just_log2("test", now)
         ct.just_log2("info", get_config_msg())
         ct.print(get_config_msg(), "mark")
         ct.just_log3("test_check",
@@ -1413,7 +1478,7 @@ def main():
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict)
 
-                # --------------- NER | Relation model 识别实体
+                # --------------- NER | Relation transE  model 识别实体
                 for d_index in range(FLAGS.ner_epoches):
                     model = 'train'
                     train_part = 'entity_relation'  # config.cc_par('train_part')
@@ -1458,7 +1523,7 @@ def main():
                             feed_dict[discriminator.cand_input_quests] = item['p_pos']
                             feed_dict[discriminator.neg_input_quests] = item['p_neg']
                             # ner
-                            feed_dict[discriminator.ner_ori_input_quests] = item['q_']
+                            feed_dict[discriminator.ner_ori_input_quests] = item['q_s']
                             feed_dict[discriminator.ner_cand_input_quests] = item['s_pos']
                             feed_dict[discriminator.ner_neg_input_quests] = item['s_neg']
                             # answer

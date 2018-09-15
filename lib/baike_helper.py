@@ -29,6 +29,18 @@ MAX_POOL_NUM = 5
 
 
 class baike_helper:
+
+    def __init__(self ,f2=''):
+        if f2 != '':
+            # f2 = config.cc_par('alias_dict')
+            alias_dict = dict()
+            f2s = ct.file_read_all_lines_strip_no_tips(f2)  # 字典
+            for l2 in f2s:
+                _s = str(l2).split('\t')[0]
+                _ps = str(l2).split('\t')[1:]
+                alias_dict[_s] = _ps
+            self.alias_dict = alias_dict
+
     # 统计关系的数目并做分析，排序
     @staticmethod
     def relatons_statistics(f1="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb",
@@ -1501,7 +1513,7 @@ class baike_helper:
         # clean_str_s
         e_s = self.kbqa.get(ct.clean_str_s(entity_id),"")
         if e_s == "":
-            ct.print("cant find key:  %s " % entity_id)
+            ct.print("cc cant find key:  %s " % entity_id)
             # raise Exception('entity cant find')
             ct.print(str(entity_id).replace(' ', '').lower()
                      , 'read_entity_and_get_all_neg_relations_cc')
@@ -1513,6 +1525,68 @@ class baike_helper:
                 a1.append(s1[1])
 
         return r1, a1
+
+    # 读取实体的去掉指定属性的其他属性
+    # 读取别名指代的全部实体
+    # 读取所有的属性和答案
+    def kb_get_p_o_by_s(self, entity_id, ps_to_except=[]):
+        # 读取别名指代的全部实体
+        _es = self.alias_dict.get(ct.clean_str_s(entity_id),"")
+        if _es == "":
+            ct.print("kb_get_p_o_by_s: cant find key:  %s " % entity_id)
+            # raise Exception('entity cant find')
+            ct.print(str(entity_id).replace(' ', '').lower()
+                     , 'kb_get_p_o_by_s')
+        all_ps = []
+        all_os = []
+        for _ in _es:
+            _e1, _o1 = self.read_entity_and_get_all_neg_relations_cc(_)
+            for _1, _2 in zip(_e1, _o1):
+                if _1 not in all_ps and _1 not in ps_to_except:
+                    all_ps.append(_1)
+                    all_os.append(_2)
+        return all_ps, all_os
+
+        # r1 = []
+        # a1 = []
+        # for s1 in all_es:
+        #     if s1 not in ps_to_except:
+        #         r1.append(s1[0])
+        #         a1.append(s1[1])
+
+
+
+    # 获取包含属性S-P的所有S P O
+    def kb_get_spo_by_s_p(self, s1_in_q, s, p, o):
+        # 读取别名指代的全部实体
+        _es = self.alias_dict.get(ct.clean_str_s(s1_in_q), "")
+        if _es == "":
+            ct.print("cant find key:  %s " % s1_in_q)
+            # raise Exception('entity cant find')
+            ct.print(s1_in_q  , 'kb_get_p_o_by_s')
+        tp = []
+        fp = []
+        for _ in _es:
+            _e1, _o1 = self.read_entity_and_get_all_neg_relations_cc(_)
+            for _1, _2 in zip(_e1, _o1):
+                _spo = (_, _1, _2)
+                if _1 == p :
+                    if ct.clean_str_o(_2) == ct.clean_str_o( o):
+                        tp.append(_spo)
+                    else:
+                        fp.append(_spo)
+
+        return tp,fp
+
+        # r1 = []
+        # a1 = []
+        # for s1 in all_es:
+        #     if s1 not in ps_to_except:
+        #         r1.append(s1[0])
+        #         a1.append(s1[1])
+
+        # return r1, a1
+
 
     # 生成的是,黑桃问题-属性-属性值；
     def answer_get_all_neg_relations_cc_1(self, entity_list, answer_to_except):
@@ -2397,8 +2471,64 @@ class baike_helper:
                 if _s3 in s_all:
                     kb_new.append('\t'.join(_kb_one))
         ct.file_wirte_list(f4,kb_new)
-        pass
 
+    # 从q.rdf.ms.re.v2.txt中读取所有候选的实体
+    # 从扩展字典中取出所有可能的指代实体
+    # 从V1字典中抽取所有的出来
+    def extract_kb_test2(self, f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
+                         f2='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt',
+                         f3='../data/nlpcc2016/2-kb/kb.v1.txt',
+                         f_out='../data/nlpcc2016/10-test/kb-test.txt',
+                          ):
+        f1s = ct.file_read_all_lines_strip(f1)  # ner
+        f2s = ct.file_read_all_lines_strip(f2)  # 字典
+
+
+        # 候选实体集合
+        s1 = set()
+        for l1 in f1s:
+            l1s = l1.split('\t')
+
+            _l1_s = l1s[9:]
+            _l1_s.append(l1s[2])
+            for l1s_one in _l1_s:
+                # 将NER的字过滤一下
+                # l1s_one = baike_helper.entity_re_extract_one_repeat(l1s_one)
+                s1.add(l1s_one)
+        d1 = dict()
+        # # 构造字典
+        for l2 in f2s:
+            _s = str(l2).split('\t')[0]
+            _ps = str(l2).split('\t')[1:]
+            d1[_s]=_ps
+        #
+        s_all = set()
+        for _s1 in s1:
+            s_all.add(_s1)
+            if d1.__contains__(_s1):
+                _list1 = d1[_s1]
+            for _list1_one in _list1:
+                s_all.add(_list1_one)
+        # # 遍历KB
+
+
+
+        kb_new = []
+        _index = -1
+        with open(f3, mode='r', encoding='utf-8') as rf:
+            for l in rf:
+                _index += 1
+                if _index % 10000 == 0:
+                    ct.print(_index / 10000)
+                _kb_one = str(l).split('\t')
+                _s1 = _kb_one[0]
+                # _s2 = ct.clean_str_s(_s1)
+                # _s3= baike_helper.entity_re_extract_one_repeat(_s2)
+                # _kb_one[0] = _s2
+
+                if _s1 in s_all:
+                    kb_new.append('\t'.join(_kb_one))
+        ct.file_wirte_list(f_out, kb_new)
 
 class baike_test:
     # 词频 (term frequency, TF) 指的是某一个给定的词语在该文件中出现的次数
@@ -3368,7 +3498,12 @@ def extract_not_use_cx():
 if __name__ == '__main__':
 
     bkt = baike_test()
-    bkh = baike_helper()
+    bkh = baike_helper('../data/nlpcc2016/4-ner/extract_e/e1.dict.txt')
+
+    if True:
+        bkh.init_spo('../data/nlpcc2016/2-kb/kb-use.v2.txt')
+        a,b = bkh.kb_get_p_o_by_s('灯红酒绿')
+        print(a)
 
     if False:
         baike_helper.buqi_lost(f1='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt',
@@ -3545,7 +3680,8 @@ if __name__ == '__main__':
                         f3="../data/nlpcc2016/n_gram/e_12.txt.tj_sort.txt", skip_no_space=False)
     # 测试单行
     # 5.9
-    baike_test.try_idf(f1='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt',
+    if False:
+        baike_test.try_idf(f1='../data/nlpcc2016/4-ner/extract_entitys_all_tj.txt',
                        f2='../data/nlpcc2016/4-ner/extract_entitys_all.txt.statistics.txt',
                        f3='../data/nlpcc2016/6-answer/q.rdf.ms.re.v1.txt')
     # 5.8
