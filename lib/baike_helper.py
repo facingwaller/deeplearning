@@ -24,7 +24,7 @@ from multiprocessing import Pool
 from lib.config import config
 from lib.ct import ct
 from lib.read_utils import TextConverter
-
+import numpy as np
 MAX_POOL_NUM = 5
 
 
@@ -1802,13 +1802,52 @@ class baike_helper:
     # 在C模式下，返回的是defau+全部
     # Gan模式下，返回的是default+100
     #  include_default = False 总数total 是否包含 default ，默认不包含,
-    def competing_ps(self, entity_id, ps_to_except, total, competing_dict,model ="C"):
+    # 增加超过200则取概率
+    def competing_ps(self, pos_p, ps_to_except, total, competing_train_dict, model ="C"):
         r1 = []
         a1 = []
-        e_s = competing_dict.get(str(entity_id).replace(' ', '').lower(), "")
+        e_s = competing_train_dict.get(str(pos_p).replace(' ', '').lower(), "")
         # 当获取到的数据是空的时候则考虑增加default属性
 
         if e_s == "":
+            ct.print("competing_ps: cant find key %s" % pos_p, 'competing_ps')
+            return r1, a1
+
+        if model == "C":
+            for s1 in e_s:
+                if s1[0] not in ps_to_except:
+                    r1.append(s1)  # 温度范围	别名	中文名	又名
+                    raise Exception('NO NO NO ')
+        elif model == "G":
+            r2 = []
+            prob2 = []
+            for s1 in e_s:
+                if s1[0] not in ps_to_except:
+                    r2.append(s1)  # 温度范围	别名	中文名	又名
+                    prob2.append(s1[1])
+            if len(r2) > total:
+                # exp_rating = np.exp(np.array(prob2) )
+                prob3 = np.array(prob2)  / np.sum(prob2)
+                neg_index = np.random.choice(np.arange(len(prob3)), size=total, p=prob3,
+                                             replace=False)  # 生成 FLAGS.gan_k个负例
+                # 从r1种随机挑选total个
+                # if np.sum(p > 0) < size:
+                #     raise ValueError("Fewer non-zero entries in p than size")
+                for i in neg_index:
+                    r1.append(r2[i])
+            # r1.extend(r2)
+            # print("G") #G
+        return r1, r1
+
+    # 之前是测试集的备份
+    def competing_ps_bak(self, pos_p, ps_to_except, total, competing_dict, model ="C"):
+        r1 = []
+        a1 = []
+        e_s = competing_dict.get(str(pos_p).replace(' ', '').lower(), "")
+        # 当获取到的数据是空的时候则考虑增加default属性
+
+        if e_s == "":
+            ct.print("competing_ps: cant find key %s" % pos_p, 'competing_ps')
             return r1, a1
 
         if model == "C":
@@ -1825,7 +1864,7 @@ class baike_helper:
                 r2 = random.sample(r2, total)
             r1.extend(r2)
             # print("G") #G
-        return r1, a1
+        return r1, r1
 
     @staticmethod
     def rebulild_qa_rdf():

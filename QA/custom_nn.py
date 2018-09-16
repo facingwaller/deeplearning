@@ -79,6 +79,10 @@ class CustomNetwork:
             self.ans_test_input_r = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试答案
             # 201809010 end
 
+            # 20180916 ns 实验 negative sampling top k
+            self.ns_r_pos = tf.placeholder(tf.int32, [None, self.timesteps])  # z
+            self.ns_r_cp = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试
+            # end
         with tf.device("/cpu:0"), tf.name_scope("embedding_layer"):
             # if word_model == "tf_embedding":
                 # 方法1，char-rnn中的办法,如果报错就改成方法2，随机初始化一个W / embedding
@@ -135,6 +139,10 @@ class CustomNetwork:
             self.ans_test_r = tf.nn.embedding_lookup(self.ans_embedding, self.ans_test_input_r)
             # 201809010 end
 
+            # 20180916 ns 实验 negative sampling top k
+            self.ns_test_r_pos = tf.nn.embedding_lookup(self.embedding, self.ns_r_pos)
+            self.ns_test_r_cp = tf.nn.embedding_lookup(self.embedding, self.ns_r_cp)
+            # end
 
             tf.summary.histogram("embedding", self.embedding)  # 可视化观看变量
 
@@ -164,7 +172,10 @@ class CustomNetwork:
             # print(self.test_r_out)
             # print("build_LSTM_network<<<<<<<<<<<<<<<<<")
 
-            # 20180906-1--start 用cos做NER
+            self.ns_test_r_pos_out = biLSTM(self.ns_test_r_pos, self.rnn_size)
+            self.ns_test_r_cp_out = biLSTM(self.ns_test_r_cp, self.rnn_size)
+
+
         with tf.variable_scope("LSTM_scope_ner_%d" % self.num, reuse=None) as scop_ner1:
             # self.ori_quests_tmp
             self.ner_ori_q1 = biLSTM(self.ner_ori_quests_tmp, self.rnn_size)
@@ -224,6 +235,11 @@ class CustomNetwork:
             self.ori_q_feat, self.cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W,weight_dict)
             self.ori_nq_feat, self.neg_q_feat = get_feature(self.ori_q, self.neg_a, att_W,weight_dict)
             self.test_q_out, self.test_r_out = get_feature(self.test_q_out, self.test_r_out, att_W,weight_dict)
+
+            # 20180916 ns 实验 negative sampling top k
+            # self.ns_test_r_pos_out = get_feature()
+            # self.ns_test_r_cp_out
+            # end
 
             # 20180906-1--start 用cos做NER
             ner_att_W = {
@@ -293,7 +309,12 @@ class CustomNetwork:
 
             # 201809010 end
 
+            # 20180916 ns 实验 negative sampling top k
+            # self.ns_test_r_pos_out
+            # self.ns_test_r_cp_out
 
+            self.ns_r_r = feature2cos_sim(self.ns_test_r_pos_out, self.ns_test_r_cp_out)
+            # end
 
         else:
             pass
@@ -359,6 +380,8 @@ class CustomNetwork:
         self.q_r_ner_cosine = tf.add(self.test_q_r, self.ner_test_q_r)
         # 三者的得分
         self.q_r_ner_ans_cosine = tf.add(tf.add(self.test_q_r, self.ner_test_q_r), self.ans_test_q_r)
+
+        self.ns_r_r_score = self.ns_r_r
         # 三者得分- S P   transe
         # xishu  = tf.Variable(-0.01,  trainable=True)
         # axis=1 对 里面的每个数组

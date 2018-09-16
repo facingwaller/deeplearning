@@ -52,6 +52,7 @@ class DataClass:
     test_question_list_index = []  # 数字索引版
     test_relation_list_index = []
 
+    competing_train_score_dict = dict() # 竞争属性集合-训练集上的带分数
     fb = []
     # ----------------
     mode = ""  # 区分不同模式下函数的调用,可以考虑改成继承
@@ -132,6 +133,7 @@ class DataClass:
             if need_load_kb:
                 self.bh = baike_helper(config.cc_par('alias_dict'))
                 self.bh.init_spo(f_in=config.cc_par('kb-use'))
+                # 临时关闭
 
             self.init_cc_questions(config.cc_par('cc_q_path'), run_type)
             ct.print("init_cc_questions finish.")
@@ -153,12 +155,12 @@ class DataClass:
                 self.init_synonym(config.cc_par('synonym_words'))
             if config.cc_compare('S_model', 'S_model'):
                 self.synonym_train_data(config.cc_par('synonym_train_data'))
-            if config.cc_compare('pool_mode', 'competing_ps'):
-                self.init_competing_model(config.cc_par('competing_ps_path'))
+            # if config.cc_compare('pool_mode', 'competing_ps'):
+            self.init_competing_model(config.cc_par('competing_ps_path'))
             # self.init_expend_es(config.cc_par('expend_es'))
             # 加载别名字典
             # self.init_alias_dict(config.cc_par('alias_dict'))
-            ct.print("load embedding ok!")
+            ct.print("load embedding ok! start init nn")
             return
         # # elif mode == 'ner':
         # #     need_load_kb = True
@@ -469,7 +471,7 @@ class DataClass:
                 for line in read_file.readlines():
                     idx += 1
                     line_seg = line.split('\t')
-                    if len(line_seg) < 6 or line.__contains__('NULL'):  # todo:rewrite input file,重写输入文件
+                    if len(line_seg) < 6 or line.__contains__('NULL'):  #
                         ct.print("bad:" + line, "bad")
                         bad_idx.append(idx) # 记录需要跳过的index
                         continue
@@ -561,7 +563,7 @@ class DataClass:
             relation1 = ct.clean_str_rel(line_seg[3].lower())  # 清洗关系
             entity2 = line_seg[4]
             entity_ner = line_seg[5].replace('\n', '').replace('\r', '')
-            # todo: if char can't convert ,filter them,如果需要转换不了，到时候在这里直接过滤
+
             # 6.1.1.3 3 在载入问题的时候用♠替换掉实体
             # question = line_seg[0]
             # question = question.replace(' ', '').lower()
@@ -886,7 +888,7 @@ class DataClass:
         z_new = []
         # z_a_new = []
         # self.q_neg_r_tuple 这个地方需要筛选出仅有问题列表里面的数据
-        # todo : bug here
+
 
         # 生成 0- len(question_list_index) 的随机数字
         total = len(self.q_neg_r_tuple_train)
@@ -1057,7 +1059,7 @@ class DataClass:
                 x_new_current = self.convert_str_to_indexlist(ner_q)
                 y_new.append(self.convert_str_to_indexlist(self.entity1_in_q_list[global_index]))
 
-            x_new.append(x_new_current)  # todo 替换黑桃后问题
+            x_new.append(x_new_current)  #
             labels.append(True)
 
         ct.just_log2("info", "entity:%s " % name)
@@ -1177,7 +1179,7 @@ class DataClass:
 
 
         name = self.entity1_list[global_index]
-        # todo: index should not in
+
         # ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
         ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
         # ps_to_except1 数组组合
@@ -1389,7 +1391,7 @@ class DataClass:
             elif self.mode == "sq":
                 r_all_neg = ct.read_entity_and_get_all_neg_relations_sq(entity_id=name, ps_to_except=ps_to_except1)
             elif self.mode == "cc":
-                # todo: add answer to filter more
+
                 r_all_neg, a_all_neg = self.bh.read_entity_and_get_all_neg_relations_cc(entity_id=name,
                                                                                         ps_to_except=ps_to_except1)
 
@@ -1617,7 +1619,7 @@ class DataClass:
             raise Exception('error')
         name = self.entity1_list[global_index]
 
-        # todo: index should not in
+
         # ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
         ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
         # ps_to_except1 = [ps_to_except1]
@@ -1653,7 +1655,7 @@ class DataClass:
         ct.just_log2("info", r1_msg)
 
         # 加入所有的
-        # todo : total is get_static_num_debug
+
         if train_part == 'relation':
             rs = rs
         else:
@@ -1741,7 +1743,7 @@ class DataClass:
         ct.just_log2("info", r1_msg)
 
         # 加入所有的
-        # todo : total is get_static_num_debug
+
         # if train_part == 'relation':
         #     rs = rs
         # else:
@@ -1836,9 +1838,8 @@ class DataClass:
         ct.just_log2("info", "s1_in_q:%s\tentity1:%s" % (s1_in_q,entity1))
         ct.just_log2("info", q1_msg)
         ct.just_log2("info", r1_msg)
-
         # 加入所有的
-        # todo : total is get_static_num_debug
+
         # if train_part == 'relation':
         #     rs = rs
         # else:
@@ -1847,6 +1848,18 @@ class DataClass:
         # num = min(config.get_static_num_debug(), rs_len)
         # cand_s_neg = cand_s_neg[0:num]
 
+        c_temp_cand_ps_neg, c_temp_cand_ps_neg = [],[]
+        if config.cc_par('negative_sampling_model') == 'competing':
+            ct.print('\nr_pos1:%s' % r_pos1, 'choice')
+            neg_size = 10
+            c_temp_cand_ps_neg, c_temp_cand_as_neg \
+                = self.bh.competing_ps(r_pos1, [r_pos1],
+                                       neg_size, self.competing_train_dict, "G")
+            for _1, _2 in \
+                    zip(c_temp_cand_ps_neg, c_temp_cand_ps_neg):
+                _1 = _1[0]
+                _2 = _2[0]
+                ct.print(_1,'choice')
         _index = 0
         for cand_s_neg_item in all_cands:
             # 增加选出候选的neg属性
@@ -1863,8 +1876,21 @@ class DataClass:
                     d_key = cand_s_neg_item
                 temp_cand_ps_neg, temp_cand_as_neg = \
                         self.bh.read_entity_and_get_all_neg_relations_cc(d_key)
+                raise Exception('目前只使用别名词典的办法获取属性')
                 # self.bh.read_entity_and_get_all_neg_relations_cc(d_key)
-
+            # 前提是 s 是正确的
+            if cand_s_neg_item == s1_in_q :
+                for _1, _2 in \
+                        zip(c_temp_cand_ps_neg, c_temp_cand_ps_neg):
+                    _1 = _1[0]
+                    _2 = _2[0]
+                    ct.print(_1,'choice')
+                    # 考虑在这里去除重复
+                    if _1 not in temp_cand_ps_neg:
+                        temp_cand_ps_neg.append(_1)
+                        temp_cand_as_neg.append(_2)
+                    else:
+                        ct.print('%s 重复出现'% (_1), 'temp')
             for _cand_ps_neg_item,_as in \
                     zip(temp_cand_ps_neg,temp_cand_as_neg):
                 # 如果实体和属性都是正确的，则跳过
@@ -1894,19 +1920,9 @@ class DataClass:
                 r1_msg = "s-neg,r-neg,a-neg: %s - %s - %s \t q_current_for_a:%s " % \
                          (cand_s_neg_item,_cand_ps_neg_item,_as,q_current_for_a)
                 ct.just_log2("info", r1_msg)
-
-                if _index % total == 0 and _index != 0:
-                    d1 = dict()
-                    d1['q_'] = np.array(q_)   # 0
-                    d1['q_p'] = np.array(q_p)   # 1
-                    d1['q_s'] = np.array(q_s)   # 2
-                    d1['q_a'] = np.array(q_a)  # 2
-                    d1['s_pos'] = np.array(s_pos)   # 3
-                    d1['s_neg'] = np.array(s_neg)   # 4
-                    d1['p_pos'] = np.array(p_pos)   # 5
-                    d1['p_neg'] = np.array(p_neg)   # 6
-                    d1['a_pos'] = np.array(a_pos)  # 5
-                    d1['a_neg'] = np.array(a_neg)  # 6
+                need_return = _index % total == 0 and _index != 0
+                if need_return:
+                    d1 = self.return_dict(a_neg, a_pos, p_neg, p_pos, q_, q_a, q_p, q_s, s_neg, s_pos)
                     q_.clear()
                     q_p.clear()
                     q_s.clear()
@@ -1917,23 +1933,26 @@ class DataClass:
                     p_neg.clear()
                     a_pos.clear()
                     a_neg.clear()
-                    
                     yield d1
-        #  d1['x_new'],d1['x_new_e'], d1['x_new_p'], d1['y_pos'],d1['y_neg'],d1['p_pos'],d1['p_neg']
-        # ct.just_log2("info","len: " + str(len(x_new)) + "  " + str(len(y_pos))+" "+str(len(np.array(y_neg))))
-        # r_len = len(x_new)
-        #
-        # return np.array(x_new), np.array(y_pos), np.array(y_neg), r_len
-
-            # if len(x_new)>0: # 把剩下的也返回回去
-            #     d1['x_new'] = np.array(x_new)  # 0
-            #     d1['x_new_e'] = np.array(x_new_e)  # 1
-            #     d1['x_new_p'] = np.array(x_new_p)  # 2
-            #     d1['y_pos'] = np.array(y_pos)  # 3
-            #     d1['y_neg'] = np.array(y_neg)  # 4
-            #     d1['p_pos'] = np.array(p_pos)  # 5
-            #     d1['p_neg'] = np.array(p_neg)  # 6
+            # end for
+            # if len(q_)>0:
+            #     d1 = self.return_dict(a_neg, a_pos, p_neg, p_pos, q_, q_a, q_p, q_s, s_neg, s_pos)
             #     yield d1
+
+    def return_dict(self, a_neg, a_pos,  p_neg, p_pos, q_, q_a, q_p, q_s, s_neg, s_pos):
+        d1 = dict()
+        d1['q_'] = np.array(q_)  # 0
+        d1['q_p'] = np.array(q_p)  # 1
+        d1['q_s'] = np.array(q_s)  # 2
+        d1['q_a'] = np.array(q_a)  # 2
+        d1['s_pos'] = np.array(s_pos)  # 3
+        d1['s_neg'] = np.array(s_neg)  # 4
+        d1['p_pos'] = np.array(p_pos)  # 5
+        d1['p_neg'] = np.array(p_neg)  # 6
+        d1['a_pos'] = np.array(a_pos)  # 5
+        d1['a_neg'] = np.array(a_neg)  # 6
+
+        return d1
 
     # 1
     # 在用，valid_batch_debug-> 生成一个问题的相关信息
@@ -2053,7 +2072,7 @@ class DataClass:
                     # continue
                     labels.append(True)
                 else:
-                    labels.append(False)
+                     labels.append(False)
                 if cand_s_neg_item == s1_in_q :
                     ner_labels.append(True)
                 else:
@@ -2085,6 +2104,131 @@ class DataClass:
         if not labels.__contains__(True):
             ct.print('%s\t%s\t%s '%(q_current,r_pos1,a_in_q_pos),'bad_q')
         return d1
+
+    # 获取竞争属性集合，用于计算互相之间的相似度
+    def batch_iter_competing_ps_cosine(self):
+
+        total = 1000
+        _index = 0
+        r_pos = []
+        r_cp = []
+        r_cp_str = ''
+        prob2 = []
+
+        for p_k, p_v in self.competing_train_dict.items():
+            ps_to_except = [p_k]
+            r_cp_str = p_k
+            for _p in p_v: # ( 属性 ，个数)
+                if _p[0] not in ps_to_except:
+                    _index += 1
+                    r_pos.append(self.convert_str_to_indexlist(p_k))  # 加自己
+                    r_cp.append(self.convert_str_to_indexlist(_p[0]))
+                    prob2.append(_p[1])
+                need_return = _index % total == 0
+                if need_return:
+                    d1 = dict()
+                    d1['r_pos'] = np.array(r_pos)
+                    d1['r_cp'] = np.array(r_cp)
+
+                    d1['r_pos_str'] = r_cp_str
+                    r_pos.clear()
+                    r_cp.clear()
+                    yield d1
+        if len(r_pos) > 0:
+            d1 = dict()
+            d1['r_pos_str'] = r_cp_str
+            d1['r_pos'] = np.array(r_pos)
+            d1['r_cp'] = np.array(r_cp)
+            yield d1
+
+    # 对照 feature2cos_sim 写成 np 版本
+    def cal_cosine(self,p1,p2):
+        # cosine=x*y/(|x||y|)
+        norm_p1 = np.sqrt(np.sum(np.multiply(p1,p1)))
+        norm_p2 = np.sqrt(np.sum(np.multiply(p2, p2)))
+        mul_p1_p2 = np.sum(np.multiply(p1,p2))
+        cos_sim_p1_p2 = np.divide(mul_p1_p2,np.multiply(norm_p1,norm_p2))
+        return cos_sim_p1_p2
+
+    # 更新和计算竞争属性集的每个属性的top k
+    # d1  key = 属性，value = 属性对应的向量
+    # 同时更新一份到 competing_train_dict 供对接之前的前TOP K个概率出
+    def update_competing_ps_cosine(self,top_n,d1):
+        cp_dict = dict()  # key = 属性 value =  top-k 的属性
+        competing_train_dict_new = dict()
+        for p_k, p_v in self.competing_train_dict.items():
+            ps_to_except = [p_k]
+            p_k_xl = d1.get(p_k,'')
+            if p_k_xl == '':
+                continue
+            st_list = []
+            _index = -1
+            _competing_train_dict_set = set()
+            for _p in p_v:  # ( 属性 ，个数)
+                # _p = p_v[i]
+                if _p[0] in ps_to_except:
+                    continue
+                _index += 1
+                _p_xl = d1.get(_p[0],'')
+                if _p_xl == '':
+                    continue
+                st = ct.new_struct()
+                st.index = _index
+                st.p = _p[0]
+                st.score = np.mean(self.cal_cosine(p_k_xl,_p_xl))
+                st_list.append(st)
+                # _competing_train_dict 部分
+                _tp =(st.p,st.score)
+                _competing_train_dict_set.add(_tp)
+
+            # 排序
+            st_list.sort(key=ct.get_key)
+            st_list.reverse()
+            if len(st_list)>top_n:
+                st_list = st_list[0:top_n]
+            cp_dict[p_k] = st_list
+            ct.print("@%s" % p_k, 'update_score')
+            for item in st_list:
+                ct.print("%s\t%s"%(item.p,str(item.score)),'update_score')
+            competing_train_dict_new[p_k] = _competing_train_dict_set
+
+        self.cp_dict = cp_dict
+        self.competing_train_dict = competing_train_dict_new
+
+
+
+    # 获取竞争属性集合，用于计算互相之间的相似度
+    def batch_iter_all_competing_ps(self):
+        total = 1000
+        _index = 0
+        r_cp = []
+        for item in self.competing_set:
+            _index += 1
+            r_cp.append(self.convert_str_to_indexlist(item))
+            need_return = _index % total == 0
+            if need_return:
+                d1 = dict()
+                d1['r_cp'] = np.array(r_cp)
+                r_cp.clear()
+                yield d1
+
+        if len(r_cp) > 0:
+            d1 = dict()
+            d1['r_cp'] = np.array(r_cp)
+            yield d1
+
+
+    # 更新competing ps
+    def update_train_competing_ps_cosine(self,r_pos,r_cp,top_n,st_list):
+        # d1 = dict()   # key = pos_p , value = top k
+        st_list = st_list[0:top_n]
+        _s = set()
+        ct.print(str(r_pos), 'update_train_competing_ps_cosine')
+        for st in st_list :
+            _item = (r_cp[st.index],st.score)
+            _s.add(_item)
+            ct.print(str(_item),'update_train_competing_ps_cosine')
+        self.competing_train_score_dict[r_pos] = _s
 
     # 获取一个SP 的所有答案
     # TP  FP FN
@@ -2216,13 +2360,34 @@ class DataClass:
     # competing model 竞争模块
     def init_competing_model(self, f1='competing_ps_path'):
         competing_dict = dict()
+        # competing_prob_dict = dict()
+        competing_set = set()
+        f1s = ct.file_read_all_lines_strip_no_tips(f1)
+        for l1 in f1s:
+            k1 = str(l1).split('\t')[0]  # key
+            v1 = str(l1).split('\t')[1]  #
+            competing_set.add(v1)
+            _prob = float(str(l1).split('\t')[2])
+            if competing_dict.__contains__(k1):
+                _cs_set=competing_dict[k1]
+            else:
+                _cs_set = set()
+            _cs_set.add((v1,_prob))
+            competing_dict[k1] = _cs_set
+            # competing_prob_dict["%s_%s"%(k1,v1)] = _prob
+        self.competing_train_dict = competing_dict
+        self.competing_set = competing_set
+
+    # competing model 竞争模块
+    # 错误方法
+    def init_competing_model_bak(self, f1='competing_ps_path'):
+        competing_dict = dict()
         f1s = ct.file_read_all_lines_strip(f1)
         for l1 in f1s:
             k1 = str(l1).split('\t')[0]
             v1 = str(l1).split('\t')[1:]
             competing_dict[k1] = set(v1)
         self.competing_dict = competing_dict
-
     # def init_alias_dict(self,f2=''):
     #     # # 构造字典
     #     alias_dict = dict()
@@ -2274,7 +2439,7 @@ class DataClass:
             raise Exception('error')
         name = self.entity1_list[global_index]
 
-        # todo: index should not in
+
         # ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
         ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
         # ps_to_except1 = [ps_to_except1]
@@ -2302,7 +2467,7 @@ class DataClass:
         ct.just_log2("info", r1_msg)
 
         # 加入所有的
-        # todo : total is get_static_num_debug
+
         if train_part == 'relation':
             rs = rs
         else:
@@ -2372,7 +2537,7 @@ class DataClass:
             raise Exception('error')
         name = self.entity1_list[global_index]
 
-        # todo: index should not in
+
         # ps_to_except1 = self.relation_list[global_index]  # 应该从另一个关系集合获取
         ps_to_except1 = self.relation_path_clear_str_all[global_index]  # 从这里拿是对的
         # ps_to_except1 = [ps_to_except1]
@@ -2399,7 +2564,7 @@ class DataClass:
         ct.just_log2("info", r1_msg)
 
         # 加入所有的
-        # todo : total is get_static_num_debug
+
         if train_part == 'relation':
             rs = rs
         else:
@@ -2748,6 +2913,15 @@ def test_answer():
 
 def test_ner_entitiy():
     dh = DataClass("cc")
+    r_pos1 = '性别'
+    rs, a_s = dh.bh.competing_ps(r_pos1, [r_pos1],
+                                   10, dh.competing_train_dict, "G")
+
+    for _cand_ps_neg_item, _as in \
+            zip(rs, a_s):
+        _cand_ps_neg_item=_cand_ps_neg_item[0]
+        print(_cand_ps_neg_item)
+    # print(rs)
     train_question_list_index = None
     train_relation_list_index = None
     model = 'valid'
@@ -2755,6 +2929,7 @@ def test_ner_entitiy():
     train_part = 'entity'
     g = dh.batch_iter_cand_s(model, index,10)
     for x, y, z,m in g:
+        break
         print(x)
         print(y)
         print(z)

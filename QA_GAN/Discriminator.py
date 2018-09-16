@@ -16,6 +16,7 @@ class Discriminator(bilstm):
                  need_cal_attention, need_max_pooling, word_model, embedding_weight, need_gan, first):
         bilstm.__init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
                         need_cal_attention, need_max_pooling, word_model, embedding_weight, need_gan, first)
+        print("%s start"%config.cc_par('loss_part'))
         self.model_type = "Dis"
         with tf.name_scope("output"):
             # 这个是普通的loss函数：  max( 0,0.05 -(pos-neg) )
@@ -26,7 +27,6 @@ class Discriminator(bilstm):
             self.ans_losses = tf.maximum(0.0, tf.subtract(loss_margin, tf.subtract(self.ans_score12, self.ans_score13)))
             # 20180906-1--end
             self.loss = 0
-            print(config.cc_par('loss_part'))
             # if config.cc_par('loss_part').__contains__('relation'):
             self.loss_rel = tf.reduce_sum(self.rel_loss)  # + self.l2_reg_lambda * self.l2_loss
             self.loss_ner = tf.reduce_sum(self.ner_losses)

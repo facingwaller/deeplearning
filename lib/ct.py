@@ -833,7 +833,8 @@ class ct:
         ms = config.get_print_type()
         if m in ms:
             print("%s:\t%s" % (timestamp, msg))
-        ct.just_log4(m, "%s:\t%s" % (timestamp, msg))
+        if m not in ['maybe_possible','maybe','test_error','time']:
+            ct.just_log4(m, "%s:\t%s" % (timestamp, msg))
 
     @staticmethod
     def print_list(list1, m="none"):

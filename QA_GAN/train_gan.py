@@ -288,7 +288,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
             msg1 = "step:%d st.index:%d,score:%f,r:%s" % (step, item.index, item.score, r1)
             item.msg1 = msg1
             maybe_list[index] = item
-            ct.print(msg1, "maybe")
+            # ct.print(msg1, "maybe")
 
         if pos_in_it:
             maybe_dict['r'] += 1
@@ -377,8 +377,8 @@ def valid_step_e_r(sess, lstm, step,  item,  dh, model, global_index, state,):
         st = ct.new_struct()
         st.index = i
         st.label = labes[i] # 对错
-        st.ner_label = ner_labels
-        st.rel_label = rel_labels
+        st.ner_label = ner_labels[i]
+        st.rel_label = rel_labels[i]
         st.cosine_matix = test_q_r_cosin[i]
         st.score = test_q_r_cosin[i]/mean_num
 
@@ -588,7 +588,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
         else:
             tj['fp'] += 1 # 负类判定为正类
             tj['fn'] += 1 # 正类判定为负类
-            ct.print("%d\tfn:%s"% fn,"fn")
+            ct.print("%s\tfn:%s"% (state,fn),"fn")
     p1 = tj['tp'] / (tj['tp']+ tj['fp'])
     recall1 = tj['tp'] /(tj['tp']+ tj['fn'])
     f1 = 2 * p1 * recall1 /(p1+recall1)
@@ -691,7 +691,7 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
         # else:
         ct.just_log2("test_error", valid_msg3)
     ct.just_log2("test_error", '--------------%d' % len(_1))
-    ct.print("==========%s" % model, "maybe_possible")
+    # ct.print("==========%s" % model, "maybe_possible")
 
     # 再记录一次 出错问题的排序
     tp = ct.sort_dict(error_test_dict)
@@ -750,8 +750,8 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
     msg = "==== %s %f 正确答案数（%d）/总数(%d)：%f;候补(%d)/总数:%f " \
           % (model, acc, maybe_tmp_dict['r'], total, acc0, maybe_tmp_dict['m1'], maybe_canget)
     # ct.print(msg, "maybe1")
-    ct.print(msg, "maybe_possible")
-    ct.print("\n---------------------------", "maybe1")
+    # ct.print(msg, "maybe_possible")
+    # ct.print("\n---------------------------", "maybe1")
 
     return error_test_dict
 
@@ -892,6 +892,8 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer,
     log_error_questions(dh, model, error_test_q_list,
                                           error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
                                           maybe_list_list, acc, maybe_global_index_list)
+    ct.just_log3("test_check",
+                 "@@error@@test_blow\n")
     # ct.print("===========step=%d" % step, "maybe_possible")
 
     #  if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
@@ -919,84 +921,10 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer,
     # ct.just_log2("info", toogle_line)
     checkpoint(sess, state)
     ct.just_log3("test_check",
-                 "\nmode\tid\tglobal_id\tglobal_id_in_origin\tquestion\tentity\tpos\tanswer\tr1\tr2\tr3\n\t@@err")
+                 "@@error@@valid_below\n")
 
 
-# def answer_select(state, train_step, dh, step, sess, discriminator, merged, writer, valid_test_dict):
-#     test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
-#
-#     if False:
-#         # 验证
-#
-#         #   if (train_step + 1) % FLAGS.evaluate_every == 0:
-#         model = "valid"
-#         train_part = config.cc_par('train_part')
-#         if train_part == 'relation':
-#             train_part_1 = dh.train_relation_list_index
-#         else:
-#             train_part_1 = dh.train_answer_list_index
-#
-#         id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
-#         ct.print("问题总数 %s " % len(id_list))
-#         # if model == "valid":
-#         #     id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
-#         # else:
-#         #     id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
-#
-#         # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
-#
-#         acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
-#             answer_valid_batch_debug(sess, discriminator, 0, None, merged, writer,
-#                                      dh, test_batchsize, dh.train_question_list_index,
-#                                      train_part_1,
-#                                      model, dh.train_question_global_index, train_part, id_list, state)
-#         msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (
-#         step, state, train_step, model, test_batchsize, acc)
-#         ct.print(msg)
-#         ct.just_log2("valid", msg)
-#         valid_test_dict = log_error_questions(dh, model, error_test_q_list,
-#                                               error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
-#                                               maybe_list_list, acc, maybe_global_index_list)
-#         ct.print("===========step=%d" % step, "maybe_possible")
-#     # if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
-#     # ============= 测试
-#     model = "test"
-#     train_part = config.cc_par('train_part')
-#     if train_part == 'relation':
-#         train_part_1 = dh.test_relation_list_index
-#     else:
-#         train_part_1 = dh.test_answer_list_index
-#
-#     id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
-#
-#     acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
-#         answer_valid_batch_debug(sess, discriminator, step, None, merged, writer,
-#                                  dh, test_batchsize, dh.test_question_list_index,
-#                                  train_part_1, model, dh.test_question_global_index, train_part, id_list, state)
-#     # 测试 集合不做训练 但是将其记录下来
-#
-#     # error_test_dict = log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc,
-#     #                                       maybe_global_index_list)
-#     # error_test_dict = log_error_questions(dh, model, error_test_q_list,
-#     #                                       error_test_pos_r_list, error_test_neg_r_list, error_test_dict,
-#     #                                       maybe_list_list, acc, maybe_global_index_list)
-#
-#     _1.clear()
-#     _2.clear()
-#     _3.clear()
-#     msg = "step:%d %s train_step %d %s_batchsize:%d  acc:%f " % (
-#         step, state, train_step, model, test_batchsize, acc)
-#     ct.print(msg)
-#     ct.just_log2("test", msg)
-#     ct.print("===========step=%d" % step, "maybe_possible")
-#     # toogle_line = ">>>>>>>>>>>>>>>>>>>>>>>>>train_step=%d" % train_step
-#     # ct.log3(toogle_line)
-#     # ct.just_log2("info", toogle_line)
-#
-#     checkpoint(sess, state)
 
-
-# 主流程
 def main():
     with tf.device("/gpu"):
         session_conf = tf.ConfigProto(allow_soft_placement=FLAGS.allow_soft_placement,
@@ -1039,17 +967,17 @@ def main():
             embedding_weight=embedding_weight,
             need_gan=True, first=True)
 
-        generator = Generator(
-            max_document_length=dh.max_document_length,  # timesteps
-            word_dimension=FLAGS.word_dimension,  # 一个单词的维度
-            vocab_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
-            rnn_size=FLAGS.rnn_size,  # 隐藏层大小
-            model=model,
-            need_cal_attention=FLAGS.need_cal_attention,
-            need_max_pooling=FLAGS.need_max_pooling,
-            word_model=FLAGS.word_model,
-            embedding_weight=embedding_weight,
-            need_gan=True, first=False)
+        # generator = Generator(
+        #     max_document_length=dh.max_document_length,  # timesteps
+        #     word_dimension=FLAGS.word_dimension,  # 一个单词的维度
+        #     vocab_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
+        #     rnn_size=FLAGS.rnn_size,  # 隐藏层大小
+        #     model=model,
+        #     need_cal_attention=FLAGS.need_cal_attention,
+        #     need_max_pooling=FLAGS.need_max_pooling,
+        #     word_model=FLAGS.word_model,
+        #     embedding_weight=embedding_weight,
+        #     need_gan=True, first=False)
 
         ct.print("max_document_length=%s,vocab_size=%s " % (str(dh.max_document_length), str(dh.converter.vocab_size)))
 
@@ -1062,10 +990,6 @@ def main():
             writer = tf.summary.FileWriter(ct.log_path() + "\\log\\", sess.graph)
             sess.run(init)
 
-            use_error = False
-            error_test_q_list = []
-            error_test_pos_r_list = []
-            error_test_neg_r_list = []
             loss_dict = dict()
             loss_dict['loss'] = 0
             loss_dict['pos'] = 0
@@ -1258,7 +1182,7 @@ def main():
                         pools = train_neg
                         gan_k = FLAGS.gan_k + r_len
                         use_top_k = True
-                        if use_top_k:  # 直接去前X个
+                        if use_top_k:  # 直接取前X个
                             ts = []
                             for i in range(len(predicteds)):
                                 t1 = (i, predicteds[i])
@@ -1560,6 +1484,38 @@ def main():
                     run_step = 0
                     elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                              error_test_dict,train_part)
+
+                # 更新一圈竞争排名 # 20180916 ns 实验 negative sampling top k
+                for cos_index in range(FLAGS.ns_epoches):
+                    ct.print('ns_epoches start')
+                    ns_r_r_score_all = []
+                    r_cp = []
+                    ns_index = 0
+                    cp_dict = dict()
+                    gc1 = dh.batch_iter_all_competing_ps()
+                    for item in gc1:
+                        ns_index += 1
+                        state = "step=%d_epoches=%s_index=%d" % (step, 'd', ns_index)
+                        feed_dict = {}
+                        # feed_dict[discriminator.ns_r_pos] = item['r_pos']  # negative sampling
+                        feed_dict[discriminator.ns_r_cp] = item['r_cp']
+                        ns_r_r_score, _ = sess.run(
+                            [discriminator.ns_test_r_cp_out,discriminator.ns_test_r_cp],
+                            feed_dict=feed_dict)
+                        # ns_r_r_score = ns_r_r_score[0]
+                        if ns_index % 100 == 0:
+                            print(state)
+                        ns_r_r_score_all.extend(ns_r_r_score)
+                        r_cp.extend([dh.converter.arr_to_text_no_unk(x) for x in item['r_cp']])
+
+                        # 遍历得分
+                        for i in range(0,len(ns_r_r_score)):
+                            score = ns_r_r_score[i]
+                            r_cp_str = dh.converter.arr_to_text_no_unk(item['r_cp'][i])
+                            cp_dict[r_cp_str] = score
+                    top_n = 20
+                    dh.update_competing_ps_cosine(top_n,cp_dict)
+
 
             ct.print('finish epoches %d' % FLAGS.epoches)
 

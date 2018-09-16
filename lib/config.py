@@ -51,19 +51,17 @@ if testid == "cc_test":
     rnn_size = 100
     mode = "cc"
     check = 100000
-    # 属性模式
-    use_property = 'special'
-    # 使用属性的模式做训练和测试
-    # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
+    # 属性模式 # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
+    use_property = 'special'  # 使用属性的模式做训练和测试
     skip_threshold = 0.02
-    t_relation_num = 100 # 4358  # 重要！这个指示了训练的关系个数 4358
+    t_relation_num = 100  # 4358  # 重要！这个指示了训练的关系个数 4358
+    ner_top_cand = 2  # 训练取2，测试取3 0 只测属性识别
     # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
     # 而非模拟测试的。 之前是混合在一起
     real_split_train_test = True
-    #####
     # train_part = 'relation'  # 属性 relation |answer | entity  |  entity_relation
     loss_part = 'entity_relation_transE-2'  # entity_relation_transE|  entity_relation_answer_transE |  relation | entity | transE
-    loss_margin = 0.05  # 简书上是0.05，liu kang 那边是 0.6 也有0.02
+    loss_margin = 0.02  # 简书上是0.05，liu kang 那边是 0.6 也有0.02
     #  IR-GAN
     batch_size_gan = 1000  #100 或者 1000 ,80%的竞争属性是在600
     gan_k = 10
@@ -76,6 +74,7 @@ if testid == "cc_test":
     c_epoches = 0
     a_epoches = 0
     ner_epoches = 1
+    ns_epoches = 0
 
     # optimizer_method = 'origin'  # origin , gan
     #  maybe
@@ -84,7 +83,7 @@ if testid == "cc_test":
     # only_default 默认模式|fixed_amount 固定 最多100个 | additional 默认+额外
     # synonym_train_mode 优先加入neg的同义词
     # competing_ps 竞争属性
-    pool_mode = 'competing_ps'
+    pool_mode = 'None' # competing_ps | None
 
     # 模型恢复
     restore_model = False
@@ -109,7 +108,7 @@ if testid == "cc_test":
 
     # 竞争属性集
     # competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
-    competing_ps_path = '../data/nlpcc2016/13-competing/competing_ps.v1.txt'
+    competing_ps_path = '../data/nlpcc2016/13-competing/competing_ps_tj.v2.txt'
     competing_batch_size = 10 # 控制size
 
     expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
@@ -117,9 +116,11 @@ if testid == "cc_test":
     # S-NER
     ner_model = 'cos'
     ner_path = '../data/nlpcc2016/4-ner/extract_entitys_all_tj_sort.v1.txt'
-    ner_top_cand = 2  # 训练取2，测试取3
+
     alias_dict = '../data/nlpcc2016/4-ner/extract_e/e1.dict.txt'
     use_alias_dict = True
+    # 负例选取的方式 alias 指代后的全体实体的属性 | competing 某POS属性的竞争属性
+    negative_sampling_model = 'alias'  # alias | competing
 else:
     raise Exception("testid 参数有误")
 
@@ -211,7 +212,8 @@ cc_p = {
     'ner_top_cand':ner_top_cand,
     't_relation_num':t_relation_num,
     'alias_dict':alias_dict,
-    'use_alias_dict':use_alias_dict
+    'use_alias_dict':use_alias_dict,
+    'negative_sampling_model':negative_sampling_model
 
 }
 
@@ -239,7 +241,8 @@ tf.flags.DEFINE_integer("s_epoches", s_epoches, "s_epoches")
 tf.flags.DEFINE_integer("c_epoches", c_epoches, "c_epoches")
 tf.flags.DEFINE_integer("a_epoches", a_epoches, "a_epoches")
 tf.flags.DEFINE_integer("ner_epoches", ner_epoches, "ner_epoches")
-
+tf.flags.DEFINE_integer("ns_epoches", ns_epoches, "ns_epoches")
+# ns_epoches
 
 #
 # tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
