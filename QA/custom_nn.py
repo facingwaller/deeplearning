@@ -199,16 +199,16 @@ class CustomNetwork:
             # 20180906-1--end
 
 
-    def max_pooling(self):
-        '''
-        弃用
-        :return:
-        '''
-        self.ori_q = max_pooling(self.ori_q)
-        self.cand_a = max_pooling(self.cand_a)
-        self.neg_a = max_pooling(self.neg_a)
-        self.test_q_out = max_pooling(self.test_q_out)
-        self.test_r_out = max_pooling(self.test_r_out)
+    # def max_pooling(self):
+    #     '''
+    #     弃用
+    #     :return:
+    #     '''
+    #     self.ori_q = max_pooling(self.ori_q)
+    #     self.cand_a = max_pooling(self.cand_a)
+    #     self.neg_a = max_pooling(self.neg_a)
+    #     self.test_q_out = max_pooling(self.test_q_out)
+    #     self.test_r_out = max_pooling(self.test_r_out)
 
     def cal_attention(self):
         with tf.name_scope("att_weight"):
@@ -292,7 +292,7 @@ class CustomNetwork:
             # 20180906-1--start 用cos做NER
             self.ner_ori_cand = feature2cos_sim(self.ner_ori_q_feat, self.ner_cand_q_feat)
             self.ner_ori_neg = feature2cos_sim(self.ner_ori_q_feat, self.ner_neg_q_feat)
-            self.ner_loss, self.ner_acc = cal_loss_and_acc(self.ner_ori_cand, self.ner_ori_neg)
+            # self.ner_loss, self.ner_acc = cal_loss_and_acc(self.ner_ori_cand, self.ner_ori_neg)
             self.ner_test_q_r = feature2cos_sim(self.ner_test_q_out, self.ner_test_r_out)
 
             # 20180906-1--end
@@ -300,8 +300,7 @@ class CustomNetwork:
             # 201809010 start 添加answer部分
             self.ans_ori_cand = feature2cos_sim(self.ans_ori_q_feat, self.ans_cand_q_feat)
             self.ans_ori_neg = feature2cos_sim(self.ans_ori_q_feat, self.ans_neg_q_feat)
-            self.ans_loss, self.ans_acc = cal_loss_and_acc(self.ans_ori_cand, self.ans_ori_neg)
-            # self.ans_test_q_r = feature2cos_sim(self.ans_test_q_out, self.ans_test_r_out) 备份
+            # self.ans_loss, self.ans_acc = cal_loss_and_acc(self.ans_ori_cand, self.ans_ori_neg)
             #  改成 Sq+Pq = Oq 就是说句子中的S + 句子中的P = 真正的答案O ，寻找与他最匹配的候选O
             temp_O = tf.add(self.ner_test_q_out, self.test_q_out)
             self.ans_test_q_r = feature2cos_sim(temp_O, self.ans_test_r_out)
@@ -372,8 +371,8 @@ class CustomNetwork:
 
 
         tf.summary.histogram("loss", self.r_loss)  # 可视化观看变量
-        tf.summary.histogram("ner_loss", self.ner_loss)  # 可视化观看变量
-        tf.summary.histogram("r_acc", self.r_acc)  # 可视化观看变量
+        # tf.summary.histogram("ner_loss", self.ner_loss)  # 可视化观看变量
+        # tf.summary.histogram("r_acc", self.r_acc)  # 可视化观看变量
 
     def cal_score(self):
         # 二者的得分
@@ -450,45 +449,53 @@ class CustomNetwork:
         # return loss
         # 就是得分
 
+    def train_op1(self,loss,global_step,max_grad_norm):
+        tvars = tf.trainable_variables()
+        grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars),
+                                          max_grad_norm)
+        optimizer = tf.train.GradientDescentOptimizer(1e-1)
+        optimizer.apply_gradients(zip(grads, tvars))
+        return optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
 
-    def ap_attention(self):
-        '''
-        未启用
-        :return:
-        '''
-        rnn_size = self.rnn_size
-        ori_q = self.ori_q
-        test_q = self.test_q
-        cand_a = self.cand_a
-        neg_a = self.neg_a
-        test_a = self.test_a
-        self.quest_len = self.max_document_length
-        self.answer_len = self.quest_len
-        batch_size = len(self.ori_input_quests)  # 10
-        # ----------------------------- cal attention -------------------------------
-        with tf.variable_scope("attention_%d" % self.num, reuse=None) as scope:
-            U = tf.get_variable("U", [2 * self.rnn_size, 2 * rnn_size],
-                                initializer=tf.truncated_normal_initializer(stddev=0.1))
-            G = tf.nn.tanh(
-                tf.matmul(tf.matmul(ori_q, tf.tile(tf.expand_dims(U, 0), [batch_size, 1, 1])), cand_a, adjoint_b=True))
-            delta_q = tf.nn.softmax(tf.reduce_max(G, 2))
-            delta_a = tf.nn.softmax(tf.reduce_max(G, 1))
-            neg_G = tf.nn.tanh(
-                tf.matmul(tf.matmul(ori_q, tf.tile(tf.expand_dims(U, 0), [batch_size, 1, 1])), neg_a, adjoint_b=True))
-            #  tf.tile主要的功能就是在tensorflow中对矩阵进行自身进行复制的功能，比如按行进行复制，或是按列进行复制
-            delta_neg_q = tf.nn.softmax(tf.reduce_max(neg_G, 2))
-            delta_neg_a = tf.nn.softmax(tf.reduce_max(neg_G, 1))
-        with tf.variable_scope("attention_%d" % self.num, reuse=True) as scope:
-            test_G = tf.nn.tanh(
-                tf.matmul(tf.matmul(test_q, tf.tile(tf.expand_dims(U, 0), [batch_size, 1, 1])), test_a, adjoint_b=True))
-            delta_test_q = tf.nn.softmax(tf.reduce_max(test_G, 2))
-            delta_test_a = tf.nn.softmax(tf.reduce_max(test_G, 1))
+    # def ap_attention(self):
+    #     '''
+    #     未启用
+    #     :return:
+    #     '''
+    #     rnn_size = self.rnn_size
+    #     ori_q = self.ori_q
+    #     test_q = self.test_q
+    #     cand_a = self.cand_a
+    #     neg_a = self.neg_a
+    #     test_a = self.test_a
+    #     self.quest_len = self.max_document_length
+    #     self.answer_len = self.quest_len
+    #     batch_size = len(self.ori_input_quests)  # 10
+    #     # ----------------------------- cal attention -------------------------------
+    #     with tf.variable_scope("attention_%d" % self.num, reuse=None) as scope:
+    #         U = tf.get_variable("U", [2 * self.rnn_size, 2 * rnn_size],
+    #                             initializer=tf.truncated_normal_initializer(stddev=0.1))
+    #         G = tf.nn.tanh(
+    #             tf.matmul(tf.matmul(ori_q, tf.tile(tf.expand_dims(U, 0), [batch_size, 1, 1])), cand_a, adjoint_b=True))
+    #         delta_q = tf.nn.softmax(tf.reduce_max(G, 2))
+    #         delta_a = tf.nn.softmax(tf.reduce_max(G, 1))
+    #         neg_G = tf.nn.tanh(
+    #             tf.matmul(tf.matmul(ori_q, tf.tile(tf.expand_dims(U, 0), [batch_size, 1, 1])), neg_a, adjoint_b=True))
+    #         #  tf.tile主要的功能就是在tensorflow中对矩阵进行自身进行复制的功能，比如按行进行复制，或是按列进行复制
+    #         delta_neg_q = tf.nn.softmax(tf.reduce_max(neg_G, 2))
+    #         delta_neg_a = tf.nn.softmax(tf.reduce_max(neg_G, 1))
+    #     with tf.variable_scope("attention_%d" % self.num, reuse=True) as scope:
+    #         test_G = tf.nn.tanh(
+    #             tf.matmul(tf.matmul(test_q, tf.tile(tf.expand_dims(U, 0), [batch_size, 1, 1])), test_a, adjoint_b=True))
+    #         delta_test_q = tf.nn.softmax(tf.reduce_max(test_G, 2))
+    #         delta_test_a = tf.nn.softmax(tf.reduce_max(test_G, 1))
+    #
+    #     # -------------------------- recalculate lstm output -------------------------
+    #
+    #     ori_q_feat = max_pooling(tf.multiply(ori_q, tf.reshape(delta_q, [-1, self.quest_len, 1])))
+    #     cand_q_feat = max_pooling(tf.multiply(cand_a, tf.reshape(delta_a, [-1, self.answer_len, 1])))
+    #     neg_ori_q_feat = max_pooling(tf.multiply(ori_q, tf.reshape(delta_neg_q, [-1, self.quest_len, 1])))
+    #     neg_q_feat = max_pooling(tf.multiply(neg_a, tf.reshape(delta_neg_a, [-1, self.answer_len, 1])))
+    #     test_q_feat = max_pooling(tf.multiply(test_q, tf.reshape(delta_test_q, [-1, self.quest_len, 1])))
+    #     test_a_feat = max_pooling(tf.multiply(test_a, tf.reshape(delta_test_a, [-1, self.answer_len, 1])))
 
-        # -------------------------- recalculate lstm output -------------------------
-
-        ori_q_feat = max_pooling(tf.multiply(ori_q, tf.reshape(delta_q, [-1, self.quest_len, 1])))
-        cand_q_feat = max_pooling(tf.multiply(cand_a, tf.reshape(delta_a, [-1, self.answer_len, 1])))
-        neg_ori_q_feat = max_pooling(tf.multiply(ori_q, tf.reshape(delta_neg_q, [-1, self.quest_len, 1])))
-        neg_q_feat = max_pooling(tf.multiply(neg_a, tf.reshape(delta_neg_a, [-1, self.answer_len, 1])))
-        test_q_feat = max_pooling(tf.multiply(test_q, tf.reshape(delta_test_q, [-1, self.quest_len, 1])))
-        test_a_feat = max_pooling(tf.multiply(test_a, tf.reshape(delta_test_a, [-1, self.answer_len, 1])))

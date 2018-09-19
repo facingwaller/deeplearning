@@ -23,78 +23,10 @@ from QA_GAN.Discriminator import Discriminator
 from QA_GAN.Generator import Generator
 from lib.ct import ct
 
-# -----------------------------------定义变量
-# ----------------------------------- execute train model ---------------------------------
-maybe_dict = dict()
-maybe_dict['r'] = 0
-maybe_dict['e'] = 0
 
-
-# def run_step2(sess, lstm, step, trainstep, train_op, train_q, train_cand, train_neg, merged, writer, dh, use_error):
-#     start_time = time.time()
-#     feed_dict = {
-#         lstm.ori_input_quests: train_q,  # ori_batch
-#         lstm.cand_input_quests: train_cand,  # cand_batch
-#         lstm.neg_input_quests: train_neg  # neg_batch
-#     }
-#
-#     # ct.check_len(train_q,15)
-#     # ct.check_len(train_cand, 15)
-#     # ct.check_len(train_neg, 15)
-#     summary, l1, acc1, embedding1, train_op1, \
-#     ori_cand_score, ori_neg_score, ori_quests_out = sess.run(
-#         [merged, lstm.loss, lstm.acc, lstm.embedding, train_op,
-#          lstm.ori_cand, lstm.ori_neg, lstm.ori_quests],
-#         feed_dict=feed_dict)
-#
-#     time_str = datetime.datetime.now().isoformat()
-#     right, wrong, score = [0.0] * 3
-#     for i in range(0, len(train_q)):
-#         ori_cand_score_mean = np.mean(ori_cand_score[i])
-#         ori_neg_score_mean = np.mean(ori_neg_score[i])
-#         if ori_cand_score_mean > 0.55 and ori_neg_score_mean < 0.4:
-#             right += 1.0
-#         else:
-#             wrong += 1.0
-#         score += ori_cand_score_mean - ori_neg_score_mean
-#     time_elapsed = time.time() - start_time
-#
-#     writer.add_summary(summary, trainstep)
-#     # ct.print("STEP:" + str(step) + " loss:" + str(l1) + " acc:" + str(acc1))
-#     info = "use_error %s %s: step %s, loss %s, acc %s, score %s,right %s wrong %s, %6.7f secs/batch " % (
-#         use_error, time_str, trainstep, l1, acc1, score, right, wrong, time_elapsed)
-#     ct.just_log2("info", info)
-#     ct.print(info)
-#     if use_error and l1 == 0.0 and acc1 == 1.0:
-#         ct.just_log2("debug", "step=%s,train_step=%s------" % (step, trainstep))
-#         dh.log_error_r(train_q, "train_q")
-#         dh.log_error_r(train_cand, "train_cand")
-#         dh.log_error_r(train_neg, "train_neg")
-#         ct.print("??????")
-#
-#     if l1 == 0.0 and acc1 == 1.0:
-#         dh.loss_ok += 1
-#         ct.log3("loss = 0.0  %d " % dh.loss_ok)
-#         ct.print("loss == 0.0 and acc == 1.0 checkpoint and exit now = %d" % dh.loss_ok)
-#         if dh.loss_ok == FLAGS.stop_loss_zeor_count:
-#             checkpoint(sess)
-#             os._exit(0)
-#     else:
-#         dh.loss_ok = 0
-#     # ct.prin(1)
-#     if (trainstep + 1) % FLAGS.check == 0:
-#         checkpoint(sess)
-
-
-# ---先做多个问题（一样的问题），多个答案，多个标签，输出得分前X的答案并给出得分
-# test_q,问题
-# test_r,关系
-# labels,标签,
-# 2018.2.26 把相近的分数也带回去
 def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, writer, dh, model, global_index, state,
-               anwser_select=False):
-    start_time = time.time()
-    train_part= 'entity'
+               train_part):
+    anwser_select = False
     if train_part == 'entity':
         feed_dict = {
             lstm.ner_test_input_q: test_q,
@@ -290,11 +222,7 @@ def valid_step(sess, lstm, step, train_op, test_q, test_r, labels, merged, write
             maybe_list[index] = item
             # ct.print(msg1, "maybe")
 
-        if pos_in_it:
-            maybe_dict['r'] += 1
-        else:
-            maybe_dict['e'] += 1
-        acc0 = maybe_dict['r'] / (maybe_dict['r'] + maybe_dict['e'])
+
         # ct.print("%f pos_in_it  %s" % (acc0, pos_in_it), "maybe")
         # ct.print("\n", "maybe")
 
@@ -488,10 +416,11 @@ def valid_step_e_r(sess, lstm, step,  item,  dh, model, global_index, state,):
 
 
     return is_right,ner_ok,r_ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list
+
+
 # 训练
 def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
-                      model, test_question_global_index, train_part, id_list, state,
-                      anwser_select=False):
+                      model, test_question_global_index, train_part, id_list, state):
     # 分析 NER+R 和 NER R 的@1 准确率
     tj = dict()
     tj['f_right'] = 0
@@ -512,7 +441,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
     #     id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
 
     # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
-
+    ner_ok, r_ok, = False,False
     error_test_q_list = []
     error_test_pos_r_list = []
     error_test_neg_r_list = []
@@ -535,15 +464,15 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
         # 训练实体 属性 或者 实体+属性 采用不同的生成办法
         # 在此生成问题的相关信息
         if train_part == 'relation' or train_part == 'entity':
-            # test_q, test_r, labels = \
-            #     dh.batch_iter_wq_test_one_debug( model, index,train_part)
-            #
-            # ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = \
-            #     valid_step(sess, lstm, step, train_op,test_q, test_r,
-            #                                           labels, merged, writer, dh, model,
-            #                                           global_index, state,
-            #                                           anwser_select)
-            raise Exception('此路不通')
+            test_q, test_r, labels = \
+                dh.batch_iter_wq_test_one_debug( model, index,train_part)
+
+            ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = \
+                valid_step(sess, lstm, step, train_op,test_q, test_r,
+                                                      labels, merged, writer, dh, model,
+                                                      global_index, state,
+                                                         train_part)
+            # raise Exception('此路不通')
         elif train_part == 'entity_relation':
             item = dh.batch_iter_cc_ner_entitiy_test_one( model, index)
             if item['labels'] == None or len(item['labels']) == 0:
@@ -577,7 +506,7 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
         tp, tp2, fn = dh.get_o_from_kb(model, index)
         if ok: # 正例被检测为真
             tj['tp'] += 1 # len(tp)
-            # tj['fp'] += len(tp2)
+            tj['fp'] += len(tp2)
             for _tp in tp:
                 ct.print("%d\ttp:%s"%(index,_tp),"tp")
             # fp_msg = []
@@ -591,7 +520,10 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
             ct.print("%s\tfn:%s"% (state,fn),"fn")
     p1 = tj['tp'] / (tj['tp']+ tj['fp'])
     recall1 = tj['tp'] /(tj['tp']+ tj['fn'])
-    f1 = 2 * p1 * recall1 /(p1+recall1)
+    if p1+recall1 != 0 :
+        f1 = 2 * p1 * recall1 /(p1+recall1)
+    else:
+        f1 = -1
     acc = tj['f_right'] / (tj['f_right'] + tj['f_wrong'])
     ner_acc = tj['n_right'] / (tj['n_right'] + tj['n_wrong'])
     r_acc = tj['r_right'] / (tj['r_right'] + tj['r_wrong'])
@@ -606,61 +538,6 @@ def valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize,
 
     ct.print("%s" % (state), "tpfpfn")
     return acc,ner_acc,r_acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list
-
-
-# answer_valid_batch_debug
-# def answer_valid_batch_debug(sess, lstm, step, train_op, merged, writer, dh, batchsize, train_question_list_index,
-#                              train_relation_list_index, model, test_question_global_index, train_part, id_list, state):
-#     right = 0
-#     wrong = 0
-#     # 产生随机的index给debug那边去获得index
-#     # 仅供现在验证用
-#     # if model == "valid":
-#     #     id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
-#     # else:
-#     #     id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
-#
-#     # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
-#
-#     error_test_q_list = []
-#     error_test_pos_r_list = []
-#     error_test_neg_r_list = []
-#     maybe_list_list = []
-#     maybe_global_index_list = []  # 问题的全局index
-#     if batchsize > len(id_list):
-#         batchsize = len(id_list)
-#         ct.print('batchsize too big ,now is %d' % batchsize, 'error')
-#     for i in range(batchsize):
-#         try:
-#             index = id_list[i]
-#         except Exception as e1:
-#             ct.print(e1, 'error')
-#         if model == "test":
-#             global_index = test_question_global_index[index]
-#         else:
-#             global_index = test_question_global_index[index]
-#         ct.print("valid_batch_debug:%s %d ,index = %d ;global_index=%d " % (model, i, index, global_index))
-#         test_q, test_r, labels = \
-#             dh.batch_iter_cc_answer_test_one_debug(train_question_list_index, train_relation_list_index, model, index,
-#                                                    train_part)
-#
-#         ok, error_test_q, error_test_pos_r, error_test_neg_r, maybe_list = valid_step(sess, lstm, step, train_op,
-#                                                                                       test_q, test_r,
-#                                                                                       labels, merged, writer, dh, model,
-#                                                                                       global_index, state,
-#                                                                                       anwser_select=True)
-#         error_test_q_list.extend(error_test_q)
-#         error_test_pos_r_list.extend(error_test_pos_r)
-#         error_test_neg_r_list.extend(error_test_neg_r)
-#         maybe_list_list.append(maybe_list)
-#         maybe_global_index_list.append(global_index)
-#         if ok:
-#             right += 1
-#         else:
-#             wrong += 1
-#     acc = right / (right + wrong)
-#     ct.print("right:%d wrong:%d" % (right, wrong), "debug")
-#     return acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list
 
 
 def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list, acc, maybe_global_index_list):
@@ -756,105 +633,7 @@ def log_error_questions(dh, model, _1, _2, _3, error_test_dict, maybe_list_list,
     return error_test_dict
 
 
-# --获取随机
-def get_shuffle_indices_train(total):
-    """
-
-    :param dh:
-    :param step:
-    :param train_part:
-    :param model: train valid test
-    :return:
-    """
-    # if train_part == 'relation':
-    shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
-    # shuffle_indices1 = [str(x) for x in list(shuffle_indices)]
-    # step  训练模式    训练部分
-    # ct.just_log(config.cc_par('combine'),
-    #             '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(shuffle_indices1)))
-    # else:
-    #     f1s = ct.file_read_all_lines_strip(config.cc_par('combine'))
-    #     line = ''
-    #     exist = False
-    #     for l1 in f1s:
-    #         if str(l1).split('\t')[0] == str(train_step):
-    #             line = str(l1)
-    #             exist = True
-    #             break
-    #     if exist:
-    #         line_split = line.split('\t')
-    #         line_split = line_split[3:]
-    #         line_split = [int(x) for x in line_split]
-    #         shuffle_indices = np.array(line_split)
-    #         ct.print('get_shuffle_indices_train   exist %s' % train_step, 'shuffle_indices_train')
-    #     else:  # 不存在就自己写
-    #         shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
-    #         ct.print('get_shuffle_indices_train   not exist %s' % train_step, 'shuffle_indices_train')
-    #         # step  训练模式    训练部分
-    #         # ct.file_wirte_list(config.cc_par('combine'),
-    #         #                    '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(shuffle_indices)))
-
-    return shuffle_indices
-
-
-def get_shuffle_indices_test(dh, step, train_part, model, train_step):
-    """
-
-    :param dh:
-    :param step:
-    :param train_part:
-    :param model: train valid test
-    :return:
-    """
-    if True: #train_part == 'relation':
-        if model == "valid":
-            if config.cc_compare('valid_model', 'only_error'):
-                f1s = ct.file_read_all_lines_strip(config.cc_par('valid_only_error_valid'))
-                id_list = [int(x) for x in f1s]
-            else:
-                id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
-        else:
-            if config.cc_compare('valid_model', 'only_error'):
-                f1s = ct.file_read_all_lines_strip(config.cc_par('valid_only_error_test'))
-                id_list = [int(x) for x in f1s]
-            else:
-                id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
-
-                # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
-
-                # id_list2 = [str(x) for x in id_list]
-                # # step  训练模式    训练部分
-                # ct.just_log(config.cc_par('combine_test'),
-                #             '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(id_list2)))
-    # else:
-    #     f1s = ct.file_read_all_lines_strip(config.cc_par('combine_test'))
-    #     line = ''
-    #     exist = False
-    #     for l1 in f1s:
-    #         if str(l1).split('\t')[0] == str(train_step) \
-    #                 and str(l1).split('\t')[1] == model:
-    #             line = str(l1)
-    #             exist = True
-    #             break
-    #     if exist:
-    #         line_split = line.split('\t')
-    #         line_split = line_split[3:]
-    #         line_split = [int(x) for x in line_split]
-    #         id_list = np.array(line_split)
-    #         ct.print('get_shuffle_indices_test exist %s %s ' % (train_step, model), 'shuffle_indices_test')
-    #     else:  # 不存在就自己写
-    #         if model == "valid":
-    #             id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
-    #         else:
-    #             id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
-    #
-    #         id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
-    #         ct.print('get_shuffle_indices_test not exist %s ' % train_step, 'shuffle_indices_test')
-
-    return id_list
-
-
-# ----------------------------------- checkpoint-----------------------------------
+ 
 def checkpoint(sess, state):
     # Output directory for models and summaries
 
@@ -872,7 +651,6 @@ def checkpoint(sess, state):
     msg1 = "save_path:%s" % save_path
     ct.just_log2('model', msg1)
 
-
 def elvation(state, train_step, dh, step, sess, discriminator, merged, writer,
              valid_test_dict, error_test_dict,train_part):
     '''
@@ -881,7 +659,7 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer,
     # 验证
     test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
     model = "valid"
-    id_list = get_shuffle_indices_test(dh, step, None, model, train_step)
+    id_list = ct.get_shuffle_indices_test(dh, step, None, model, train_step)
     ct.print("问题总数 %s " % len(id_list))
 
     acc, ner_acc, r_acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
@@ -899,7 +677,7 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer,
     #  if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
     # ============= 测试
     model = "test"
-    id_list = get_shuffle_indices_test(dh, step, train_part, model, train_step)
+    id_list = ct.get_shuffle_indices_test(dh, step, train_part, model, train_step)
     acc, ner_acc, r_acc, _1, _2, _3, maybe_list_list, maybe_global_index_list = \
         valid_batch_debug(sess, discriminator, step, None, merged, writer,
                           dh, test_batchsize, model, dh.test_question_global_index, train_part, id_list, state)
@@ -923,8 +701,6 @@ def elvation(state, train_step, dh, step, sess, discriminator, merged, writer,
     ct.just_log3("test_check",
                  "@@error@@valid_below\n")
 
-
-
 def main():
     with tf.device("/gpu"):
         session_conf = tf.ConfigProto(allow_soft_placement=FLAGS.allow_soft_placement,
@@ -937,7 +713,6 @@ def main():
         ct.print("mark:%s " % config.cc_par('mark'), 'mark')  # 1.2.1
         ct.just_log2("info", now)
         ct.just_log2("result", now)
-        # ct.just_log2("test", now)
         ct.just_log2("info", get_config_msg())
         ct.print(get_config_msg(), "mark")
         ct.just_log3("test_check",
@@ -967,29 +742,25 @@ def main():
             embedding_weight=embedding_weight,
             need_gan=True, first=True)
 
-        # generator = Generator(
-        #     max_document_length=dh.max_document_length,  # timesteps
-        #     word_dimension=FLAGS.word_dimension,  # 一个单词的维度
-        #     vocab_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
-        #     rnn_size=FLAGS.rnn_size,  # 隐藏层大小
-        #     model=model,
-        #     need_cal_attention=FLAGS.need_cal_attention,
-        #     need_max_pooling=FLAGS.need_max_pooling,
-        #     word_model=FLAGS.word_model,
-        #     embedding_weight=embedding_weight,
-        #     need_gan=True, first=False)
+        generator = Generator(
+            max_document_length=dh.max_document_length,  # timesteps
+            word_dimension=FLAGS.word_dimension,  # 一个单词的维度
+            vocab_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
+            rnn_size=FLAGS.rnn_size,  # 隐藏层大小
+            model=model,
+            need_cal_attention=FLAGS.need_cal_attention,
+            need_max_pooling=FLAGS.need_max_pooling,
+            word_model=FLAGS.word_model,
+            embedding_weight=embedding_weight,
+            need_gan=True, first=False)
 
         ct.print("max_document_length=%s,vocab_size=%s " % (str(dh.max_document_length), str(dh.converter.vocab_size)))
-
         # 初始化
         init = tf.global_variables_initializer()
-
         merged = tf.summary.merge_all()
-
         with sess.as_default():
             writer = tf.summary.FileWriter(ct.log_path() + "\\log\\", sess.graph)
             sess.run(init)
-
             loss_dict = dict()
             loss_dict['loss'] = 0
             loss_dict['pos'] = 0
@@ -1015,13 +786,15 @@ def main():
 
             train_step = 0
             currtnt_loss_part = 'entity_relation_transE' # entity_relation transE
+            # 间隔训练 transE entity_relation
+            # if currtnt_loss_part == 'transE':
+            #     currtnt_loss_part = 'entity_relation'
+            # else:
+            #     currtnt_loss_part = 'transE'
+            d_run_time = 0
             for step in range(FLAGS.epoches):
-                # 间隔训练 transE entity_relation
-                # if currtnt_loss_part == 'transE':
-                #     currtnt_loss_part = 'entity_relation'
-                # else:
-                #     currtnt_loss_part = 'transE'
                 # --------------- D model
+
                 for d_index in range(FLAGS.d_epoches):
                     toogle_line = "D model >>>>>>>>>>>>>>>>>>>>>>>>>step=%d,total_train_step=%d " % (
                         step, len(dh.q_neg_r_tuple))
@@ -1032,8 +805,12 @@ def main():
                     train_part = config.cc_par('train_part')
                     model = 'train'
                     # 1 遍历raw
-                    shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index))
+                    shuffle_indices = ct.get_shuffle_indices_train(len(dh.train_question_list_index))
+
                     for index in shuffle_indices:
+                        # d_run_time += 1
+                        # if d_run_time >1:
+                        #     break
                         train_step += 1
                         # 取出一个问题的相关数据
                         train_q, train_pos, train_neg, r_len = \
@@ -1044,11 +821,11 @@ def main():
                         if train_q is None or r_len == 0:
                             ct.just_log2("info", "len = 0")
                             continue
-                        if r_len > 1000:
-                            print(1)  # debug 用
+
                         # 启用GAN-选择高质量的neg属性
                         if config.cc_compare('pool_mode', 'additional') or \
-                            config.cc_compare('pool_mode', 'competing_ps') :
+                            config.cc_compare('pool_mode', 'competing_ps') or \
+                            config.cc_compare('pool_mode', 'only_default') :
                             # 2 随机取100个neg
                             feed_dict = {
                                 generator.ori_input_quests: train_q,  # ori_batch
@@ -1087,15 +864,21 @@ def main():
                             train_pos =train_pos_gan_l
                             train_neg = train_neg_gan_k
                         else:
-                            print("...")
-                            exit(0)
+                            raise Exception('NO ')
 
                         # 取出这些负样本就拿去给D判别 score12 = q_pos   score13 = q_neg
                         # 此处修改为 使用选择后的
-                        feed_dict = {
+                        # 预训练G
+                        feed_dict_d = {
                             discriminator.ori_input_quests: train_q,  # ori_batch
                             discriminator.cand_input_quests: train_pos,  # cand_batch
                             discriminator.neg_input_quests: train_neg  # neg_batch
+                        }
+
+                        feed_dict_g = {
+                            generator.ori_input_quests: train_q,  # ori_batch
+                            generator.cand_input_quests: train_pos,  # cand_batch
+                            generator.neg_input_quests: train_neg  # neg_batch
                         }
 
                         # 给D计算出reward
@@ -1103,9 +886,16 @@ def main():
                         #                   feed_dict)  # reward= 2 * (tf.sigmoid( 0.05- (q_pos -q_neg) ) - 0.5)
                         # try:
                         _, run_step, current_loss, accuracy = sess.run(
-                                [discriminator.train_op, discriminator.global_step, discriminator.loss,
+                                [discriminator.train_op, discriminator.global_step,
+                                 discriminator.loss_rel,
                                  discriminator.accuracy],
-                                feed_dict)
+                                feed_dict_d)
+                        # train_step += 1
+                        _, run_step, current_loss, accuracy = sess.run(
+                                [generator.gan_updates_pre, generator.global_step,
+                                 generator.r_loss, # g 是 r_loss r_acc ; d 是 loss_rel accuracy
+                                 generator.r_acc],
+                                feed_dict_g)
                         # except Exception as x:
                         #     print(x)
 
@@ -1113,6 +903,7 @@ def main():
                             train_step, len(shuffle_indices), run_step, current_loss, accuracy))
                         ct.print(line, 'loss')
                         loss_dict['loss'] += current_loss
+
                     # check
                     total = len(shuffle_indices)
                     msg = "%s\tloss=%s " % (state, loss_dict['loss'] / total)
@@ -1121,12 +912,12 @@ def main():
                     loss_dict['neg'] = 0
                     ct.print(msg, 'debug_gan')
                     # 验证 和测试
-                    elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
-                             error_test_dict)
+                    elvation(state, 0, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                         error_test_dict, train_part)
 
                 # --------------- G model
-
                 for g_index in range(FLAGS.g_epoches):
+
                     state = "step=%d_epoches=%s_index=%d" % (step, 'g', g_index)
                     ct.print(state)
                     # if False:
@@ -1135,10 +926,10 @@ def main():
                     ct.log3(toogle_line)
                     ct.just_log2("info", toogle_line)
 
-                    train_part = config.cc_par('train_part')
+                    train_part = 'relation'
                     model = 'train'
                     # 1 遍历raw
-                    shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index))
+                    shuffle_indices = ct.get_shuffle_indices_train(len(dh.train_question_list_index))
                     win, lose = 0, 0
                     for index in shuffle_indices:
                         train_step += 1
@@ -1180,8 +971,8 @@ def main():
                         # ct.print("#%d#\t%s" % (index, rrr1), 'debug_predicteds_list')
 
                         pools = train_neg
-                        gan_k = FLAGS.gan_k + r_len
-                        use_top_k = True
+                        gan_k = 5 # FLAGS.gan_k + r_len
+                        use_top_k = False
                         if use_top_k:  # 直接取前X个
                             ts = []
                             for i in range(len(predicteds)):
@@ -1214,7 +1005,6 @@ def main():
                             # ct.just_log2("info", )
                             debug_gan1.append("top_%d\t%s\t%s" %
                                               (i, dh.converter.arr_to_text_no_unk(train_neg[i]), prob[i]))
-
                         # 取出这些负样本就拿去给D判别 score12 = q_pos   score13 = q_neg
                         feed_dict = {
                             discriminator.ori_input_quests: train_q_gan_k,  # ori_batch
@@ -1224,15 +1014,22 @@ def main():
                         # 给D计算出reward
                         reward = sess.run(discriminator.reward,
                                           feed_dict)  # reward= 2 * (tf.sigmoid( 0.05- (q_pos -q_neg) ) - 0.5)
-                        # for _reward in reward:
+                        for _reward in reward:
+                            ct.print(_reward,'reward')
+
                         neg_better_than_pos = False
                         for x in reward:
-                            if x > 0:
-                                neg_better_than_pos = True
-                        if neg_better_than_pos:
-                            win += 1
-                        else:
-                            lose += 1
+                            if x < 0:
+                                win += 1
+                            else:
+                                lose += 1
+
+                                # neg_better_than_pos = True
+
+                        # if neg_better_than_pos:
+                        #     win += 1
+                        # else:
+                        #     lose += 1
                         # reward_list = [x for x in reward]
                         # reward_list.sort()
                         # rrr1 = '\t'.join([str(x) for x in reward_list])
@@ -1251,10 +1048,14 @@ def main():
                             generator.neg_input_quests: train_neg,  # neg_batch
                             generator.reward: reward}
                         # 原作者：应该是全集上的softmax	但是此处做全集的softmax开销太大了
-                        _, run_step, current_loss, positive, negative = sess.run(
+                        _, run_step, current_loss, positive, negative,\
+                        _1,_2= sess.run(
                             [generator.gan_updates, generator.global_step, generator.gan_loss, generator.positive,
-                             generator.negative],  # self.prob= tf.nn.softmax( self.cos_13)
+                             generator.negative,
+                             generator.prob,generator.reward ],  # self.prob= tf.nn.softmax( self.cos_13)
                             feed_dict)  # self.gan_loss = -tf.reduce_mean(tf.log(self.prob) * self.reward)
+                        _1_log = np.log(_1)
+                        _ganlos = -np.mean(_1_log*_2)
                         line = ("%s-%s: G step %d, loss %f  positive %f negative %f" % (
                             train_step, len(shuffle_indices), run_step, current_loss, positive, negative))
                         loss_dict['loss'] += current_loss
@@ -1264,14 +1065,21 @@ def main():
 
                     # check
                     total = len(shuffle_indices)
-                    msg = "%s\tloss=%2.6f\tpos=%2.6f\tneg=%2.6f;win=%d\tacc=%s" % (state, loss_dict['loss'] / total,
+                    msg = "%s\tloss=%2.6f\tpos=%2.6f\tneg=%2.6f;G_win=%d lose = %d \tacc=%s" % (state, loss_dict['loss'] / total,
                                                                                    loss_dict['pos'] / total,
                                                                                    loss_dict['neg'] / total
-                                                                                   , lose, lose / total)
+                                                                                   , lose,win, lose / (win+lose))
                     ct.print(msg, 'debug_gan')
                     loss_dict['loss'] = 0
                     loss_dict['pos'] = 0
                     loss_dict['neg'] = 0
+
+                    # 验证 和测试
+                    # elvation(state, 0, dh, step, sess, discriminator, merged, writer, valid_test_dict,
+                    #          error_test_dict, train_part)
+                    # 验证 G
+                    # elvation(state+' generator', 1, dh, step, sess, generator, merged, writer, valid_test_dict,
+                    #          error_test_dict, train_part)
 
                 # --------------- S model 优先加入neg的同义词
                 for s_index in range(FLAGS.s_epoches):
@@ -1282,7 +1090,7 @@ def main():
                     # run_step= -1
                     # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                     #           error_test_dict)
-                    shuffle_indices = get_shuffle_indices_train(total=len(dh.synonym_train_keys))
+                    shuffle_indices = ct.get_shuffle_indices_train(total=len(dh.synonym_train_keys))
                     loss_dict['loss'] = 0
                     for index in shuffle_indices:
                         train_step += 1
@@ -1317,7 +1125,7 @@ def main():
                     # run_step= -1
                     # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                     #           error_test_dict)
-                    shuffle_indices = get_shuffle_indices_train(total=len(dh.question_list))
+                    shuffle_indices = ct.get_shuffle_indices_train(total=len(dh.question_list))
                     loss_dict['loss'] = 0
                     model = 'train'
                     for index in shuffle_indices:
@@ -1364,7 +1172,7 @@ def main():
                     # run_step= -1
                     # elvation(state, run_step, dh, step, sess, discriminator, merged, writer, valid_test_dict,
                     #           error_test_dict)
-                    shuffle_indices = get_shuffle_indices_train(total=len(dh.question_list))
+                    shuffle_indices = ct.get_shuffle_indices_train(total=len(dh.question_list))
                     loss_dict['loss'] = 0
                     model = 'train'
                     for index in shuffle_indices:
@@ -1412,7 +1220,7 @@ def main():
                     ct.just_log2("info", toogle_line)
                     state = "step=%d_epoches=%s_index=%d" % (step, 'd', d_index)
                     # 1 遍历raw
-                    shuffle_indices = get_shuffle_indices_train(len(dh.train_question_list_index))
+                    shuffle_indices = ct.get_shuffle_indices_train(len(dh.train_question_list_index))
                     train_step = 0
                     for index in shuffle_indices:
                         train_step += 1

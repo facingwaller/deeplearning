@@ -9,7 +9,6 @@ import socket
 import tensorflow as tf
 from enum import Enum
 
-
 class optimizer_m(Enum):
     lstm = 1
     gan = 2
@@ -17,112 +16,108 @@ class optimizer_m(Enum):
 
 FLAGS = tf.flags.FLAGS
 
-myname = socket.getfqdn(socket.gethostname())
-myaddr = socket.gethostbyname(myname)
-# embedding
-tf.flags.DEFINE_integer("word_dimension", 100, "单词的维度 ")
+# myname = socket.getfqdn(socket.gethostname())
+# myaddr = socket.gethostbyname(myname)
+# # embedding
+
 # tf_embedding tf自己训练
 # word2vec_train 用word2vec重新组建W矩阵，并随后更新
-tf.flags.DEFINE_string("word_model", "word2vec_train", "可选有|tf_embedding|word2vec_train|word2vec")
 
-testid = "cc_test"
-if str(myaddr) == "192.168.31.194":
-    testid = "cc_test"
-    cmd_path = r'F:\ProgramData\Anaconda2\envs\tensorflow\python.exe F:/PycharmProjects/dl2/deeplearning/QA/train.py'
-else:
-    testid = "cc_test"
-    cmd_path = r'C:\ProgramData\Anaconda2\envs\tensorflow\python.exe C:/Users/flow/PycharmProjects/tensorFlow1/QA/train.py'
-print("%s\t%s" % (myaddr, testid))
+# testid = "cc_test"
+# if str(myaddr) == "192.168.31.194":
+#     testid = "cc_test"
+#     cmd_path = r'F:\ProgramData\Anaconda2\envs\tensorflow\python.exe F:/PycharmProjects/dl2/deeplearning/QA/train.py'
+# else:
+#     testid = "cc_test"
+#     cmd_path = r'C:\ProgramData\Anaconda2\envs\tensorflow\python.exe C:/Users/flow/PycharmProjects/tensorFlow1/QA/train.py'
+# print("%s\t%s" % (myaddr, testid))
 
 # ==正常调参
-mark = '...NER实验中...'
-
-if testid == "cc_test":
-    # 极限情况下调,1个问题，全关系
-    epoches = 10  # 10  # 遍历多少轮
-    batch_size = 10  # 1个batch的大小 # 临时改了
-    evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
-    evaluate_batchsize = 9999  # 验证一次的问题数目,超过则使用最大的
-    questions_len_train = 999999999999999  # 所有问题数目
-    questions_len_test = 999999999999999  # 测试的问题数目，全部
-    wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
-    total_questions = 999999999999999
-    stop_loss_zeor_count = 2000  # 2000次则停下来
-    rnn_size = 100
-    mode = "cc"
-    check = 100000
-    # 属性模式 # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
-    use_property = 'special'  # 使用属性的模式做训练和测试
-    skip_threshold = 0.02
-    t_relation_num = 100  # 4358  # 重要！这个指示了训练的关系个数 4358
-    ner_top_cand = 2  # 训练取2，测试取3 0 只测属性识别
-    # 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
-    # 而非模拟测试的。 之前是混合在一起
-    real_split_train_test = True
-    # train_part = 'relation'  # 属性 relation |answer | entity  |  entity_relation
-    loss_part = 'entity_relation_transE-2'  # entity_relation_transE|  entity_relation_answer_transE |  relation | entity | transE
-    loss_margin = 0.02  # 简书上是0.05，liu kang 那边是 0.6 也有0.02
-    #  IR-GAN
-    batch_size_gan = 1000  #100 或者 1000 ,80%的竞争属性是在600
-    gan_k = 10
-    sampled_temperature = 20
-    gan_learn_rate = 0.02
-
-    g_epoches = 0
-    d_epoches = 0
-    s_epoches = 0
-    c_epoches = 0
-    a_epoches = 0
-    ner_epoches = 1
-    ns_epoches = 0
-
-    # optimizer_method = 'origin'  # origin , gan
-    #  maybe
-    keep_run = False  # 指示是否持续跑maybe里面的属性
-    optimizer_method = optimizer_m.lstm  # 优化模式 gan | lstm
-    # only_default 默认模式|fixed_amount 固定 最多100个 | additional 默认+额外
-    # synonym_train_mode 优先加入neg的同义词
-    # competing_ps 竞争属性
-    pool_mode = 'None' # competing_ps | None
-
-    # 模型恢复
-    restore_model = False
-    restore_path = \
-         r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
-    #     r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
-    #     r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_04_01_13_50_19_4Mv1\checkpoints\step=9_epoches=d_index=0\model.ckpt-1'
-    # restore_path = \
-    #     r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_30_14_33_09_gan.v3\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
-    # 2018_03_29_11_36_36\checkpoints\step=3_epoches=d_index=05
-    restore_test = False
-    synonym_mode = 'none'  # 属性同义词 ps_synonym| none
-    synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
-    # synonym S_model
-    S_model = 'none'  # S_model | none
+mark = '...gan...'
 
 
-    # 只验证错误的模式 only_error|all
-    valid_model = 'all'
-    valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
-    valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
+# 极限情况下调,1个问题，全关系
+epoches = 10  # 10  # 遍历多少轮
+batch_size = 10  # 1个batch的大小 # 临时改了
+evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
+evaluate_batchsize = 9999  # 验证一次的问题数目,超过则使用最大的
+questions_len_train = 999999999999999  # 所有问题数目
+questions_len_test = 999999999999999  # 测试的问题数目，全部
+wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
+total_questions = 999999999999999
+stop_loss_zeor_count = 2000  # 2000次则停下来
+rnn_size = 100
+mode = "cc"
+check = 100000
+# 属性模式 # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
+use_property = 'special'  # 使用属性的模式做训练和测试
+skip_threshold = 0.05
+t_relation_num = 50  # 4358  # 重要！这个指示了训练的关系个数 4358
+ner_top_cand = 2  # 训练取2，测试取3 0 只测属性识别
+# 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
+# 而非模拟测试的。 之前是混合在一起
+real_split_train_test = True
+train_part = 'relation'  # 属性 relation |answer | entity  |  entity_relation
+loss_part = 'entity_relation_transE-2' # entity_relation_transE-2
+# entity_relation_transE|  entity_relation_answer_transE |  relation | entity | transE
+loss_margin = 0.05  # 简书上是0.05，liu kang 那边是 0.6 也有0.02
+#  IR-GAN
+batch_size_gan = 200  # 100 或者 1000 ,80%的竞争属性是在600
+gan_k = 10
+sampled_temperature = 20
+gan_learn_rate = 0.05
 
-    # 竞争属性集
-    # competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
-    competing_ps_path = '../data/nlpcc2016/13-competing/competing_ps_tj.v2.txt'
-    competing_batch_size = 10 # 控制size
+g_epoches = 20
+d_epoches = 1
+s_epoches = 0
+c_epoches = 0
+a_epoches = 0
+ner_epoches = 0
+ns_epoches = 0
 
-    expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
+keep_run = False  # 指示是否持续跑maybe里面的属性
+optimizer_method = optimizer_m.gan  # 优化模式 gan | lstm
+# only_default 默认模式|fixed_amount 固定 最多100个 | additional 默认+额外
+# synonym_train_mode 优先加入neg的同义词
+# competing_ps 竞争属性
+pool_mode = 'additional' # competing_ps | None | additional | only_default
 
-    # S-NER
-    ner_model = 'cos'
-    ner_path = '../data/nlpcc2016/4-ner/extract_entitys_all_tj_sort.v1.txt'
+# 模型恢复
+restore_model = False
+restore_path = \
+     r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
+#     r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
+#     r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_04_01_13_50_19_4Mv1\checkpoints\step=9_epoches=d_index=0\model.ckpt-1'
+# restore_path = \
+#     r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_30_14_33_09_gan.v3\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
+# 2018_03_29_11_36_36\checkpoints\step=3_epoches=d_index=05
+restore_test = False
+synonym_mode = 'none'  # 属性同义词 ps_synonym| none
+synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
+# synonym S_model
+S_model = 'none'  # S_model | none
 
-    alias_dict = '../data/nlpcc2016/4-ner/extract_e/e1.dict.txt'
-    use_alias_dict = True
-    # 负例选取的方式 alias 指代后的全体实体的属性 | competing 某POS属性的竞争属性
-    negative_sampling_model = 'alias'  # alias | competing
-else:
-    raise Exception("testid 参数有误")
+
+# 只验证错误的模式 only_error|all
+valid_model = 'all'
+valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
+valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
+
+# 竞争属性集
+# competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
+competing_ps_path = '../data/nlpcc2016/13-competing/competing_ps_tj.v2.txt'
+competing_batch_size = 10 # 控制size
+
+expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
+
+# S-NER
+ner_model = 'cos'
+ner_path = '../data/nlpcc2016/4-ner/extract_entitys_all_tj_sort.v1.txt'
+
+alias_dict = '../data/nlpcc2016/4-ner/extract_e/e1.dict.txt'
+use_alias_dict = True
+# 负例选取的方式 alias 指代后的全体实体的属性 | competing 某POS属性的竞争属性
+negative_sampling_model = 'alias'  # alias | competing
 
 # config.par('sq_fb_rdf_path')
 sq_p = {
@@ -146,11 +141,6 @@ sq_p = {
 }
 
 cc_p = {
-    # 'q.rdf': '../data/nlpcc2016/ner_t1/q.rdf.txt',  # 原始的
-    # 'q.rdf.m_s': '../data/nlpcc2016/3-questions/q.rdf.m_s.txt',  # 带RDF，识别出的实体的RDF
-    # 'q.rdf.m_s.filter': '../data/nlpcc2016/3-questions/q.rdf.m_s.filter.txt',  # 且过滤掉不能使用的方便查找
-    # 'q.rdf.txt.math_s': '../data/nlpcc2016/ner_t1/q.rdf.txt.math_s.txt',  # 匹配到S的文件
-    # 'q.final': '../data/nlpcc2016/3-questions/q.rdf.m_s.filter.suggest.txt',  # 带RDF，识别出的实体的RDF
     'rdf_extract_property': '../data/nlpcc2016/5-class/rdf_extract_property_origin.txt',  # 包含属性及其对应的index
     'rdf_extract_property_test': '../data/nlpcc2016/5-class/rdf_extract_property_origin_test.txt',  # 包含属性及其对应的index
     'rdf_maybe_property': '../data/nlpcc2016/5-class/maybe_possible.txt',
@@ -166,23 +156,20 @@ cc_p = {
     # 只包含使用的部分
     'kb-use': '../data/nlpcc2016/2-kb/kb-use.v2.txt',
     # 匹配实体和过滤后的问题集
-    # 'cc_q_path': '../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
-    # 'cc_q_path': '../data/nlpcc2016/4-ner/demo3/q.rdf.score.top_3_all_0.v4.10.txt',
-    # 'cc_q_path': '../data/nlpcc2016/4-ner/result/q.rdf.score.expend.v1.txt',
     'cc_q_path': '../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
     # q.rdf.score.expend.v1.txt
     'real_split_train_test': True,
     'real_split_train_test_skip': 14097, # 14610
     'real_split_train_test_skip_v2': 14097,
     'use_property': use_property,  # 记录进日志
-    # 'train_part': train_part,  # 属性 relation |answer
+    'train_part': train_part,  # 属性 relation |answer
     'loss_part': loss_part,  # 属性 relation |answer
     'loss_margin': loss_margin,
     'combine': '../data/nlpcc2016/9-combine/step.txt',
     'combine_test': '../data/nlpcc2016/9-combine/step_test.txt',
     'test_ps': '../data/nlpcc2016/5-class/test_ps.txt',
     'test_ps_result': '../data/nlpcc2016/5-class/test_ps_result.txt',
-    'cmd_path': cmd_path,
+    # 'cmd_path': cmd_path,
     'keep_run': keep_run,
     'optimizer_method': optimizer_method,
     'mark': mark,
@@ -222,6 +209,8 @@ if questions_len_test < evaluate_batchsize:
                     % (questions_len_test, evaluate_batchsize))
 
 # 模型
+tf.flags.DEFINE_integer("word_dimension", 100, "单词的维度 ")
+tf.flags.DEFINE_string("word_model", "word2vec_train", "可选有|tf_embedding|word2vec_train|word2vec")
 tf.flags.DEFINE_string("mode", mode, "是否增加attention机制 ")
 tf.flags.DEFINE_boolean("need_cal_attention", True, "是否增加attention机制 ")
 tf.flags.DEFINE_boolean("need_max_pooling", False, "是否增加max_pooling机制 ")
@@ -244,9 +233,6 @@ tf.flags.DEFINE_integer("ner_epoches", ner_epoches, "ner_epoches")
 tf.flags.DEFINE_integer("ns_epoches", ns_epoches, "ns_epoches")
 # ns_epoches
 
-#
-# tf.flags.DEFINE_integer("num_classes", 100, "num_classes 最终的分类")
-# tf.flags.DEFINE_integer("num_hidden", 100, "num_hidden 隐藏层的大小")
 tf.flags.DEFINE_integer("embedding_size", 100, "embedding_size")
 tf.flags.DEFINE_integer("rnn_size", rnn_size, "LSTM 隐藏层的大小 ")
 tf.flags.DEFINE_integer("batch_size", batch_size, "batch_size")
@@ -314,22 +300,22 @@ class config:
     def cc_compare(key, value):
         return cc_p[key] == value
 
-    @staticmethod
-    def get_model():
-        if str(myaddr) == "192.168.31.194":
-            return "test"
-        else:
-            return "train"
-
-    @staticmethod
-    def get_config_path():
-
-        # print(myaddr)
-        # F:\3_Server\freebase-data\topic-json
-        if str(myaddr) == "192.168.31.194":
-            return r"F:\3_Server\freebase-data\topic-json"
-        else:
-            return r"D:\ZAIZHI\freebase-data\topic-json"
+    # @staticmethod
+    # def get_model():
+    #     if str(myaddr) == "192.168.31.194":
+    #         return "test"
+    #     else:
+    #         return "train"
+    #
+    # @staticmethod
+    # def get_config_path():
+    #
+    #     # print(myaddr)
+    #     # F:\3_Server\freebase-data\topic-json
+    #     if str(myaddr) == "192.168.31.194":
+    #         return r"F:\3_Server\freebase-data\topic-json"
+    #     else:
+    #         return r"D:\ZAIZHI\freebase-data\topic-json"
 
     # @staticmethod
     # def get_sq_topic_path():

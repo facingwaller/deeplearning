@@ -1430,9 +1430,71 @@ class ct:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         return timestamp
 
+    @staticmethod
+    def get_shuffle_indices_train(total):
+        shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
+        return shuffle_indices
+
+    @staticmethod
+    def get_shuffle_indices_test(dh, step, train_part, model, train_step):
+        """
+
+        :param dh:
+        :param step:
+        :param train_part:
+        :param model: train valid test
+        :return:
+        """
+        if True: #train_part == 'relation':
+            if model == "valid":
+                if config.cc_compare('valid_model', 'only_error'):
+                    f1s = ct.file_read_all_lines_strip(config.cc_par('valid_only_error_valid'))
+                    id_list = [int(x) for x in f1s]
+                else:
+                    id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
+            else:
+                if config.cc_compare('valid_model', 'only_error'):
+                    f1s = ct.file_read_all_lines_strip(config.cc_par('valid_only_error_test'))
+                    id_list = [int(x) for x in f1s]
+                else:
+                    id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+
+                    # id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+
+                    # id_list2 = [str(x) for x in id_list]
+                    # # step  训练模式    训练部分
+                    # ct.just_log(config.cc_par('combine_test'),
+                    #             '%s\t%s\t%s\t%s' % (train_step, model, train_part, '\t'.join(id_list2)))
+        # else:
+        #     f1s = ct.file_read_all_lines_strip(config.cc_par('combine_test'))
+        #     line = ''
+        #     exist = False
+        #     for l1 in f1s:
+        #         if str(l1).split('\t')[0] == str(train_step) \
+        #                 and str(l1).split('\t')[1] == model:
+        #             line = str(l1)
+        #             exist = True
+        #             break
+        #     if exist:
+        #         line_split = line.split('\t')
+        #         line_split = line_split[3:]
+        #         line_split = [int(x) for x in line_split]
+        #         id_list = np.array(line_split)
+        #         ct.print('get_shuffle_indices_test exist %s %s ' % (train_step, model), 'shuffle_indices_test')
+        #     else:  # 不存在就自己写
+        #         if model == "valid":
+        #             id_list = ct.get_static_id_list_debug(len(dh.train_question_list_index))
+        #         else:
+        #             id_list = ct.get_static_id_list_debug_test(len(dh.test_question_list_index))
+        #
+        #         id_list = ct.random_get_some_from_list(id_list, FLAGS.evaluate_batchsize)
+        #         ct.print('get_shuffle_indices_test not exist %s ' % train_step, 'shuffle_indices_test')
+
+        return id_list
 log_path = ct.log_path_static()
 
 if __name__ == "__main__":
+    print(1e-1)
     aa1 = ct.log_path_static()
     print(aa1 + "\\log\\")
     print(len('你知道国务院学位委员会、国家教育委员会关于整顿普通高等学校授予成人高等教育本科毕业生学士学位工作的通知是谁发布的吗？'))

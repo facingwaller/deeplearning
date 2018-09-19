@@ -312,7 +312,7 @@ class DataClass:
             'debug')
 
         # 记录问题集合和测试集合 输出问句
-        ct.print('看看哪些neg关系是训练有', 'debug')
+        ct.print('start init nn', 'debug')
         r_train = set()
         r_test = set()
         ct.print('train', 'train_test_q')
