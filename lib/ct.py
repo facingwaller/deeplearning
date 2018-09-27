@@ -1253,7 +1253,7 @@ class ct:
     def clean_str_s(string):
 
         s1 = str(string).strip().strip('\n').strip('\r').replace(' ', '').lower()
-        s2 = ct.clean_str_zh2en(s1)  # 符号转换
+        s2 = ct.clean_str_zh2en(s1)  # 清理格式符合实体的符号。
         return s2
 
     # 清理实体名
@@ -1493,29 +1493,42 @@ class ct:
         return id_list
 log_path = ct.log_path_static()
 
+
 if __name__ == "__main__":
-    print(1e-1)
-    aa1 = ct.log_path_static()
-    print(aa1 + "\\log\\")
-    print(len('你知道国务院学位委员会、国家教育委员会关于整顿普通高等学校授予成人高等教育本科毕业生学士学位工作的通知是谁发布的吗？'))
-    # print(len('死亡日记1999年电影thevirginsuicides(1999film)'))
-    # c1 = ct.re_clean_question('请问一下谁知道♠要打印多少张，请问下？')
-    # c1 = re.sub('(♠)+','♠','11231♠♠♠1♠♠3♠')
-    # c1 = re.sub('(♠.*♠)+', '♠', '112aaa♠♠♠1♠♠3♠ggg')
-    print(ct.padding_answer('"“”【[【啊。.啊，,打的】【。a【`·43$#@3213 21 '))
-    c1 = ct.do_some_clean('大家1了解♠的♢吗？?')
-    print(c1)
-    # ct.test_read_entity_and_get_all_neg_relations_sq()
-    # ct.test_random_get_some_from_list()
-    # ct.test_read_entity_and_get_all_relations()
-    # ct.test_decode_all_relations()
-    # ct.test_nump_sort()
-    # ct.log3("1111")  # 测试日志 ok
-    # ct.test_decode_all_relations()
-    # ct.test_random_get_one_from_list()
-
-    # else:
-    # print(r1[r11_index].deep)
+    all_ps_ret = []
+    all_os_ret = []
+    all_ps= [1,2,3,5]
+    num=5
+    range_array = ct.random_get_some_from_list(all_ps,num)
+    for i in range_array:
+        # all_ps_ret.append(all_ps[i])
+        # all_os_ret.append(all_ps[i])
+        print(i)
 
 
-    # print(relation_path_rs_all)
+    # pass
+    # print(1e-1)
+    # aa1 = ct.log_path_static()
+    # print(aa1 + "\\log\\")
+    # print(len('你知道国务院学位委员会、国家教育委员会关于整顿普通高等学校授予成人高等教育本科毕业生学士学位工作的通知是谁发布的吗？'))
+    # # print(len('死亡日记1999年电影thevirginsuicides(1999film)'))
+    # # c1 = ct.re_clean_question('请问一下谁知道♠要打印多少张，请问下？')
+    # # c1 = re.sub('(♠)+','♠','11231♠♠♠1♠♠3♠')
+    # # c1 = re.sub('(♠.*♠)+', '♠', '112aaa♠♠♠1♠♠3♠ggg')
+    # print(ct.padding_answer('"“”【[【啊。.啊，,打的】【。a【`·43$#@3213 21 '))
+    # c1 = ct.do_some_clean('大家1了解♠的♢吗？?')
+    # print(c1)
+    # # ct.test_read_entity_and_get_all_neg_relations_sq()
+    # # ct.test_random_get_some_from_list()
+    # # ct.test_read_entity_and_get_all_relations()
+    # # ct.test_decode_all_relations()
+    # # ct.test_nump_sort()
+    # # ct.log3("1111")  # 测试日志 ok
+    # # ct.test_decode_all_relations()
+    # # ct.test_random_get_one_from_list()
+    #
+    # # else:
+    # # print(r1[r11_index].deep)
+    #
+    #
+    # # print(relation_path_rs_all)

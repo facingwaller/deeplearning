@@ -151,7 +151,7 @@ def get_feature(input_q, input_a, att_W,weight_dict):
      weight_array = [ 'Wam','Wqm','Wms']
     步骤4中，计算Attention权值。这里对问题特征进行max-pooling计算最大特征，
     然后用这个特征去和答案特征计算Attention权值，然后将Attention权值应用在答案特征之上，
-    最后再取max-pooling。（论文中采用取平均，但是本人实验时效果不佳）
+    最后再取max-pooling。
     :param input_q:
     :param input_a:
     :param att_W:

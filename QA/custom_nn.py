@@ -23,7 +23,7 @@ class CustomNetwork:
         self.timesteps = max_document_length  # 一句话的单词数目，也是跑一次模型的times step，时刻步数
         self.word_dimension = word_dimension  # 一个单次的维度
         self.embedding_size = vocab_size  # vocab_size 词汇表大小
-        self.rnn_size = rnn_size or 300  # LSTM隐藏层的大小
+        self.rnn_size = rnn_size or 100  # LSTM隐藏层的大小
         self.attention_matrix_size = word_dimension  # 是要embedding的大小
         # self.init_config(model)
         self.need_cal_attention = need_cal_attention
@@ -39,13 +39,13 @@ class CustomNetwork:
         # ======================占位符
         self.build_inputs(word_model, embedding_weight)
         self.build_LSTM_network()
-        if self.need_max_pooling:
-            self.max_pooling()
+        # if self.need_max_pooling:
+        #     self.max_pooling()
         if self.need_cal_attention:
             self.cal_attention()
         self.cos_sim()
-        if config.cc_par('loss_part').__contains__('transE'):
-            self.transe_calculate_loss()
+
+        self.transe_calculate_loss()
         self.cal_score()
 
     def build_inputs(self, word_model, embedding_weight):
@@ -80,8 +80,13 @@ class CustomNetwork:
             # 201809010 end
 
             # 20180916 ns 实验 negative sampling top k
-            self.ns_r_pos = tf.placeholder(tf.int32, [None, self.timesteps])  # z
+            self.ns_q = tf.placeholder(tf.int32, [None, self.timesteps])  # z
             self.ns_r_cp = tf.placeholder(tf.int32, [None, self.timesteps])  # 测试
+
+            # NS.V2 第二版本的 negative sampling尝试，直接输入隐藏层变量 [行，列，维度]
+            self.ns2_q = tf.placeholder(tf.float32, [None,self.timesteps, self.rnn_size * 2])  # z
+            self.ns2_r = tf.placeholder(tf.float32, [None,self.timesteps, self.rnn_size * 2])  # z
+
             # end
         with tf.device("/cpu:0"), tf.name_scope("embedding_layer"):
             # if word_model == "tf_embedding":
@@ -140,7 +145,7 @@ class CustomNetwork:
             # 201809010 end
 
             # 20180916 ns 实验 negative sampling top k
-            self.ns_test_r_pos = tf.nn.embedding_lookup(self.embedding, self.ns_r_pos)
+            self.ns_test_q = tf.nn.embedding_lookup(self.embedding, self.ns_q)
             self.ns_test_r_cp = tf.nn.embedding_lookup(self.embedding, self.ns_r_cp)
             # end
 
@@ -172,7 +177,7 @@ class CustomNetwork:
             # print(self.test_r_out)
             # print("build_LSTM_network<<<<<<<<<<<<<<<<<")
 
-            self.ns_test_r_pos_out = biLSTM(self.ns_test_r_pos, self.rnn_size)
+            self.ns_test_q_out = biLSTM(self.ns_test_q, self.rnn_size)
             self.ns_test_r_cp_out = biLSTM(self.ns_test_r_cp, self.rnn_size)
 
 
@@ -199,17 +204,6 @@ class CustomNetwork:
             # 20180906-1--end
 
 
-    # def max_pooling(self):
-    #     '''
-    #     弃用
-    #     :return:
-    #     '''
-    #     self.ori_q = max_pooling(self.ori_q)
-    #     self.cand_a = max_pooling(self.cand_a)
-    #     self.neg_a = max_pooling(self.neg_a)
-    #     self.test_q_out = max_pooling(self.test_q_out)
-    #     self.test_r_out = max_pooling(self.test_r_out)
-
     def cal_attention(self):
         with tf.name_scope("att_weight"):
             # attention params
@@ -232,9 +226,17 @@ class CustomNetwork:
             weight_dict['Wam']='Wam'
             weight_dict['Wqm'] = 'Wqm'
             weight_dict['Wms'] = 'Wms'
-            self.ori_q_feat, self.cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W,weight_dict)
-            self.ori_nq_feat, self.neg_q_feat = get_feature(self.ori_q, self.neg_a, att_W,weight_dict)
-            self.test_q_out, self.test_r_out = get_feature(self.test_q_out, self.test_r_out, att_W,weight_dict)
+            _AM = config.cc_par('attention_model')  # 问题端 (默认)答案端
+            if _AM == 'q_side':
+                self.cand_q_feat, self.ori_q_feat = get_feature(self.cand_a,self.ori_q,att_W, weight_dict)
+                self.neg_q_feat, self.ori_nq_feat = get_feature( self.neg_a,self.ori_q, att_W, weight_dict)
+                self.test_r_out, self.test_q_out = get_feature(self.test_r_out,self.test_q_out,  att_W, weight_dict)
+            else:
+                self.ori_q_feat, self.cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W,weight_dict)
+                self.ori_nq_feat, self.neg_q_feat = get_feature(self.ori_q, self.neg_a, att_W,weight_dict)
+                self.test_q_out, self.test_r_out = get_feature(self.test_q_out, self.test_r_out, att_W,weight_dict)
+                # NS.V2
+                self.ns2_q_feat, self.ns2_r_feat = get_feature(self.ns2_q, self.ns2_r, att_W, weight_dict)
 
             # 20180916 ns 实验 negative sampling top k
             # self.ns_test_r_pos_out = get_feature()
@@ -279,8 +281,8 @@ class CustomNetwork:
             self.ans_test_q_out, self.ans_test_r_out = get_feature(self.ans_test_q_out, self.ans_test_r_out, ans_att_W,ans_weight_dict)
             # 201809010 end
 
-    def cos_sim(self):
 
+    def cos_sim(self):
         # 是否计算attention 看输入的是原始的ori_q还是经过注意力机制处理的ori_q_feat
         if self.need_cal_attention:
             self.ori_cand = feature2cos_sim(self.ori_q_feat, self.cand_q_feat)
@@ -312,35 +314,37 @@ class CustomNetwork:
             # self.ns_test_r_pos_out
             # self.ns_test_r_cp_out
 
-            self.ns_r_r = feature2cos_sim(self.ns_test_r_pos_out, self.ns_test_r_cp_out)
+            # self.ns_r_r = feature2cos_sim(self.ns_test_r_pos_out, self.ns_test_r_cp_out)
             # end
 
+            # NS.V2 最终得分
+            self.ns2_q_r = feature2cos_sim(self.ns2_q_feat, self.ns2_r_feat)
+
         else:
-            pass
-            # self.ori_cand = feature2cos_sim(self.ori_q, self.cand_a)
-            # self.ori_neg = feature2cos_sim(self.ori_q, self.neg_a)
-            # # self.ori_cand = feature2cos_sim(self.ori_q_feat, self.cand_q_feat)
-            # # print("ori_cand-----------")
-            # # print(self.ori_cand)
-            # # self.ori_neg = feature2cos_sim(self.ori_q_feat, self.neg_q_feat)
-            # # print("ori_neg-----------")
-            # # print(self.ori_neg)
-            # self.r_loss, self.acc, self.loss_tmp = cal_loss_and_acc_try(self.ori_cand, self.ori_neg)
-            # # 计算问题和关系的相似度
-            # self.test_q_r = feature2cos_sim(self.test_q_out, self.test_r_out)
-            #
-            # # 20180906-1--start 用cos做NER
-            # self.ner_ori_cand = feature2cos_sim(self.ner_ori_q, self.ner_cand_a)
-            # self.ner_ori_neg = feature2cos_sim(self.ner_ori_q, self.ner_neg_a)
-            # self.ner_loss, self.ner_acc, self.ner_loss_tmp = cal_loss_and_acc_try(self.ner_ori_cand, self.ner_ori_neg)
-            # self.ner_test_q_r = feature2cos_sim(self.ner_test_q_out, self.ner_test_r_out)
-            # # end
-            #
-            # # 201809010 start 添加answer部分
-            # self.ans_ori_cand = feature2cos_sim(self.ans_ori_q, self.ans_cand_a)
-            # self.ans_ori_neg = feature2cos_sim(self.ans_ori_q, self.ans_neg_a)
-            # self.ans_loss, self.ans_acc, self.ans_loss_tmp = cal_loss_and_acc_try(self.ans_ori_cand, self.ans_ori_neg)
-            # self.ans_test_q_r = feature2cos_sim(self.ans_test_q_out, self.ans_test_r_out)
+            self.ori_cand = feature2cos_sim(self.ori_q, self.cand_a)
+            self.ori_neg = feature2cos_sim(self.ori_q, self.neg_a)
+            # self.ori_cand = feature2cos_sim(self.ori_q_feat, self.cand_q_feat)
+            # print("ori_cand-----------")
+            # print(self.ori_cand)
+            # self.ori_neg = feature2cos_sim(self.ori_q_feat, self.neg_q_feat)
+            # print("ori_neg-----------")
+            # print(self.ori_neg)
+            self.r_loss, self.acc, self.loss_tmp = cal_loss_and_acc_try(self.ori_cand, self.ori_neg)
+            # 计算问题和关系的相似度
+            self.test_q_r = feature2cos_sim(self.test_q_out, self.test_r_out)
+
+            # 20180906-1--start 用cos做NER
+            self.ner_ori_cand = feature2cos_sim(self.ner_ori_q, self.ner_cand_a)
+            self.ner_ori_neg = feature2cos_sim(self.ner_ori_q, self.ner_neg_a)
+            self.ner_loss, self.ner_acc, self.ner_loss_tmp = cal_loss_and_acc_try(self.ner_ori_cand, self.ner_ori_neg)
+            self.ner_test_q_r = feature2cos_sim(self.ner_test_q_out, self.ner_test_r_out)
+            # end
+
+            # 201809010 start 添加answer部分
+            self.ans_ori_cand = feature2cos_sim(self.ans_ori_q, self.ans_cand_a)
+            self.ans_ori_neg = feature2cos_sim(self.ans_ori_q, self.ans_neg_a)
+            self.ans_loss, self.ans_acc, self.ans_loss_tmp = cal_loss_and_acc_try(self.ans_ori_cand, self.ans_ori_neg)
+            self.ans_test_q_r = feature2cos_sim(self.ans_test_q_out, self.ans_test_r_out)
             # # 201809010 end
 
         # 输出供计算
@@ -368,6 +372,9 @@ class CustomNetwork:
             self.ans_positive = tf.reduce_mean(self.ans_score12)
             self.ans_negative = tf.reduce_mean(self.ans_score13)
             # 201809010 end
+        else:
+            self.score12 = self.ori_cand
+            self.score13 = self.ori_neg
 
 
         tf.summary.histogram("loss", self.r_loss)  # 可视化观看变量
@@ -380,7 +387,7 @@ class CustomNetwork:
         # 三者的得分
         self.q_r_ner_ans_cosine = tf.add(tf.add(self.test_q_r, self.ner_test_q_r), self.ans_test_q_r)
 
-        self.ns_r_r_score = self.ns_r_r
+        # self.ns_r_r_score = self.ns_r_r
         # 三者得分- S P   transe
         # xishu  = tf.Variable(-0.01,  trainable=True)
         # axis=1 对 里面的每个数组
@@ -453,7 +460,8 @@ class CustomNetwork:
         tvars = tf.trainable_variables()
         grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars),
                                           max_grad_norm)
-        optimizer = tf.train.GradientDescentOptimizer(1e-1)
+        optimizer = tf.train.GradientDescentOptimizer(0.1)
+        # print('1e-2 0.05 的学习率  之前是0.1 1e-1')
         optimizer.apply_gradients(zip(grads, tvars))
         return optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
 
@@ -499,3 +507,13 @@ class CustomNetwork:
     #     test_q_feat = max_pooling(tf.multiply(test_q, tf.reshape(delta_test_q, [-1, self.quest_len, 1])))
     #     test_a_feat = max_pooling(tf.multiply(test_a, tf.reshape(delta_test_a, [-1, self.answer_len, 1])))
 
+    # def max_pooling(self):
+    #     '''
+    #     弃用
+    #     :return:
+    #     '''
+    #     self.ori_q = max_pooling(self.ori_q)
+    #     self.cand_a = max_pooling(self.cand_a)
+    #     self.neg_a = max_pooling(self.neg_a)
+    #     self.test_q_out = max_pooling(self.test_q_out)
+    #     self.test_r_out = max_pooling(self.test_r_out)

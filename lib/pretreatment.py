@@ -31,6 +31,17 @@ class pretreatment:
         print(t1)
         pass
 
+    # 将M2ID文件重写：去掉空格和 ||| 改成 ID \t ID
+    @staticmethod
+    def re_write_m2id(f1,f_out):
+        f1s = ct.file_read_all_lines_strip(f1)  # 读取所有的问题
+        f2 = []
+        for l1 in f1s:
+            l1 = str(l1).replace(' ','').replace('|||','\t')
+            l1 = ct.clean_str_s(l1)
+            f2.append(l1)
+        ct.file_wirte_list(f_out,f2)
+        pass
 
 
 

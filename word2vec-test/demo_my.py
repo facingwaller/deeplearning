@@ -14,13 +14,14 @@ def main():
 
     while True:
         try:
-            print(model["我"])
+            # print(model["我"])
             query = input()
-            q_list = query.split()
+            q_list = query.split(' ')
 
             if len(q_list) == 1:
-                print("相似词前 100 排序")
+
                 res = model.most_similar(q_list[0], topn=10)
+                print("%s 相似字前 10 排序"%query)
                 for item in res:
                     print(item[0] + "," + str(item[1]))
 

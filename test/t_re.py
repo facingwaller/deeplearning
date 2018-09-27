@@ -11,7 +11,7 @@ l1 = r"全国人增加《中华法》附件" \
 l2 = '(啊|呀(你知道)？吗|呢)?(?|\?)*$'
 # r1 = re.search(p1,l1)
 
-
+print(len('♠(xeone5-2609/4gb/500gb/quadro600)的显示内存是多少?'))
 print("------------")
 r2 = re.findall(p3, l1)
 # print(r2)

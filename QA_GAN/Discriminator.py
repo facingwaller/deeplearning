@@ -16,7 +16,7 @@ class Discriminator(bilstm):
                  need_cal_attention, need_max_pooling, word_model, embedding_weight, need_gan, first):
         bilstm.__init__(self, max_document_length, word_dimension, vocab_size, rnn_size, model,
                         need_cal_attention, need_max_pooling, word_model, embedding_weight, need_gan, first)
-        print("%s start"%config.cc_par('loss_part'))
+
         self.model_type = "Dis"
         with tf.name_scope("output"):
             # 这个是普通的loss函数：  max( 0,0.05 -(pos-neg) )
@@ -36,9 +36,12 @@ class Discriminator(bilstm):
             #     self.loss += tf.reduce_sum(self.ans_losses)
             self.loss_ans = tf.reduce_sum(self.ans_losses)
             # if config.cc_par('loss_part').__contains__('transE'):
+
+            # 临时注释
             self.loss_transe = tf.reduce_sum(self.transe_loss)
             self.loss_e_r_transe = tf.reduce_sum(self.ner_losses)+tf.reduce_sum(self.rel_loss)+\
                             tf.reduce_sum(self.transe_loss)
+
             # print('当前使用了3个loss')
                 # self.transe_loss
             # print(self.loss)
@@ -84,9 +87,22 @@ class Discriminator(bilstm):
 
         # 优化D
         # self.global_step = tf.Variable(0, name="globle_step", trainable=False)
-        print('现在训练的是 loss_rel ')
-        self.train_op = self.train_op1(self.loss_rel, self.global_step,FLAGS.max_grad_norm)
+        # if config.cc_par('loss_part') == 'entity_relation':
+        #     print('现在训练的是 loss_e_r ')
+        self.train_op_e_r = self.train_op1(self.loss_e_r, self.global_step,FLAGS.max_grad_norm)
+        # elif config.cc_par('loss_part') == 'entity':
+        #     print('现在训练的是 loss_ner ')
+        self.train_op_ner = self.train_op1(self.loss_ner, self.global_step, FLAGS.max_grad_norm)
+        # elif config.cc_par('loss_part') == 'entity':
+        #     print('现在训练的是 loss_rel ')
+        self.train_op_rel = self.train_op1(self.loss_rel, self.global_step, FLAGS.max_grad_norm)
+
+        self.train_op_e_r_transe = self.train_op1(self.loss_e_r_transe, self.global_step, FLAGS.max_grad_norm)
+        #
+        # 临时注释
         self.train_op_transe = self.train_op1(self.loss_transe, self.global_step,FLAGS.max_grad_norm)
+        print('end ')
+        #
         # else:  # origin
             # self.global_step = tf.Variable(0, name="globle_step", trainable=False)
             # # 这里输出

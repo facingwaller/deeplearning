@@ -24,8 +24,8 @@ def sentence_to_vec_list(model,stopwordset,sentence):
 
 
 def main():
-    fnam = "../data/word2vec/zh-cn/wiki_texts_seg.txt.bin"
-    model = models.Word2Vec.load(fnam)
+    # fnam = "../data/word2vec/zh-cn/wiki_texts_seg.txt.bin"
+    # model = models.Word2Vec.load(fnam)
     jieba.set_dictionary('jieba_dict/dict.txt.big')
 
     # load stopwords set
@@ -41,15 +41,20 @@ def main():
     # rdf路径
     #
     lines = ct.file_read_all_lines(path1)
+    # lines =['《机械设计基础》这本书的作者是谁','鑫威kw9000es是个什么产品']
     for line in lines:
         sentence = str(line).split('\t')[0]
         # line = "《机械设计基础》这本书的作者是谁"
     # 读取所有的line
         words = jieba.cut(sentence, cut_all=False)
-        vs = []
-        for word in words:
-            if word not in stopwordset:
-                word_set.add(word)
+        print('%s'% ' '.join(words))
+        # vs = []
+        # for word in words:
+        #     print(word)
+            # if word not in stopwordset:
+                # word_set.add(word)
+
+
         #     res=sentence_to_vec_list(model,stopwordset,line)
     #     for r in res:
     #         ct.just_log2(r)

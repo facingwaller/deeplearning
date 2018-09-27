@@ -33,79 +33,106 @@ FLAGS = tf.flags.FLAGS
 # print("%s\t%s" % (myaddr, testid))
 
 # ==正常调参
-mark = '...gan...'
+mark = '...ns...'
 
+# 配置说明  命名实体识别方案
+def s_config():
+    assert t_relation_num == 4385 # 所有属性对应的问题
+    assert d_epoches == 1 # 使用D模式训练
+    assert train_part == 'entity'  # 训练的是实体(指示训练的模块、以及计算得分的模块)
+    assert ns_model == 'entity'  # negative sampling 使用产生负例实体
+    assert ner_top_cand == 2 # 指示取前3个（2个负例，1个正例）做训练
+
+# 配置说明  属性识别方案
+def p_config():
+    assert t_relation_num == 4385  # 所有属性对应的问题
+    assert d_epoches == 1   # 使用D模式训练
+    assert train_part == 'relation'  # 指示训练的模块、以及计算得分的模块
+    assert ns_model == 'only_default'  # negative sampling 使用产生负例实体；属性是重点，使用了多种方法。
+    assert ner_top_cand == 0    # 指示 取0个命名实体负例，
+
+def er_config():
+    assert t_relation_num == 4385  # 所有属性对应的问题
+    assert ner_epoches == 1   # 使用D模式训练
+    assert train_part == 'entity_relation'  # 属性 relation |answer | entity  |  entity_relation
+    assert loss_part == 'entity_relation'  # entity_relation ；entity_relation_transE;entity;relation
+
+def ert_config():
+    assert t_relation_num == 4385  # 所有属性对应的问题
+    assert ner_epoches == 1   # 使用D模式训练
+    assert ns_epoches == 1  # 使用NS模式训练
+    assert train_part == 'entity_relation'  # 属性 relation |answer | entity  |  entity_relation
+    assert loss_part == 'entity_relation'  # entity_relation ；entity_relation_transE;entity;relation
 
 # 极限情况下调,1个问题，全关系
+# =========================================== 基本不需要调整
 epoches = 10  # 10  # 遍历多少轮
-batch_size = 10  # 1个batch的大小 # 临时改了
 evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
-evaluate_batchsize = 9999  # 验证一次的问题数目,超过则使用最大的
-questions_len_train = 999999999999999  # 所有问题数目
-questions_len_test = 999999999999999  # 测试的问题数目，全部
-wrong_relation_num = 999999999999999  # 错误的关系，设置9999可以是全部的意思
-total_questions = 999999999999999
+evaluate_batchsize = 999999  # 验证一次的问题数目,超过则使用最大的
+questions_len_train = 99999999999  # 所有问题数目
+questions_len_test = 999999999999  # 测试的问题数目，全部
+wrong_relation_num = 999999999999  # 错误的关系，设置9999可以是全部的意思
+total_questions = 99999999
 stop_loss_zeor_count = 2000  # 2000次则停下来
 rnn_size = 100
 mode = "cc"
 check = 100000
 # 属性模式 # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
 use_property = 'special'  # 使用属性的模式做训练和测试
-skip_threshold = 0.05
-t_relation_num = 50  # 4358  # 重要！这个指示了训练的关系个数 4358
-ner_top_cand = 2  # 训练取2，测试取3 0 只测属性识别
-# 分割训练和测试 数据集的时候 使用正式的划分（严格区分训练和测试），
-# 而非模拟测试的。 之前是混合在一起
-real_split_train_test = True
-train_part = 'relation'  # 属性 relation |answer | entity  |  entity_relation
-loss_part = 'entity_relation_transE-2' # entity_relation_transE-2
-# entity_relation_transE|  entity_relation_answer_transE |  relation | entity | transE
+# skip_threshold = 0.05
+pre_train = True
+
+# ################## 可能调整
 loss_margin = 0.05  # 简书上是0.05，liu kang 那边是 0.6 也有0.02
+attention_model = 'a_side'  # a_side 问题端或者答案端
+batch_size = 10  # 1个batch的大小 # 临时改成1 个看loss
+
+# ==================================需要配置
+t_relation_num = 100  # 4385  # 重要！这个指示了训练的关系个数 4358
+ner_top_cand = 2  # 训练取2，测试取3（写死） ; 0 只测属性识别,2 测实体或者实体+属性
+
+real_split_train_test = True  # 严格区分训练和测试
+train_part = 'entity_relation'  # 属性 relation |answer | entity  |  entity_relation
+loss_part = 'entity_relation_transE'  # entity_relation ；entity_relation_transE;entity;relation
+# entity_relation_transE|  entity_relation_answer_transE |  relation | entity | transE
 #  IR-GAN
+ns_model = 'competing_q_ert'  # competing_q_ert competing_q  only_default random entity
+g_epoches = 0
+d_epoches = 0
+s_epoches = 0
+c_epoches = 0
+a_epoches = 0
+ner_epoches = 1
+ns_epoches = 1
+
+
+# ===============================实验的时候才调整
 batch_size_gan = 200  # 100 或者 1000 ,80%的竞争属性是在600
 gan_k = 10
 sampled_temperature = 20
 gan_learn_rate = 0.05
+d_need_cal_attention = True
+g_need_cal_attention = True
+competing_s_neg_p_num = 5
 
-g_epoches = 20
-d_epoches = 1
-s_epoches = 0
-c_epoches = 0
-a_epoches = 0
-ner_epoches = 0
-ns_epoches = 0
-
-keep_run = False  # 指示是否持续跑maybe里面的属性
-optimizer_method = optimizer_m.gan  # 优化模式 gan | lstm
 # only_default 默认模式|fixed_amount 固定 最多100个 | additional 默认+额外
 # synonym_train_mode 优先加入neg的同义词
 # competing_ps 竞争属性
-pool_mode = 'additional' # competing_ps | None | additional | only_default
+# pool_mode = 'additional' # competing_ps | None | additional | only_default
 
 # 模型恢复
-restore_model = False
-restore_path = \
-     r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
-#     r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_03_22_11_55_32_one_day\checkpoints\step=1_epoches=g_index=0\model.ckpt-1'
-#     r'C:\Users\flow\PycharmProjects\tensorFlow1\QA_GAN\runs\2018_04_01_13_50_19_4Mv1\checkpoints\step=9_epoches=d_index=0\model.ckpt-1'
-# restore_path = \
-#     r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs\2018_03_30_14_33_09_gan.v3\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
-# 2018_03_29_11_36_36\checkpoints\step=3_epoches=d_index=05
+restore_model = True
+restore_path_base = r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs'
+restore_path = restore_path_base+\
+                r'\2018_09_27_16_42_34_100p_er_1\checkpoints\step=0_epoches=d_index=0\model.ckpt-1'# 识别了一遍S+P
+               # r'\2018_09_25_21_22_12_all_s_1\checkpoints\step=0_epoches=d_index=0\model.ckpt-1'# 识别了一遍S
 restore_test = False
-synonym_mode = 'none'  # 属性同义词 ps_synonym| none
-synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
-# synonym S_model
-S_model = 'none'  # S_model | none
 
-
-# 只验证错误的模式 only_error|all
-valid_model = 'all'
-valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
-valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
 
 # 竞争属性集
 # competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
 competing_ps_path = '../data/nlpcc2016/13-competing/competing_ps_tj.v2.txt'
+# competing_ps_path = '../data/nlpcc2016/13-competing/competing_p_in_kb.v2.txt'
 competing_batch_size = 10 # 控制size
 
 expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
@@ -119,7 +146,19 @@ use_alias_dict = True
 # 负例选取的方式 alias 指代后的全体实体的属性 | competing 某POS属性的竞争属性
 negative_sampling_model = 'alias'  # alias | competing
 
-# config.par('sq_fb_rdf_path')
+
+# 只验证错误的模式 only_error|all
+valid_model = 'all'
+valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
+valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
+keep_run = False  # 指示是否持续跑maybe里面的属性
+optimizer_method = optimizer_m.gan  # 优化模式 gan | lstm
+synonym_mode = 'none'  # 属性同义词 ps_synonym| none
+synonym_train_mode = 'none'  # 同义词的训练模式 synonym_train_mode|none
+# synonym S_model
+S_model = 'none'  # S_model | none
+
+
 sq_p = {
     'restore_path': '',
     #
@@ -174,7 +213,7 @@ cc_p = {
     'optimizer_method': optimizer_method,
     'mark': mark,
     'gan_learn_rate': gan_learn_rate,
-    'pool_mode': pool_mode,
+    # 'pool_mode': pool_mode,
     #
     'restore_model': restore_model,
     'restore_path': restore_path,
@@ -192,6 +231,7 @@ cc_p = {
     # 竞争
     'competing_ps_path': competing_ps_path,
     'competing_batch_size':competing_batch_size,
+    'competing_s_neg_p_num':competing_s_neg_p_num,
     ## NER
     'expend_es':expend_es,
     'ner_model' : ner_model,
@@ -200,19 +240,22 @@ cc_p = {
     't_relation_num':t_relation_num,
     'alias_dict':alias_dict,
     'use_alias_dict':use_alias_dict,
-    'negative_sampling_model':negative_sampling_model
+    'negative_sampling_model':negative_sampling_model,
+    'pre_train':pre_train,
+    # 注意力
+    'attention_model':attention_model,
+    'd_need_cal_attention':d_need_cal_attention,
+    'g_need_cal_attention':g_need_cal_attention,
+    'ns_model':ns_model
 
 }
 
-if questions_len_test < evaluate_batchsize:
-    raise Exception("验证batch的size要大于总问题个数 %d <= %d"
-                    % (questions_len_test, evaluate_batchsize))
 
 # 模型
 tf.flags.DEFINE_integer("word_dimension", 100, "单词的维度 ")
 tf.flags.DEFINE_string("word_model", "word2vec_train", "可选有|tf_embedding|word2vec_train|word2vec")
 tf.flags.DEFINE_string("mode", mode, "是否增加attention机制 ")
-tf.flags.DEFINE_boolean("need_cal_attention", True, "是否增加attention机制 ")
+# tf.flags.DEFINE_boolean("need_cal_attention", need_cal_attention, "是否增加attention机制 ")
 tf.flags.DEFINE_boolean("need_max_pooling", False, "是否增加max_pooling机制 ")
 tf.flags.DEFINE_boolean("need_test", True, "是否测试 ")
 tf.flags.DEFINE_boolean("fix_model", True, "是否开启纠错模式 ")
@@ -395,13 +438,18 @@ class config:
     def use_property():
         return use_property
 
-    @staticmethod
-    def skip_threshold():
-        return skip_threshold
+
 
 
 if __name__ == "__main__":
     # print(config.get_model())
+    print(restore_path)
+    ns_q_state_all= []
+    global_index = 1
+    import time
+    time_start = time.time()
+
+    print('cost %d/%d: %s' % (global_index, len(ns_q_state_all), time.time() - time_start))
     s1 = "《点石成金》是谁写的？".replace('点石成金','???')
     print(s1)
     print(config.cc_par('train_part'))
