@@ -27,7 +27,7 @@ if __name__ == '__main__':  #
                                    f_out='../data/nlpcc2016/4-ner/extract_e/e1.tj.v2-2.txt')
 
     # 答案选择
-    if True:
+    if False:
         dh = DataClass("cc")
         s=r'F:\PycharmProjects\dl2\deeplearning\data\nlpcc2016\6-answer\select_100p\s.txt'
         p = r'F:\PycharmProjects\dl2\deeplearning\data\nlpcc2016\6-answer\select_100p\p.txt'
@@ -253,15 +253,15 @@ if __name__ == '__main__':  #
         cf.build_competing_p_in_kb('../data/nlpcc2016/13-competing/competing_p_in_kb.v2.txt',
                                    '../data/nlpcc2016/13-competing/competing_s_in_kb.v2.txt',
                                    kb_path)
-    if False:
+    if True:
         #  读取问题
         f1 = config.cc_par('cc_q_path')
         skip = config.cc_par('real_split_train_test_skip_v2')
         cf.build_test_ps(f1=f1,
-                         f2='../data/nlpcc2016/13-competing/train_ps.v1.txt', skip=skip)
+                         f2='../data/nlpcc2016/13-competing/train_ps.v2.txt', skip=skip)
 
-    if False:
-        cf.build_competing_ps(f1='../data/nlpcc2016/13-competing/train_ps.v1.txt',
+    if True:
+        cf.build_competing_ps(f1='../data/nlpcc2016/13-competing/train_ps.v2.txt',
                               f2='../data/nlpcc2016/13-competing/competing_ps.v1.txt',
                               f3='../data/nlpcc2016/13-competing/competing_ps_tj.v2.txt')
 

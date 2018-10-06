@@ -725,7 +725,7 @@ class classification:
                 break
                 # train = False
                 # break
-            pos = str(f1l).split('\t')[3]
+            pos = ct.clean_str_rel(str(f1l).split('\t')[3])
             pos_set.add(pos)
         # 遍历
         index = -1
@@ -739,7 +739,7 @@ class classification:
             # 开始检测
             q1 = str(f1l).split('\t')[0]
             s1 = str(f1l).split('\t')[2] # 取在句子中的实体部分
-            p1 = str(f1l).split('\t')[3]
+            p1 = ct.clean_str_rel(str(f1l).split('\t')[3])
             # 获取属性集合 需要改成 获取 别名字典的所有的属性
             # vs = bkh.kbqa.get(s1, '')
             s1 = bkh.entity_re_extract_one_repeat(s1)

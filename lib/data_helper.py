@@ -1897,6 +1897,9 @@ class DataClass:
         if ns_model == 'only_default':
             spo_tuple = self.build_spo_tuple_onlydeault(a_pos, all_cands, entity1, _ns, r_pos1, s1_in_q,
                              use_alias_dict)
+        elif ns_model == 'only_default_er':
+            spo_tuple = self.build_spo_tuple_onlydeault_er(a_pos, all_cands, entity1, _ns, r_pos1, s1_in_q,
+                             use_alias_dict)
         elif ns_model == 'random':
             spo_tuple = self.build_spo_tuple_random(a_pos, all_cands, entity1, _ns, r_pos1,
                                                         s1_in_q,use_alias_dict)
@@ -2065,6 +2068,35 @@ class DataClass:
             # key 是指存在于字典中的KEY
             temp_cand_ps_neg, temp_cand_as_neg = \
                     self.bh.kb_get_p_o_by_s(cand_s_neg_item,[r_pos1])
+
+            for _cand_ps_neg_item, _as in \
+                    zip(temp_cand_ps_neg, temp_cand_as_neg):
+                # 如果实体和属性都是正确的，则跳过
+                if cand_s_neg_item == s1_in_q and _cand_ps_neg_item == r_pos1:
+                    # ct.print("check: %s - %s"%(cand_s_neg_item,temp_cand_ps_neg_item))
+                    continue
+                # if _as == a_pos:
+                #     continue
+                _spo = (cand_s_neg_item, _cand_ps_neg_item, _as)
+                spo_tuple.append(_spo)
+        return spo_tuple
+
+    # 限制num个非S_neg的组合
+    def build_spo_tuple_onlydeault_er(self, a_pos, all_cands, entity1, negative_sampling_model, r_pos1, s1_in_q,
+                        use_alias_dict):
+        spo_tuple =[]
+        # 实体的负例
+        for cand_s_neg_item in all_cands:
+            # 增加选出候选的neg属性
+            # 得出正确实体的错误属性 和 错误实体的全部属性
+            # key 是指存在于字典中的KEY
+            if cand_s_neg_item == s1_in_q: # S_POS
+                temp_cand_ps_neg, temp_cand_as_neg = \
+                        self.bh.kb_get_p_o_by_s(cand_s_neg_item,[r_pos1])
+            else:
+                num = config.cc_par('competing_s_neg_p_num')  # 5
+                temp_cand_ps_neg, temp_cand_as_neg = \
+                    self.bh.kb_get_p_o_by_s_limit(cand_s_neg_item, [], num)
 
             for _cand_ps_neg_item, _as in \
                     zip(temp_cand_ps_neg, temp_cand_as_neg):

@@ -33,7 +33,7 @@ FLAGS = tf.flags.FLAGS
 # print("%s\t%s" % (myaddr, testid))
 
 # ==正常调参
-mark = '...ns...'
+mark = '...测random..'
 
 # 配置说明  命名实体识别方案
 def s_config():
@@ -47,6 +47,7 @@ def s_config():
 def p_config():
     assert t_relation_num == 4385  # 所有属性对应的问题
     assert d_epoches == 1   # 使用D模式训练
+    assert ns_epoches == 1
     assert train_part == 'relation'  # 指示训练的模块、以及计算得分的模块
     assert ns_model == 'only_default'  # negative sampling 使用产生负例实体；属性是重点，使用了多种方法。
     assert ner_top_cand == 0    # 指示 取0个命名实体负例，
@@ -54,19 +55,26 @@ def p_config():
 def er_config():
     assert t_relation_num == 4385  # 所有属性对应的问题
     assert ner_epoches == 1   # 使用D模式训练
+    assert ns_epoches == 1  # 使用NS模式训练
     assert train_part == 'entity_relation'  # 属性 relation |answer | entity  |  entity_relation
     assert loss_part == 'entity_relation'  # entity_relation ；entity_relation_transE;entity;relation
 
-def ert_config():
+def er_cp_config():
     assert t_relation_num == 4385  # 所有属性对应的问题
     assert ner_epoches == 1   # 使用D模式训练
     assert ns_epoches == 1  # 使用NS模式训练
     assert train_part == 'entity_relation'  # 属性 relation |answer | entity  |  entity_relation
     assert loss_part == 'entity_relation'  # entity_relation ；entity_relation_transE;entity;relation
 
-# 极限情况下调,1个问题，全关系
+def ert_cp_config():
+    assert t_relation_num == 4385  # 所有属性对应的问题
+    assert ner_epoches == 1   # 使用D模式训练
+    assert ns_epoches == 1  # 使用NS模式训练
+    assert train_part == 'entity_relation'  # 属性 relation |answer | entity  |  entity_relation
+    assert loss_part == 'entity_relation_transE'  # entity_relation ；entity_relation_transE;entity;relation
+
 # =========================================== 基本不需要调整
-epoches = 10  # 10  # 遍历多少轮
+epoches = 10   # 遍历多少轮
 evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
 evaluate_batchsize = 999999  # 验证一次的问题数目,超过则使用最大的
 questions_len_train = 99999999999  # 所有问题数目
@@ -88,7 +96,7 @@ attention_model = 'a_side'  # a_side 问题端或者答案端
 batch_size = 10  # 1个batch的大小 # 临时改成1 个看loss
 
 # ==================================需要配置
-t_relation_num = 100  # 4385  # 重要！这个指示了训练的关系个数 4358
+t_relation_num = 4385  # 4385  # 重要！这个指示了训练的关系个数 4358
 ner_top_cand = 2  # 训练取2，测试取3（写死） ; 0 只测属性识别,2 测实体或者实体+属性
 
 real_split_train_test = True  # 严格区分训练和测试
@@ -96,14 +104,14 @@ train_part = 'entity_relation'  # 属性 relation |answer | entity  |  entity_re
 loss_part = 'entity_relation_transE'  # entity_relation ；entity_relation_transE;entity;relation
 # entity_relation_transE|  entity_relation_answer_transE |  relation | entity | transE
 #  IR-GAN
-ns_model = 'competing_q_ert'  # competing_q_ert competing_q  only_default random entity
+ns_model = 'only_default_er'  # competing_q_ert competing_q  only_default only_default_er  random entity
 g_epoches = 0
 d_epoches = 0
 s_epoches = 0
 c_epoches = 0
 a_epoches = 0
 ner_epoches = 1
-ns_epoches = 1
+ns_epoches = 0
 
 
 # ===============================实验的时候才调整
@@ -124,8 +132,9 @@ competing_s_neg_p_num = 5
 restore_model = True
 restore_path_base = r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs'
 restore_path = restore_path_base+\
-                r'\2018_09_27_16_42_34_100p_er_1\checkpoints\step=0_epoches=d_index=0\model.ckpt-1'# 识别了一遍S+P
-               # r'\2018_09_25_21_22_12_all_s_1\checkpoints\step=0_epoches=d_index=0\model.ckpt-1'# 识别了一遍S
+                r'\2018_09_26_21_47_08_all_e_r_1\checkpoints\step=0_epoches=d_index=0\model.ckpt-1'
+            # r'\2018_10_05_11_06_59_allp_ns_cp_best\checkpoints\step=6_epoches=d_index=0\model.ckpt-1'
+
 restore_test = False
 
 
@@ -298,6 +307,9 @@ tf.flags.DEFINE_integer("gan_learn_rate", gan_learn_rate, "gan_learn_rate  ")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
+
+tf.flags.DEFINE_boolean("restore_model", restore_model, "Log placement of ops on devices")
+
 
 ms = ["train", "test"
     , "debug"
