@@ -1309,7 +1309,7 @@ class ct:
     # k1 = key  k2 = value
     @staticmethod
     def dict_add_tj(d1, k1, k2):
-        key = "%s_%s"%(k1,k2)
+        key = "%s@@@@%s"%(k1,k2)
         if key in d1:
             d1[key]+=1
         else:
@@ -1435,6 +1435,18 @@ class ct:
         shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
         return shuffle_indices
 
+    @staticmethod
+    def convert_rs_to_words(rs):
+        """
+        关系集合转换为对应的字符集合
+        :param rs:
+        :return:
+        """
+        r_words = set()
+        for _r1 in rs:
+            for _w in _r1:
+                r_words.add(_w)
+        return list(r_words)
     @staticmethod
     def get_shuffle_indices_test(dh, step, train_part, model, train_step):
         """

@@ -33,7 +33,7 @@ FLAGS = tf.flags.FLAGS
 # print("%s\t%s" % (myaddr, testid))
 
 # ==正常调参
-mark = '...测random..'
+
 
 # 配置说明  命名实体识别方案
 def s_config():
@@ -74,7 +74,7 @@ def ert_cp_config():
     assert loss_part == 'entity_relation_transE'  # entity_relation ；entity_relation_transE;entity;relation
 
 # =========================================== 基本不需要调整
-epoches = 10   # 遍历多少轮
+epoches = 100   # 遍历多少轮
 evaluate_every = 100  # 100训练X次验证一次   #等会临时改成20 - 10 试试看
 evaluate_batchsize = 999999  # 验证一次的问题数目,超过则使用最大的
 questions_len_train = 99999999999  # 所有问题数目
@@ -92,26 +92,28 @@ pre_train = True
 
 # ################## 可能调整
 loss_margin = 0.05  # 简书上是0.05，liu kang 那边是 0.6 也有0.02
-attention_model = 'a_side'  # a_side 问题端或者答案端
-batch_size = 10  # 1个batch的大小 # 临时改成1 个看loss
+attention_model = 'a_side'  # a_side (默认) 问题端或者答案端  q_side  both
+batch_size = 5  # 1个batch的大小 # 临时改成1 个看loss
 
 # ==================================需要配置
-t_relation_num = 4385  # 4385  # 重要！这个指示了训练的关系个数 4358
-ner_top_cand = 2  # 训练取2，测试取3（写死） ; 0 只测属性识别,2 测实体或者实体+属性
+# mark = '测试CP的效果；寻找最佳的CP策略；10P;NEG负例的个数是全部 ;14-cp的竞争策略[20181013-1]' # 备注
+mark = '测试CP的效果；100p;竞争CP；螺旋式上升' # 备注
+t_relation_num = 100  # 4385  # 重要！这个指示了训练的关系个数 4358
+ner_top_cand = 0  # 训练取2，测试取3（写死） ; 0 只测属性识别,2 测实体或者实体+属性
 
 real_split_train_test = True  # 严格区分训练和测试
-train_part = 'entity_relation'  # 属性 relation |answer | entity  |  entity_relation
-loss_part = 'entity_relation_transE'  # entity_relation ；entity_relation_transE;entity;relation
+train_part = 'relation'  # 属性 relation |answer | entity  |  entity_relation
+loss_part = '...'  # entity_relation ；entity_relation_transE;entity;relation
 # entity_relation_transE|  entity_relation_answer_transE |  relation | entity | transE
 #  IR-GAN
-ns_model = 'only_default_er'  # competing_q_ert competing_q  only_default only_default_er  random entity
+ns_model = 'competing_q'  # competing_q_ert competing_q  only_default only_default_er  random entity temp_test_all
 g_epoches = 0
-d_epoches = 0
+d_epoches = 2
 s_epoches = 0
 c_epoches = 0
 a_epoches = 0
-ner_epoches = 1
-ns_epoches = 0
+ner_epoches = 0
+ns_epoches = 1
 
 
 # ===============================实验的时候才调整
@@ -121,8 +123,12 @@ sampled_temperature = 20
 gan_learn_rate = 0.05
 d_need_cal_attention = True
 g_need_cal_attention = True
-competing_s_neg_p_num = 5
-
+competing_s_neg_p_num = 10   # 竞争属性中，P_POS的负例的多少
+competing_p_pos_neg_size = 9999  # 竞争属性中，P_POS的负例的多少
+convert_rs_to_words = False   # 关系集合转换为对应的字符集合
+only_p_neg_in_cp = False               # 只加入P_NEG进入 CP 暂停，这样会导致POS无法加入
+hand_add_some_neg = True
+does_cp_contains_default = False # competing_q 模式下 是否包含默认的 属性。去掉才显得出
 # only_default 默认模式|fixed_amount 固定 最多100个 | additional 默认+额外
 # synonym_train_mode 优先加入neg的同义词
 # competing_ps 竞争属性
@@ -132,15 +138,15 @@ competing_s_neg_p_num = 5
 restore_model = True
 restore_path_base = r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs'
 restore_path = restore_path_base+\
-                r'\2018_09_26_21_47_08_all_e_r_1\checkpoints\step=0_epoches=d_index=0\model.ckpt-1'
-            # r'\2018_10_05_11_06_59_allp_ns_cp_best\checkpoints\step=6_epoches=d_index=0\model.ckpt-1'
-
+                 r'\2018_10_28_15_16_00_100p_cp_2\checkpoints\step=2_epoches=d_index=0\model.ckpt-1'
+                #r'\2018_10_05_11_06_59_allp_ns_cp_best\checkpoints\step=6_epoches=d_index=0\model.ckpt-1'
 restore_test = False
 
 
 # 竞争属性集
 # competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
-competing_ps_path = '../data/nlpcc2016/13-competing/competing_ps_tj.v2.txt'
+competing_ps_path = '../data/nlpcc2016/14-cp/competing_ps_tj.v2.txt'
+# competing_ps_path = '../data/nlpcc2016/13-competing/competing_ps_tj.v2.txt'# 13-competing 版本的
 # competing_ps_path = '../data/nlpcc2016/13-competing/competing_p_in_kb.v2.txt'
 competing_batch_size = 10 # 控制size
 
@@ -255,7 +261,12 @@ cc_p = {
     'attention_model':attention_model,
     'd_need_cal_attention':d_need_cal_attention,
     'g_need_cal_attention':g_need_cal_attention,
-    'ns_model':ns_model
+    'ns_model':ns_model,
+    'competing_p_pos_neg_size':competing_p_pos_neg_size,
+    'convert_rs_to_words':convert_rs_to_words,
+    'only_p_neg_in_cp':only_p_neg_in_cp,
+    'hand_add_some_neg':hand_add_some_neg,
+    'does_cp_contains_default':does_cp_contains_default
 
 }
 

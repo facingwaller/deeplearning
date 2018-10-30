@@ -54,7 +54,7 @@ class DataClass:
 
     competing_train_score_dict = dict() # 竞争属性集合-训练集上的带分数
     question_comcpeting_ps = [] # 问题对应的竞争属性 list index = global index  value = (属性，频率/得分) set()
-    competing_train_p_id_num = dict()
+    competing_train_p_id_num = dict() # 竞争属性集合；元祖《global_index，属性》
 
     does_entity1_in_cand_list_origin = [] # 指示正确实体是否出现在候选中
 
@@ -1122,6 +1122,9 @@ class DataClass:
         rs_len = len(rs)
         num = min(ct.get_static_num_debug(), rs_len)
         rs = rs[0:num]
+        if config.cc_par('convert_rs_to_words'):
+            rs = ct.convert_rs_to_words(rs) # 关系集合转换为对应的字符集合
+
         for r1 in rs:
             # r1_split = [r1]  # .split(" ")
             # r1 = self.converter.text_to_arr_list(r1_split)
@@ -2069,6 +2072,34 @@ class DataClass:
             temp_cand_ps_neg, temp_cand_as_neg = \
                     self.bh.kb_get_p_o_by_s(cand_s_neg_item,[r_pos1])
 
+            if config.cc_par('hand_add_some_neg'):
+                # 手动添加一些NEG
+                hand_add = []
+                if r_pos1 == '出处':
+                    hand_add = ['中文名称']
+                elif r_pos1 == '属性':
+                    hand_add = ['类别']
+                elif r_pos1 == '名称':
+                    hand_add = ['别称']
+                elif r_pos1 == '注音':
+                    hand_add = ['属性', '外文名称', '中文名称']
+                elif r_pos1 == '片长':
+                    hand_add = ['主演', '编剧']
+                elif r_pos1 == '用途':
+                    hand_add = ['中文名', '别名']
+                elif r_pos1 == '部首':
+                    hand_add = ['除部首外笔画']
+                elif r_pos1 == '分级':
+                    hand_add = ['上映时间']
+                elif r_pos1 == '作者':
+                    hand_add = ['原著作者','原作者','曲作者','漫画作者','作者名言','作者身份','作者其他作品','作者籍贯']
+                else:
+                    pass
+                temp_cand_ps_neg.extend(hand_add)
+                temp_cand_as_neg.extend(hand_add)
+                pass
+            else:
+                pass
             for _cand_ps_neg_item, _as in \
                     zip(temp_cand_ps_neg, temp_cand_as_neg):
                 # 如果实体和属性都是正确的，则跳过
@@ -2197,6 +2228,7 @@ class DataClass:
                         use_alias_dict,neg_size ,global_index):
         spo_tuple =[]
         c_temp_cand_ps_neg, c_temp_cand_ps_neg = [], []
+
         if len(self.question_comcpeting_ps)> 0:
             ct.print('\nr_pos1:%s' % r_pos1, 'choice')
             _es = self.question_comcpeting_ps[global_index]
@@ -2214,6 +2246,10 @@ class DataClass:
             #     _1 = _1[0]
             #     _2 = _2[0]
             #     ct.print(_1, 'choice')
+        else:
+            ct.print('len(self.question_comcpeting_ps)==0','bug')
+            return spo_tuple
+
 
         # 实体的负例
         for cand_s_neg_item in all_cands:
@@ -2221,8 +2257,12 @@ class DataClass:
             # 得出正确实体的错误属性 和 错误实体的全部属性
             # key 是指存在于字典中的KEY
             if use_alias_dict:
-                temp_cand_ps_neg, temp_cand_as_neg = [] ,[]  # 全部来自竞争属性
-                    # self.bh.kb_get_p_o_by_s(cand_s_neg_item)
+                temp_cand_ps_neg, temp_cand_as_neg = [] ,[]
+                if config.cc_par('does_cp_contains_default'):
+                    temp_cand_ps_neg, temp_cand_as_neg = \
+                        self.bh.kb_get_p_o_by_s(cand_s_neg_item)  # [] ,[]  # 全部来自竞争属性
+
+
             # else:
             #     # 如果使用别名字典 则不需要替换回来
             #     if s1_in_q == cand_s_neg_item:
@@ -2256,6 +2296,7 @@ class DataClass:
                     continue
                 _spo = (cand_s_neg_item, _cand_ps_neg_item, _as)
                 spo_tuple.append(_spo)
+        ct.just_log2("info", "\n spo_tuple len:%d"%len(spo_tuple))
         return spo_tuple
 
     # E_R_TRASNE 模式下的竞争
@@ -2723,7 +2764,17 @@ class DataClass:
         total = 1000
         _index = 0
         r_cp = []
-        for item in self.competing_set:
+        if config.cc_par('convert_rs_to_words'):
+            c_set = ct.convert_rs_to_words(self.competing_set)
+        else:
+            c_set = self.competing_set
+        # if config.cc_par('only_p_neg_in_cp'):
+        #     _temp = set(self.relation_list)
+        #     c_set = c_set - _temp # 取 差集
+        # else:
+        #     pass
+        for item in c_set:
+            ct.print(item,'ns_p')
             _index += 1
             r_cp.append(self.convert_str_to_indexlist(item))
             need_return = _index % total == 0
@@ -2745,13 +2796,18 @@ class DataClass:
         _index = 0
         q_p = []  # 用于属性识别的q
         key = 'q_p'
-        for q_current,_s in  zip( self.question_list_origin ,self.entity1_list):
+        for q_current,_s,_label in zip( self.question_list_origin ,self.entity1_list,self.question_labels):
+            # if _label:
+            #     continue
             # q_current =  # 原始的问题(未处理)-字符串
+
             _s_clean = self.bh.entity_re_extract_one_repeat(_s)
             _index += 1
             q_current_for_p = q_current.replace(_s_clean, '♠')  # 去掉实体的问句,用于属性训练
             q_p.append(self.convert_str_to_indexlist(q_current_for_p))
             need_return = _index % total == 0
+            ct.print(q_current_for_p, 'ns_q')
+
             if need_return:
                 d1 = dict()
                 d1[key] = np.array(q_p)

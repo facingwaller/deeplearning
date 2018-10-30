@@ -770,6 +770,67 @@ class classification:
 
         # 00: 04:34: 22438   公司性质          公司口号         公司类型
 
+    # 构建基于P_POS的竞争属性集合
+    def build_test_ps_v2(self, f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                      f2='../data/nlpcc2016/5-class/test_ps.txt', skip=14097):
+        f1s = ct.file_read_all_lines_strip(f1)
+        bkh = baike_helper(config.cc_par('alias_dict'))
+        bkh.init_spo(config.cc_par('kb-use'))
+        pos_set = set()
+        index = -1
+        # 收集所有的pos-p
+        for f1l in f1s:
+            index += 1
+            train = True
+            if index > skip:
+                break
+                # train = False
+                # break
+            pos = ct.clean_str_rel(str(f1l).split('\t')[3])
+            pos_set.add(pos)
+        # 遍历
+        index = -1
+        msg_list = []
+        tp_list = []
+        for f1l in f1s:
+            index += 1
+            train = True
+            if index > skip:
+                break
+            # 开始检测
+            q1 = str(f1l).split('\t')[0]
+            s1 = str(f1l).split('\t')[2] # 取在句子中的实体部分
+            p1 = ct.clean_str_rel(str(f1l).split('\t')[3])
+            # 获取属性集合 需要改成 获取 别名字典的所有的属性
+            # vs = bkh.kbqa.get(s1, '')
+            s1 = bkh.entity_re_extract_one_repeat(s1)
+            vs , _ = bkh.kb_get_p_o_by_s(s1,'')
+            line_ps = []
+            # exist = False
+            exist = p1 in pos_set
+            # 遍历该实体的所有属性
+            for po in vs:
+                # if po in pos_set:
+                line_ps.append(po)
+
+            # msg = "%s\t%s\t%s\t%d\t%s" % (q1, p1, exist, index, '\t'.join(line_ps))
+            # 问题，P_POS,是否在POS中，global_index，属性
+            tp = (q1, p1, exist, index, '\t'.join(line_ps))
+            # 这段代码的意思是 后面index的会添加进前面的index
+            # 且只会加到第一个
+            for i in range(len(tp_list)):
+                # for _tp in tp_list:
+                _tp = tp_list[i]
+                if _tp[4] == tp[4]:
+                    _tp_3 = "%s_%s" % (tp[3], _tp[3])
+                    tp_list[i] = (_tp[0], _tp[1], _tp[2], _tp_3, _tp[4])  # _tp
+                    break
+            tp_list.append(tp)
+            # msg_list.append(msg)
+        msg_list = ["%s\t#%s\t%s\t%s\t%s" % (x[0], x[1], x[2], x[3], x[4]) for x in tp_list]
+        ct.file_wirte_list(f2, msg_list)
+
+        # 00: 04:34: 22438   公司性质          公司口号         公司类型
 
 
     # 读取出所有NEG的PS
@@ -828,6 +889,55 @@ class classification:
             msg_list.append(msg)
         ct.file_wirte_list(f3, msg_list)
 
+    # 读取出所有NEG的PS
+    def build_competing_ps_v2(self, f1='../data/nlpcc2016/5-class/test_ps.txt',
+                           f2='../data/nlpcc2016/5-class/competing_ps.txt',
+                           f3=''):
+        f1s = ct.file_read_all_lines_strip(f1)
+        # bkh = baike_helper()
+        # bkh.init_spo()
+
+        index = -1
+        d1 = dict()  # KEY=P VALUE = 竞争的P
+        d2 = dict() # key =  w1_w2 , value = 次数
+        d3 = dict() # key = w1 , value = 次数
+        import itertools
+        for f1l in f1s:
+            index += 1
+
+            # if index < skip:  # 跳过train的数据
+            #     continue
+
+            # 每行互为K-V
+            # 我想知道东城街道有几个社区?	#社区数	True	9554_9547_9540_9531_4867	行政区类型	上级行政区	村级区划单位数	电话区号	地理、人口、经济	东城街道(巴中市)	行政区划代码	社区数	行政村数	别名	东城街道(重庆市)	东城街道(二连浩特市)	东城街道(聊城市)	东城街道(雅安市)	面积	地理位置	中文名称	人口	政府驻地	概览	其他	常住人口	毗邻	//zh.wikipedia.org/wiki/filewijincheng_ii.jpg东城街道辖区内的中国科技五金城	东城街道(四会市)	东城街道(东营市)	东城街道(清远市)	东城街道(兴平市)	东城街道(荆州市)	方言	气候条件	行政区类别	所属地区	东城街道(凌源市)	东城街道(菏泽市)	东城街道	东城街道(郏县)	东城街道(商水县)	户籍人口1997年	建置时间	时区	所属	中文名	职位	东城街道(达州市)	外文名称	总面积	原名	时间	著名景点	车牌代码	邮政区码	性质	东城街道(东莞市)	下辖地区	总户数	辖区面积	总人口	东城街道(西昌市)	东城街道(临朐县)	东城街道(库车县)	东城街道(铜梁县)	机场	火车站	属于	东城街道(阳城县)	东城街道(盖州市)	东城街道(宜宾市)	东城街道(吉林市)	东城街道(利川市)	街道辖区面积	成立于	城区面积	村委会	位置	所在地	东城街道(沈丘县)	东城街道(单县)	东城街道(界首市)	东城街道(新民市)	东城街道(运城市)	东城街道(高平市)	东城街道(龙岩市)
+            l1 = str(f1l).split('\t')[4:] # L1 是后面一个问题的所有候选属性
+            #  对L1中的所有的属性，任取2个排序，意思是这2个是竞争关系
+            #  将这2个加入到D1中
+            for w in itertools.permutations(l1,2):
+                w1 = w[0]
+                w2 = w[1]
+                d1 = ct.dict_add(d1, w1, w2)
+                d2 = ct.dict_add_tj(d2, w1, w2)
+            # for w in l1:
+                d3 = ct.dict_add_tj_w1(d3, w1)
+                # d3 = ct.dict_add_tj_w1(d3, w2)
+
+        msg_list = []
+        for k1,vs in d1.items():
+            # vs = d1[k1]
+            msg = "%s\t%s" % (k1, '\t'.join(vs))
+            msg_list.append(msg)
+        ct.file_wirte_list(f2, msg_list)
+
+        msg_list = []
+        for k1,vs in d2.items():
+            # vs = d1[k1]
+            w1 = str(k1).split('@@@@')[0]
+            w2 = str(k1).split('@@@@')[1]
+            v1 = d3[w1] # 总次数
+            msg = "%s\t%s\t%d\t%d\t%f" % (w1,w2, vs,v1,vs/v1)
+            msg_list.append(msg)
+        ct.file_wirte_list(f3, msg_list)
     # 找到同实体不同属性名，但是属性值一样的
     def class_p_by_o_kb(self, f1='../data/nlpcc2016/2-kb/kb.v1.txt',
                         f3='../data/nlpcc2016/5-class/demo1/same_o.txt',

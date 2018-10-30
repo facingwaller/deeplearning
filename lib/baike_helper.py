@@ -2055,6 +2055,9 @@ class baike_helper:
                 #     raise ValueError("Fewer non-zero entries in p than size")
                 for i in neg_index:
                     r1.append(r2[i])
+            else: # 未超过则全部加入
+                for item in r2:
+                    r1.append(item)
             # r1.extend(r2)
             # print("G") #G
         return r1, r1
@@ -3923,6 +3926,19 @@ class baike_test:
                 # for x1 in x :
                 #     print("%s  %s"%(x1,bkh.get_total(x1)))
         print('finish!')
+    # 分词一个句子
+    @staticmethod
+    def ner_q(line="",f3="../data/nlpcc2016/result/combine_e12.txt.statistics.txt",):
+        bkh = baike_helper()
+        bkh.init_ner(f_in2=f3)
+        s = line.replace("\r", "").replace("\n", "").replace(' ', '')
+        s = ct.clean_str_s(s)  # 把
+        ss = bkh.ner(s)
+
+        # 排序
+        return ss
+
+
 
     # 根据extract_entitys_all.txt 重写e1.tj.v2，仅保留出现在候选实体中的
     @staticmethod

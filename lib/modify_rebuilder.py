@@ -253,23 +253,46 @@ if __name__ == '__main__':  #
         cf.build_competing_p_in_kb('../data/nlpcc2016/13-competing/competing_p_in_kb.v2.txt',
                                    '../data/nlpcc2016/13-competing/competing_s_in_kb.v2.txt',
                                    kb_path)
-    if True:
+    if False:
         #  读取问题
         f1 = config.cc_par('cc_q_path')
         skip = config.cc_par('real_split_train_test_skip_v2')
         cf.build_test_ps(f1=f1,
                          f2='../data/nlpcc2016/13-competing/train_ps.v2.txt', skip=skip)
 
-    if True:
+    if False:
         cf.build_competing_ps(f1='../data/nlpcc2016/13-competing/train_ps.v2.txt',
                               f2='../data/nlpcc2016/13-competing/competing_ps.v1.txt',
                               f3='../data/nlpcc2016/13-competing/competing_ps_tj.v2.txt')
+    # ============================================================
+    # 竞争属性部分 V2
+    # ============================================================
 
+    if False:
+        #  读取问题
+        f1 = config.cc_par('cc_q_path')
+        skip = config.cc_par('real_split_train_test_skip_v2')
+        cf.build_test_ps_v2(f1=f1,
+                         f2='../data/nlpcc2016/14-cp/train_ps.v2.txt', skip=skip)
+    if True:
+        cf.build_competing_ps_v2(f1='../data/nlpcc2016/14-cp/train_ps.v2.txt',
+                              f2='../data/nlpcc2016/14-cp/competing_ps.v1.txt',
+                              f3='../data/nlpcc2016/14-cp/competing_ps_tj.v2.txt')
     # 检查所有的实体是否存在KV中
     #
     if False:
         dh = DataClass("cc")
         dh.check_spo()
+
+    # 输入一个问句输出对应的NER 前3
+    # 1 分词
+    if False:
+        line = input()
+        res = baike_test.ner_q(line,f3='../data/nlpcc2016/4-ner/extract_entitys_all.v2.txt')
+        print(res)
+
+
+
 
 
 

@@ -6,7 +6,7 @@
 import tensorflow as tf
 from tensorflow.contrib import rnn
 from QA.bilstm import biLSTM
-from QA.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature, cal_loss_and_acc_try
+from QA.utils import feature2cos_sim, max_pooling, cal_loss_and_acc, get_feature, cal_loss_and_acc_try,get_feature_debug,get_feature_debug2
 from lib.config import config
 
 class CustomNetwork:
@@ -217,6 +217,14 @@ class CustomNetwork:
                 'Wms': tf.Variable(tf.truncated_normal(
                     [self.attention_matrix_size, 1], stddev=0.1))
             }
+            q_side_att_W = {
+                'q_side_Wam': tf.Variable(tf.truncated_normal(
+                    [2 * self.rnn_size, self.attention_matrix_size], stddev=0.1)),
+                'q_side_Wqm': tf.Variable(tf.truncated_normal(
+                    [2 * self.rnn_size, self.attention_matrix_size], stddev=0.1)),
+                'q_side_Wms': tf.Variable(tf.truncated_normal(
+                    [self.attention_matrix_size, 1], stddev=0.1))
+            }
             # 获取特征
             # print("cal_attention")
             # print(self.ori_q)
@@ -229,14 +237,47 @@ class CustomNetwork:
             _AM = config.cc_par('attention_model')  # 问题端 (默认)答案端
             if _AM == 'q_side':
                 self.cand_q_feat, self.ori_q_feat = get_feature(self.cand_a,self.ori_q,att_W, weight_dict)
-                self.neg_q_feat, self.ori_nq_feat = get_feature( self.neg_a,self.ori_q, att_W, weight_dict)
-                self.test_r_out, self.test_q_out = get_feature(self.test_r_out,self.test_q_out,  att_W, weight_dict)
-            else:
+                self.neg_q_feat, self.ori_nq_feat = get_feature(self.neg_a,self.ori_q, att_W, weight_dict)
+                self.test_r_feat_out, self.test_q_feat_out = get_feature(self.test_r_out,self.test_q_out,  att_W, weight_dict)
+            elif _AM=='a_side':
+                # self.ori_q_feat, self.cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W, weight_dict)
                 self.ori_q_feat, self.cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W,weight_dict)
-                self.ori_nq_feat, self.neg_q_feat = get_feature(self.ori_q, self.neg_a, att_W,weight_dict)
-                self.test_q_out, self.test_r_out = get_feature(self.test_q_out, self.test_r_out, att_W,weight_dict)
-                # NS.V2
+                self.ori_nq_feat, self.neg_q_feat,self.debug = get_feature_debug(self,self.ori_q, self.neg_a, att_W,weight_dict)
+
+                self.test_q_feat_out, self.test_r_feat_out = get_feature(self.test_q_out, self.test_r_out, att_W,weight_dict)
+                # # NS.V2
                 self.ns2_q_feat, self.ns2_r_feat = get_feature(self.ns2_q, self.ns2_r, att_W, weight_dict)
+
+                # self.test_q_feat_out, self.test_r_feat_out,self.debug = get_feature_debug(self,self.test_q_out, self.test_r_out, att_W,weight_dict)
+                # # # NS.V2
+                # self.ns2_q_feat, self.ns2_r_feat,self.debug1 = get_feature_debug2(self,self.ns2_q, self.ns2_r, att_W, weight_dict)
+
+                print(_AM)
+
+            elif _AM =='both':
+                # a_side 保留 a 部分
+                _, self.cand_q_feat = get_feature(self.ori_q, self.cand_a, att_W,weight_dict)
+                _, self.neg_q_feat,self.debug = get_feature_debug(self,self.ori_q, self.neg_a, att_W,weight_dict)
+                _, self.test_r_out_bak = get_feature(self.test_q_out, self.test_r_out, att_W,weight_dict)
+                # NS.V2
+                _, self.ns2_r_feat = get_feature(self.ns2_q, self.ns2_r, att_W, weight_dict)
+
+                # q_side
+                q_side_weight_dict = dict()  # [ 'Wam','Wqm','Wms']
+                q_side_weight_dict['Wam'] = 'q_side_Wam'
+                q_side_weight_dict['Wqm'] = 'q_side_Wqm'
+                q_side_weight_dict['Wms'] = 'q_side_Wms'
+                _, self.ori_q_feat = get_feature(self.cand_a,self.ori_q,q_side_att_W, q_side_weight_dict)
+                _, self.ori_nq_feat = get_feature(self.neg_a,self.ori_q, q_side_att_W, q_side_weight_dict)
+                _, self.test_q_out_bak = get_feature(self.test_r_out,self.test_q_out,q_side_att_W, q_side_weight_dict)
+                # NS.V2
+                self.ns2_q_feat, _ = get_feature(self.ns2_q, self.ns2_r, q_side_att_W, q_side_weight_dict)
+
+                self.test_r_out = self.test_r_out_bak
+                self.test_q_out = self.test_q_out_bak
+                raise Exception('NO NO ')
+            else:
+                raise Exception('NO NO ')
 
             # 20180916 ns 实验 negative sampling top k
             # self.ns_test_r_pos_out = get_feature()
@@ -289,7 +330,7 @@ class CustomNetwork:
             self.ori_neg = feature2cos_sim(self.ori_q_feat, self.neg_q_feat)
             self.r_loss, self.r_acc = cal_loss_and_acc(self.ori_cand, self.ori_neg)
 
-            self.test_q_r = feature2cos_sim(self.test_q_out, self.test_r_out)
+            self.test_q_r = feature2cos_sim(self.test_q_feat_out, self.test_r_feat_out)
 
             # 20180906-1--start 用cos做NER
             self.ner_ori_cand = feature2cos_sim(self.ner_ori_q_feat, self.ner_cand_q_feat)
@@ -304,7 +345,7 @@ class CustomNetwork:
             self.ans_ori_neg = feature2cos_sim(self.ans_ori_q_feat, self.ans_neg_q_feat)
             # self.ans_loss, self.ans_acc = cal_loss_and_acc(self.ans_ori_cand, self.ans_ori_neg)
             #  改成 Sq+Pq = Oq 就是说句子中的S + 句子中的P = 真正的答案O ，寻找与他最匹配的候选O
-            temp_O = tf.add(self.ner_test_q_out, self.test_q_out)
+            temp_O = tf.add(self.ner_test_q_out, self.test_q_feat_out)
             self.ans_test_q_r = feature2cos_sim(temp_O, self.ans_test_r_out)
             # self.q_r_ans_cosine = tf.add(self.test_q_r,self.ans_test_q_r)
 
@@ -331,7 +372,7 @@ class CustomNetwork:
             # print(self.ori_neg)
             self.r_loss, self.acc, self.loss_tmp = cal_loss_and_acc_try(self.ori_cand, self.ori_neg)
             # 计算问题和关系的相似度
-            self.test_q_r = feature2cos_sim(self.test_q_out, self.test_r_out)
+            self.test_q_r = feature2cos_sim(self.test_q_feat_out, self.test_r_feat_out)
 
             # 20180906-1--start 用cos做NER
             self.ner_ori_cand = feature2cos_sim(self.ner_ori_q, self.ner_cand_a)
@@ -415,7 +456,7 @@ class CustomNetwork:
         # self.ans_ori_q_feat, self.ans_cand_q_feat  self.ans_neg_q_feat
         margin = config.cc_par('loss_margin')
         # test
-        #  self.test_q_out, self.test_r_out
+        #  self.test_q_feat_out, self.test_r_feat_out
         # self.ner_test_q_out, self.ner_test_r_out
         # self.ans_test_q_out, self.ans_test_r_out
         # 距离 =  S + P - O
@@ -429,7 +470,7 @@ class CustomNetwork:
         self.score_func = 'L1'
 
         # 测试的 S + P
-        self.distance_test = tf.abs(self.ner_test_r_out + self.test_r_out )
+        self.distance_test = tf.abs(self.ner_test_r_out + self.test_r_feat_out )
         # 待测2 S+P-0  =  KB_S + KB_P - (s'+p')
         # self.distance_test = tf.abs(self.ner_test_q_out + self.test_q_out - self.ans_test_q_out)
         # 得分 =

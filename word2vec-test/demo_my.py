@@ -15,19 +15,23 @@ def main():
     while True:
         try:
             # print(model["我"])
-            query = input()
-            q_list = query.split(' ')
+            query1 = input()
 
-            if len(q_list) == 1:
+            # q_list = query.split('_')
+            query2 = input()
 
-                res = model.most_similar(q_list[0], topn=10)
-                print("%s 相似字前 10 排序"%query)
+            print(query1+'\t'+query2)
+
+            if True:
+
+                res = model.most_similar(query1, topn=10)
+                print("%s 相似字前 10 排序"%query1)
                 for item in res:
                     print(item[0] + "," + str(item[1]))
 
             else:
                 print("计算 Cosine 相似度")
-                res = model.similarity(q_list[0], q_list[1])
+                res = model.similarity(query1, query2)
                 print(res)
             print("----------------------------")
         except Exception as e:

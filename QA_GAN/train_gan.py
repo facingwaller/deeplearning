@@ -705,7 +705,8 @@ def elvation_valid(state, train_step, dh, step, sess, discriminator, merged, wri
     model = "valid"
     id_list = ct.get_shuffle_indices_test(dh, step, None, model, train_step)
     ct.print("问题总数 %s " % len(id_list))
-
+    ct.just_log3("test_check",
+                 "@@error@@valid_below\n")
     acc, ner_acc, r_acc, error_test_q_list, error_test_pos_r_list, error_test_neg_r_list, maybe_list_list, maybe_global_index_list = \
         valid_batch_debug(sess, discriminator, 0, None, merged, writer,
                           dh, test_batchsize,model, dh.train_question_global_index, train_part, id_list, state)
@@ -714,15 +715,15 @@ def elvation_valid(state, train_step, dh, step, sess, discriminator, merged, wri
     log_error_questions(dh, model, error_test_q_list,
                                           error_test_pos_r_list, error_test_neg_r_list, valid_test_dict,
                                           maybe_list_list, acc, maybe_global_index_list)
-    ct.just_log3("test_check",
-                 "@@error@@test_blow\n")
+    # ct.just_log3("test_check",
+    #              "@@error@@test_blow%s\n"%state)
 
 def elvation_test(state, train_step, dh, step, sess, discriminator, merged, writer,
              valid_test_dict, error_test_dict,train_part):
     test_batchsize = FLAGS.test_batchsize  # 暂时统一 验证和测试的数目
 
     ct.just_log3("test_check",
-                 "@@error@@test_blow\n")
+                 "@@error@@test_blow\t%s\n"%state)
     # ct.print("===========step=%d" % step, "maybe_possible")
 
     #  if FLAGS.need_test and (train_step + 1) % FLAGS.test_every == 0:
@@ -752,8 +753,6 @@ def elvation_test(state, train_step, dh, step, sess, discriminator, merged, writ
     # ct.log3(toogle_line)
     # ct.just_log2("info", toogle_line)
     checkpoint(sess, state)
-    ct.just_log3("test_check",
-                 "@@error@@valid_below\n")
 
 def competing_shuffle_indices_train(competing_train_p_id_num):
     # 获取到 竞争属性集合里面同属性问题里面neg最多的。
@@ -764,6 +763,39 @@ def competing_shuffle_indices_train(competing_train_p_id_num):
     ct.print('%s'%shuffle_indices,'debug')
     return shuffle_indices
 
+# 只训练该问题的竞争属性集合大于0个的
+def competing_shuffle_indices_train_v2(competing_train_p_id_num):
+    # 获取到 竞争属性集合里面同属性问题里面neg最多的。
+    _1 = []
+    for k1, v1 in competing_train_p_id_num.items():
+        if v1[1]>0:
+            _1.append(v1[0])
+    shuffle_indices = np.random.permutation(_1)  # 打乱样本下标
+    ct.print('%s'%shuffle_indices,'debug')
+    return shuffle_indices
+
+# 只训练该问题的竞争属性集合大于0个的
+# 遍历所有的问题，但是如果问题的负例个数为0则不加入
+def competing_shuffle_indices_train_v3(dh,total):
+    # 获取到 竞争属性集合里面同属性问题里面neg最多的。
+    # _1 = []
+    # for k1, v1 in competing_train_p_id_num.items():
+    #     if v1[1]>0:
+    #         _1.append(v1[0])
+    # shuffle_indices = np.random.permutation(_1)  # 打乱样本下标
+    # ct.print('%s'%shuffle_indices,'debug')
+    
+    shuffle_indices = np.random.permutation(np.arange(total))  # 打乱样本下标
+    shuffle_indices_return = []
+    for global_index  in  shuffle_indices:
+        _es = dh.question_comcpeting_ps[global_index]
+        if len(_es)> 0:
+            shuffle_indices_return.append(global_index)
+        else:
+            ct.print('zero neg:%d\t%s\t%s'%(global_index,dh.question_list_origin[global_index],dh.relation_list[global_index]),
+                'competing_shuffle_indices')       
+    
+    return shuffle_indices_return
 
 
 def main():
@@ -860,9 +892,17 @@ def main():
                 # 更新一圈竞争排名 # 20180916 ns 实验 negative sampling top k
                 for cos_index in range(FLAGS.ns_epoches):
                     # ns_competing_v1(dh, discriminator,  sess, step)
-                    ns_competing_v2(dh, discriminator,  sess, step)
+                    if config.cc_par('ns_model')=='competing_q':
+                        ns_competing_relation_origin(dh, discriminator,  sess, step)
+                        # ns_competing_v2(dh, discriminator,  sess, step)
+                        # ns_competing_v2 老版本
+                    elif config.cc_par('ns_model')=='competing_q_ert':
+                        ns_competing_ert(dh, discriminator, sess, step)
+                    else:
+                        raise  Exception('NO NO NO ')
 
                 # 根据step改变训练的东西 1 E 2 R 3 E+R
+
                 # --------------- D model
                 _ns_model = config.cc_par('ns_model')  # competing_q  only_default random entity
                 for d_index in range(FLAGS.d_epoches):
@@ -876,11 +916,14 @@ def main():
                     model = 'train'
                     pre_train = config.cc_par('pre_train')
                     # 提升测试NS V2 实验
-                    if _ns_model == 'competing_q':   # or _ns_model == 'competing_q_ert':
-                        shuffle_indices = competing_shuffle_indices_train(dh.competing_train_p_id_num)
+                    if _ns_model == 'competing_q' or _ns_model == 'competing_q_ert':
+                        # shuffle_indices = competing_shuffle_indices_train_v2(dh.competing_train_p_id_num)
+                        # 临时测试
+                        # shuffle_indices = competing_shuffle_indices_train_v3(dh,len(dh.train_question_list_index))
+                        shuffle_indices = ct.get_shuffle_indices_train(len(dh.train_question_list_index))
                     else:  # 1 遍历raw
                         shuffle_indices = ct.get_shuffle_indices_train(len(dh.train_question_list_index))
-
+                    ct.print("q count  = %d "%len(shuffle_indices))
                     for index in shuffle_indices:
                         # d_run_time += 1
                         # if d_run_time >1:
@@ -888,7 +931,7 @@ def main():
                         train_step += 1
                         # 取出一个问题的相关数据
                         batch_size = FLAGS.batch_size
-                        neg_size = 10
+                        neg_size = config.cc_par('competing_p_pos_neg_size')
                         gc1 = dh.batch_iter_cand_s_p(model,index,batch_size,_ns_model,neg_size)
                         for item in gc1:
                             feed_dict = {}
@@ -915,8 +958,8 @@ def main():
                             ct.print("%s\t%s\t%s"%(_q,_p_pos,'\t'.join(_p_neg_all)),'check_neg')
 
                             # 启用GAN-选择高质量的neg属性
-                            if not pre_train:
-                                train_neg, train_pos, train_q = gen_neg(generator, sess, train_neg, train_pos, train_q)
+                            # if not pre_train:
+                            #     train_neg, train_pos, train_q = gen_neg(generator, sess, train_neg, train_pos, train_q)
                             # 取出这些负样本就拿去给D判别 score12 = q_pos   score13 = q_neg
                             # 此处修改为 使用选择后的
                             # 预训练G
@@ -941,14 +984,37 @@ def main():
                                 # }
                                 _train_op_part = discriminator.train_op_rel
                                 _tarin_loss_part = discriminator.loss_rel
+                                # _debug_items = discriminator.debug
                             else:
                                 raise Exception('NO WAY')
                                 pass
-                            _, run_step, current_loss = sess.run(
-                                    [_train_op_part, discriminator.global_step,
-                                     _tarin_loss_part ],
+                            _, run_step, current_loss,_debug_output_q ,_debug_reshape_q_1 ,\
+                            _debug_reshape_q_3 ,_debug_reshape_a ,_debug_M_1 ,_debug_M_2 ,_debug_S_1 ,_debug_S_2 ,_debug_S_diag ,\
+                            _debug_attention_a ,_debug_attention_a_1 ,_debug_output_a ,_debug_reshape_q_2  , \
+                                _score12, _score13= sess.run(
+                                    [ _train_op_part, discriminator.global_step,
+                                     _tarin_loss_part,
+                                     discriminator.debug_output_q ,discriminator.debug_reshape_q_1 ,discriminator.debug_reshape_q_3 ,
+                                     discriminator.debug_reshape_a ,discriminator.debug_M_1 ,discriminator.debug_M_2 ,
+                                     discriminator.debug_S_1 ,discriminator.debug_S_2 ,discriminator.debug_S_diag ,
+                                     discriminator.debug_attention_a ,discriminator.debug_attention_a_1 ,discriminator.debug_output_a ,
+                                     discriminator.debug_reshape_q_2 ,
+                                     discriminator.score12,discriminator.score13],
                                     feed_dict)
                             # train_step += 1
+                            _p_pos_score = _score12[0]
+                            __index = -1
+                            for _ in _score13:
+                                __index+=1
+                                _p_neg = item['p_neg'][__index]
+                                if _>_p_pos_score:
+
+                                    ct.just_log2("info", "%s\t%f\t>\t%f " % (dh.converter.arr_to_text_no_unk(_p_neg),_,_p_pos_score))
+                                    ct.print("%s\t%f\t>\t%f " % (dh.converter.arr_to_text_no_unk(_p_neg),_,_p_pos_score),'debug_cp')
+                                else:
+                                    ct.print(
+                                        "%s\t%f\t>\t%f " % (dh.converter.arr_to_text_no_unk(_p_neg), _, _p_pos_score),
+                                        'debug_cp2')
                             if False:
                                 feed_dict_g = {
                                     generator.ori_input_quests: train_q,  # ori_batch
@@ -971,7 +1037,7 @@ def main():
 
                     # check
                     total = len(shuffle_indices)
-                    msg = "%s\t loss=%s " % (state, loss_dict['loss'] / total)
+                    msg = "%s\t loss=%s " % (state, loss_dict['loss'] / (total+1))
                     loss_dict['loss'] = 0
                     loss_dict['pos'] = 0
                     loss_dict['neg'] = 0
@@ -1150,8 +1216,14 @@ def main():
                     ct.log3(toogle_line)
                     ct.just_log2("info", toogle_line)
                     state = "step=%d_epoches=%s_index=%d" % (step, 'd', d_index)
-                    # 1 遍历raw
-                    shuffle_indices = ct.get_shuffle_indices_train(len(dh.train_question_list_index))
+                    # # 1 遍历raw
+                    # shuffle_indices = ct.get_shuffle_indices_train(len(dh.train_question_list_index))
+                    # 提升测试NS V2 实验
+                    if _ns_model == 'competing_q' or _ns_model == 'competing_q_ert':
+                        shuffle_indices = competing_shuffle_indices_train_v2(dh.competing_train_p_id_num)
+                    else:  # 1 遍历raw
+                        shuffle_indices = ct.get_shuffle_indices_train(len(dh.train_question_list_index))
+                    ct.print("q count  = %d "%len(shuffle_indices))
                     train_step = 0
                     for index in shuffle_indices:
                         train_step += 1
@@ -1225,8 +1297,163 @@ def main():
 
 
 # 方法3
-def ns_competing_v3(dh, discriminator,  sess, step):
-    ct.print('ns_epoches V3 start')
+# def ns_competing_v3(dh, discriminator,  sess, step):
+#     ct.print('ns_epoches V3 start')
+#     ns_r_r_score_all = []
+#
+#     r_cp = []
+#     ns_index = 0
+#     cp_dict = dict()
+#
+#     # 更新 全部属性
+#     gc1 = dh.batch_iter_all_competing_ps()
+#     for item in gc1:
+#         ns_index += 1
+#         state = "step=%d_epoches=%s_index=%d" % (step, 'd', ns_index)
+#         feed_dict = {}
+#         feed_dict[discriminator.ns_r_cp] = item['r_cp']
+#         ns_r_r_state, _ = sess.run(
+#             [discriminator.ns_test_r_cp_out,
+#              discriminator.ns_r_cp],
+#             feed_dict=feed_dict)
+#
+#         ns_r_r_score_all.extend(ns_r_r_state)
+#         r_cp.extend([dh.converter.arr_to_text_no_unk(x) for x in item['r_cp']])
+#         # 更新每个属性隐藏层变量进字典
+#         for i in range(0, len(ns_r_r_state)):
+#             score = ns_r_r_state[i]
+#             r_cp_str = dh.converter.arr_to_text_no_unk(item['r_cp'][i])
+#             cp_dict[r_cp_str] = score
+#
+#     # 更新 全部问题
+#     ns_index = 0
+#     ns_q_state_all = []
+#     gc1 = dh.batch_iter_all_questions()
+#     for item in gc1:
+#         ns_index += 1
+#         feed_dict = {}
+#         feed_dict[discriminator.ns_q] = item['q_p']  # negative sampling
+#         [ns_q_state, _] = sess.run(
+#             [discriminator.ns_test_q_out,
+#              discriminator.ns_q],
+#             feed_dict=feed_dict)
+#         ns_q_state_all.extend(ns_q_state)
+#         # 遍历得分
+#
+#     # 更新 全部实体
+#     ns_index = 0
+#     ns_s_state_all = []
+#     q_s_all = []
+#     ns_s_state_all_dict = {}
+#     gc1 = dh.batch_iter_all_entitys()
+#     for item in gc1:
+#         ns_index += 1
+#         feed_dict = {}
+#         q_s = item['s_cand']  #  用于识别s的候选s
+#         q_s_all.extend(q_s)
+#         feed_dict[discriminator.ns_q] = q_s  # negative sampling
+#         [ns_s_state, _] = sess.run(
+#             [discriminator.ner_test_input_r,
+#              discriminator.ner_test_r],
+#             feed_dict=feed_dict)
+#         ns_s_state_all.extend(ns_s_state)
+#         # 改成根据KEY得到实体向量
+#         for _,_state in zip(q_s,ns_s_state_all):
+#             _key = dh.converter.arr_to_text_no_unk(_)
+#             ns_s_state_all_dict[_key] = _state
+#
+#
+#     # 遍历问题,计算q-r
+#     dh.question_comcpeting_ps = []
+#     ct.print("@==================" , 'update_score')
+#     time_start = time.time()
+#     for global_index in range(len(ns_q_state_all)):
+#         if global_index % 100 == 0:
+#             print('cost %d/%d: %s'% (global_index ,len(ns_q_state_all), time.time() - time_start))
+#             time_start = time.time()
+#         # 获取问题的竞争属性
+#         r_pos1 = dh.relation_list[global_index]  # 正确的属性
+#         p_v = dh.competing_train_dict.get(r_pos1, '')
+#         p_v = [x[0] for x in p_v]  # 去除频率
+#         p_v.insert(0,r_pos1)  # 加入自己
+#         p_v_state = []
+#         for x in p_v:
+#             _es = cp_dict.get(x,'')
+#             if _es != '':
+#                 p_v_state.append(_es)     # 取出state
+#             else:
+#                 ct.print(x, 'ns_competing_v2')
+#
+#         temp_ns_q_state_list = [ns_q_state_all[global_index] for x
+#                                 in range(len(p_v_state))]
+#         feed_dict = {}
+#         feed_dict[discriminator.ns2_q] = p_v_state  # negative sampling 问题
+#         feed_dict[discriminator.ns2_r] = temp_ns_q_state_list  # negative sampling 属性
+#
+#         try:
+#             [ns2_q_r_score] = sess.run(
+#                 [discriminator.ns2_q_r],
+#                 feed_dict=feed_dict)
+#         except Exception as e1:
+#             print(e1)
+#
+#
+#         st_list = []
+#         _competing_train_dict_set = set()
+#         for _index in range(len(ns2_q_r_score)):
+#             st = ct.new_struct()
+#             st.index = _index
+#             st.p = p_v[_index]
+#             st.label = st.p == r_pos1
+#             st.score = max(0,ns2_q_r_score[_index]) # 保持非负数
+#             # if st.score < 0 or st.score == None:
+#             #     ct.print('st.score<0 ','bug')
+#             st_list.append(st)
+#             _tp = (st.p, st.score)  # 属性 ，得分
+#             _competing_train_dict_set.add(_tp)
+#
+#         # 加入
+#         _r_pos1_score = st_list[0].score # 第一个是正确属性
+#         del st_list[0] # 删除pos , 偶尔同p计算的score不一样 考虑是否增加一个margin
+#         st_list = list(filter(lambda x: x.score > _r_pos1_score, st_list))
+#         # _r_pos1_score - config.cc_par('loss_margin')
+#         st_list.sort(key=ct.get_key)
+#         st_list.reverse()
+#
+#         _msg = []
+#         q_k = dh.question_list_origin[global_index]  # 问题
+#         for item in st_list:
+#             _msg.append("%s_%s" % (item.p, str(item.score)))
+#         is_train = dh.question_labels[global_index]
+#         ct.print("%s\t@%s\t%s\t%f\t%d\t%s" %
+#                  (str(is_train),q_k, r_pos1, _r_pos1_score, len(st_list), '\t'.join(_msg)),
+#                  'update_score')
+#         # 记录更新 K-V
+#         num = len(st_list) # 个数
+#         _v1 = dh.competing_train_p_id_num.get(r_pos1, '')
+#         _t1 = (global_index, num)
+#         if _v1 != '':
+#             if _v1[1] >= num: # 已经存在的少于当前的
+#                 _t1 = _v1
+#         dh.competing_train_p_id_num[r_pos1] = _t1
+#         dh.question_comcpeting_ps.append(_competing_train_dict_set)
+#
+#     # 遍历问题，计算q-s
+#     ct.print("@==================", 'update_ner_score_ner')
+#     for global_index in range(len(dh.question_list_origin)):
+#         if dh.question_labels[global_index]: # 只做训练集，测试集就停下来
+#             break
+#         if global_index % 100 == 0:
+#             print('cost %d/%d: %s'% (global_index ,len(ns_q_state_all), time.time() - time_start))
+#             time_start = time.time()
+#
+#         # 获取实体的竞争实体
+#         #
+# 方法2
+
+# 改为只加入超过的
+def ns_competing_ert(dh, discriminator,  sess, step):
+    ct.print('ns_epoches  ns_competing_ert start')
     ns_r_r_score_all = []
 
     r_cp = []
@@ -1268,77 +1495,63 @@ def ns_competing_v3(dh, discriminator,  sess, step):
         ns_q_state_all.extend(ns_q_state)
         # 遍历得分
 
-    # 更新 全部实体
-    ns_index = 0
-    ns_s_state_all = []
-    q_s_all = []
-    ns_s_state_all_dict = {}
-    gc1 = dh.batch_iter_all_entitys()
-    for item in gc1:
-        ns_index += 1
-        feed_dict = {}
-        q_s = item['s_cand']  #  用于识别s的候选s
-        q_s_all.extend(q_s)
-        feed_dict[discriminator.ns_q] = q_s  # negative sampling
-        [ns_s_state, _] = sess.run(
-            [discriminator.ner_test_input_r,
-             discriminator.ner_test_r],
-            feed_dict=feed_dict)
-        ns_s_state_all.extend(ns_s_state)
-        # 改成根据KEY得到实体向量
-        for _,_state in zip(q_s,ns_s_state_all):
-            _key = dh.converter.arr_to_text_no_unk(_)
-            ns_s_state_all_dict[_key] = _state
-
-
-    # 遍历问题,计算q-r
+    # 遍历问题
     dh.question_comcpeting_ps = []
-    ct.print("@==================" , 'update_score')
+    ct.print("@==================ns_competing_ert" , 'update_score')
     time_start = time.time()
-    for global_index in range(len(ns_q_state_all)):
+    for global_index in range(len(ns_q_state_all)): # 遍历所有问题
         if global_index % 100 == 0:
             print('cost %d/%d: %s'% (global_index ,len(ns_q_state_all), time.time() - time_start))
             time_start = time.time()
         # 获取问题的竞争属性
         r_pos1 = dh.relation_list[global_index]  # 正确的属性
-        p_v = dh.competing_train_dict.get(r_pos1, '')
+        p_v = dh.competing_train_dict.get(r_pos1, '') # 获取P的竞争属性集合
+        if p_v == '':
+            ct.print('%s'%r_pos1,'bug_competing_train_dict') # 没找到与其竞争的,使用默认的
+
         p_v = [x[0] for x in p_v]  # 去除频率
         p_v.insert(0,r_pos1)  # 加入自己
         p_v_state = []
+        _pv = []
         for x in p_v:
-            _es = cp_dict.get(x,'')
+            _es = cp_dict.get(x,'')  # 获取该属性的state 隐藏层向量
             if _es != '':
                 p_v_state.append(_es)     # 取出state
+                _pv.append(x)
             else:
-                ct.print(x, 'ns_competing_v2')
-
+                ct.print("%s - %s"%(r_pos1,x), 'ns_competing_v2') #  片长英文名
+        # continue
+        p_v = _pv # 去掉找不到的
         temp_ns_q_state_list = [ns_q_state_all[global_index] for x
                                 in range(len(p_v_state))]
         feed_dict = {}
         feed_dict[discriminator.ns2_q] = p_v_state  # negative sampling 问题
         feed_dict[discriminator.ns2_r] = temp_ns_q_state_list  # negative sampling 属性
 
-        try:
-            [ns2_q_r_score] = sess.run(
+        # try:
+        [ns2_q_r_score] = sess.run(
                 [discriminator.ns2_q_r],
                 feed_dict=feed_dict)
-        except Exception as e1:
-            print(e1)
-
+        # except Exception as e1:
+        #     print(e1)
 
         st_list = []
         _competing_train_dict_set = set()
         for _index in range(len(ns2_q_r_score)):
+
             st = ct.new_struct()
-            st.index = _index
-            st.p = p_v[_index]
-            st.label = st.p == r_pos1
-            st.score = max(0,ns2_q_r_score[_index]) # 保持非负数
+            try:
+                st.index = _index
+                st.p = p_v[_index]
+                st.label = st.p == r_pos1
+                st.score = max(0,ns2_q_r_score[_index])  # 保持非负数
+            except Exception as e1:
+                print(e1)
             # if st.score < 0 or st.score == None:
             #     ct.print('st.score<0 ','bug')
             st_list.append(st)
-            _tp = (st.p, st.score)  # 属性 ，得分
-            _competing_train_dict_set.add(_tp)
+            # _tp = (st.p, st.score)  # 属性 ，得分
+            # _competing_train_dict_set.add(_tp)
 
         # 加入
         _r_pos1_score = st_list[0].score # 第一个是正确属性
@@ -1352,6 +1565,8 @@ def ns_competing_v3(dh, discriminator,  sess, step):
         q_k = dh.question_list_origin[global_index]  # 问题
         for item in st_list:
             _msg.append("%s_%s" % (item.p, str(item.score)))
+            _tp = (item.p, item.score)  # 属性 ，得分
+            _competing_train_dict_set.add(_tp)
         is_train = dh.question_labels[global_index]
         ct.print("%s\t@%s\t%s\t%f\t%d\t%s" %
                  (str(is_train),q_k, r_pos1, _r_pos1_score, len(st_list), '\t'.join(_msg)),
@@ -1366,18 +1581,6 @@ def ns_competing_v3(dh, discriminator,  sess, step):
         dh.competing_train_p_id_num[r_pos1] = _t1
         dh.question_comcpeting_ps.append(_competing_train_dict_set)
 
-    # 遍历问题，计算q-s
-    ct.print("@==================", 'update_ner_score_ner')
-    for global_index in range(len(dh.question_list_origin)):
-        if dh.question_labels[global_index]: # 只做训练集，测试集就停下来
-            break
-        if global_index % 100 == 0:
-            print('cost %d/%d: %s'% (global_index ,len(ns_q_state_all), time.time() - time_start))
-            time_start = time.time()
-
-        # 获取实体的竞争实体
-        #
-# 方法2
 def ns_competing_v2(dh, discriminator,  sess, step):
     ct.print('ns_epoches start')
     ns_r_r_score_all = []
@@ -1423,7 +1626,7 @@ def ns_competing_v2(dh, discriminator,  sess, step):
 
     # 遍历问题
     dh.question_comcpeting_ps = []
-    ct.print("@==================" , 'update_score')
+    ct.print("@==================ns_competing_v2" , 'update_score')
     time_start = time.time()
     for global_index in range(len(ns_q_state_all)): # 遍历所有问题
         if global_index % 100 == 0:
@@ -1463,7 +1666,7 @@ def ns_competing_v2(dh, discriminator,  sess, step):
 
         st_list = []
         _competing_train_dict_set = set()
-        for _index in range(len(ns2_q_r_score)):
+        for _index,_label in zip(range(len(ns2_q_r_score)),dh.question_labels):
 
             st = ct.new_struct()
             try:
@@ -1495,6 +1698,7 @@ def ns_competing_v2(dh, discriminator,  sess, step):
         ct.print("%s\t@%s\t%s\t%f\t%d\t%s" %
                  (str(is_train),q_k, r_pos1, _r_pos1_score, len(st_list), '\t'.join(_msg)),
                  'update_score')
+
         # 记录更新 K-V
         num = len(st_list) # 个数
         _v1 = dh.competing_train_p_id_num.get(r_pos1, '')
@@ -1505,7 +1709,427 @@ def ns_competing_v2(dh, discriminator,  sess, step):
         dh.competing_train_p_id_num[r_pos1] = _t1
         dh.question_comcpeting_ps.append(_competing_train_dict_set)
 
+# 是否加入全部
+# 是否只加入训练
+def ns_competing_relation(dh, discriminator,  sess, step,is_add_all = False):
+    ct.print('ns_epoches start')
+    ns_r_r_score_all = []
 
+    r_cp = []
+    ns_index = 0
+    cp_dict = dict()
+
+    # 更新 全部属性
+    gc1 = dh.batch_iter_all_competing_ps()
+    for item in gc1:
+        ns_index += 1
+        state = "step=%d_epoches=%s_index=%d" % (step, 'd', ns_index)
+        feed_dict = {}
+        feed_dict[discriminator.ns_r_cp] = item['r_cp']
+        ns_r_r_state, _ = sess.run(
+            [discriminator.ns_test_r_cp_out,
+             discriminator.ns_r_cp],
+            feed_dict=feed_dict)
+
+        ns_r_r_score_all.extend(ns_r_r_state)
+        r_cp.extend([dh.converter.arr_to_text_no_unk(x) for x in item['r_cp']])
+        # 更新每个属性隐藏层变量进字典
+        for i in range(0, len(ns_r_r_state)):
+            score = ns_r_r_state[i]
+            r_cp_str = dh.converter.arr_to_text_no_unk(item['r_cp'][i])
+            cp_dict[r_cp_str] = score
+
+    # 更新 全部问题
+    ns_index = 0
+    ns_q_state_all = []
+    ns_q_str = []
+    gc1 = dh.batch_iter_all_questions()
+    for item in gc1:
+        ns_index += 1
+        feed_dict = {}
+        feed_dict[discriminator.ns_q] = item['q_p']  # negative sampling
+        [ns_q_state, _] = sess.run(
+            [discriminator.ns_test_q_out,
+             discriminator.ns_q],
+            feed_dict=feed_dict)
+        ns_q_state_all.extend(ns_q_state)
+        # 属性的对应字符串
+        _1 = [dh.converter.arr_to_text_no_unk(x)   for x  in  item['q_p']]
+        ns_q_str.extend(_1)
+        # 遍历得分
+
+    # 遍历问题
+    dh.question_comcpeting_ps = []
+    dh.competing_train_p_id_num.clear()
+    ct.print("@==================ns_competing_v2" , 'update_score')
+    time_start = time.time()
+    for global_index in range(len(ns_q_state_all)): # 遍历所有问题
+        if global_index % 100 == 0:
+            print('cost %d/%d: %s'% (global_index ,len(ns_q_state_all), time.time() - time_start))
+            time_start = time.time()
+        # 获取问题的竞争属性
+        r_pos1 = dh.relation_list[global_index]  # 正确的属性
+        q_origin = dh.question_list_origin[global_index]
+        p_v = dh.competing_train_dict.get(r_pos1, '') # 获取P的竞争属性集合
+        if p_v == '':
+            ct.print('%s '%r_pos1,'bug')
+
+        p_v = [x[0] for x in p_v]  # 去除频率
+
+        # 尝试 不包含P_POS
+        # if config.cc_par('only_p_neg_in_cp'):
+        #     p_v = list(set(p_v) -  set(dh.relation_list))
+        # else:
+        #     pass
+
+        p_v.insert(0,r_pos1)  # 加入自己
+        p_v_state = []
+        _pv = []
+        if config.cc_par('convert_rs_to_words'):
+            p_v = ct.convert_rs_to_words(p_v)
+        else:
+            pass
+
+
+        for x in p_v:
+            _es = cp_dict.get(x,'')  # 获取该属性的state 隐藏层向量
+            if _es != '':
+                p_v_state.append(_es)     # 取出state
+                _pv.append(x)
+            else:
+                ct.print("%s - %s"%(r_pos1,x), 'ns_competing_v2_not_exist') #  片长英文名
+        # continue
+        p_v = _pv # 去掉找不到的
+        temp_ns_q_state_list = [ns_q_state_all[global_index] for x
+                                in range(len(p_v_state))]
+        feed_dict = {}
+        feed_dict[discriminator.ns2_q] = p_v_state  # negative sampling 问题
+        feed_dict[discriminator.ns2_r] = temp_ns_q_state_list  # negative sampling 属性
+
+        # 记录
+
+        for x in p_v:
+            ct.print('%s\t%s'%(ns_q_str[global_index],x),'ns_q_p')
+            # pass
+
+        # try:
+        [ns2_q_r_score] = sess.run(
+                [discriminator.ns2_q_r],
+                feed_dict=feed_dict)
+        # except Exception as e1:
+        #     print(e1)
+
+        st_list = []
+        _competing_train_dict_set = set()
+        for _index in range(len(ns2_q_r_score)):
+            st = ct.new_struct()
+            try:
+                st.index = _index
+                st.p = p_v[_index]
+                st.label = st.p == r_pos1
+                st.score = max(0,ns2_q_r_score[_index])  # 保持非负数
+            except Exception as e1:
+                print(e1)
+            # if st.score < 0 or st.score == None:
+            #     ct.print('st.score<0 ','bug')
+            st_list.append(st)
+            # _tp = (st.p, st.score)  # 属性 ，得分
+            # _competing_train_dict_set.add(_tp)
+
+        # 加入
+        _r_pos1_score = st_list[0].score # 第一个是正确属性
+        if True:
+            del st_list[0] # 删除pos , 偶尔同p计算的score不一样 考虑是否增加一个margin
+            padding = 0.001 # 作为一个间隔
+            loss_margin  = config.cc_par('loss_margin')
+            st_list = list(filter(lambda x: x.score > (_r_pos1_score + padding), st_list))
+            # _r_pos1_score - config.cc_par('loss_margin')
+            # _r_pos1_score
+            st_list.sort(key=ct.get_key)
+            # st_list.reverse()
+            # 临时测试：过滤掉包含原属性的,
+            st_list = list(filter(lambda x: not str(x.p).__contains__(r_pos1), st_list))
+        else:
+            st_list.sort(key=ct.get_key)
+
+
+        # 过滤掉出现在句子中的（可能更符合），
+        # st_list = list(filter(lambda x: not str(q_origin).__contains__(x.p), st_list))
+        # 临时测试改为取5个分数最低的
+        # 超过5个才取
+        # if len(st_list)>5:
+        #     st_list = st_list[0:5]
+        # else:
+        #     st_list = []
+
+        _msg = []
+        q_k = dh.question_list_origin[global_index]  # 问题
+        is_test = dh.question_labels[global_index]  # 是训练集还是测试集
+        for item in st_list:
+            _msg.append("%s_%s" % (item.p, str(item.score)))
+            _tp = (item.p, item.score)  # 属性 ，得分
+            if not is_test:  # 只加入训练的
+                _competing_train_dict_set.add(_tp)
+
+        ct.print("%s\t@%s\t%s\t%f\t%d\t%s" %
+                 (str(is_test),q_k, r_pos1, _r_pos1_score, len(st_list), '\t'.join(_msg)),
+                 'update_score')
+        # 记录更新 K-V
+
+        num = len(st_list)  # 个数
+        _v1 = dh.competing_train_p_id_num.get(r_pos1, '')
+        _t1 = (global_index, num) # dh.question_global_index[global_index]
+        if _v1 != '':
+            if _v1[1] >= num: # 已经存在的少于当前的
+                _t1 = _v1 # 将最好的赋值到当前的，保持之前最好的
+                if is_test:  # 打印测试集的
+                    ct.print("%s\t@%s\t%s\t%f\t%d\t%s" %
+                             (str(is_test), q_k, r_pos1, _r_pos1_score, len(st_list), '\t'.join(_msg)),
+                             'update_score_test')
+        if not is_test:  # 只加入训练集的
+            dh.competing_train_p_id_num[r_pos1] = _t1 # 更新该属性最弱的问题
+        dh.question_comcpeting_ps.append(_competing_train_dict_set)
+
+# 使用原版本的test的方法不过早优化
+def ns_competing_relation_origin(dh, discriminator,  sess, step,is_add_all = False):
+    ct.print('ns_epoches start')
+    ns_r_r_score_all = []
+
+    r_cp = []
+    ns_index = 0
+    cp_dict = dict()
+
+    # 更新 全部属性
+    gc1 = dh.batch_iter_all_competing_ps()
+    for item in gc1:
+        ns_index += 1
+        state = "step=%d_epoches=%s_index=%d" % (step, 'd', ns_index)
+        feed_dict = {}
+        feed_dict[discriminator.ns_r_cp] = item['r_cp']
+        ns_r_r_state, _ = sess.run(
+            [discriminator.ns_test_r_cp_out,
+             discriminator.ns_r_cp],
+            feed_dict=feed_dict)
+
+        ns_r_r_score_all.extend(ns_r_r_state)
+        r_cp.extend([dh.converter.arr_to_text_no_unk(x) for x in item['r_cp']])
+        # 更新每个属性隐藏层变量进字典
+        for i in range(0, len(ns_r_r_state)):
+            score = ns_r_r_state[i]
+            r_cp_str = dh.converter.arr_to_text_no_unk(item['r_cp'][i])
+            cp_dict[r_cp_str] = score
+
+    # 更新 全部问题
+    ns_index = 0
+    ns_q_state_all = []
+    ns_q_str = []
+    gc1 = dh.batch_iter_all_questions()
+    for item in gc1:
+        ns_index += 1
+        feed_dict = {}
+        feed_dict[discriminator.ns_q] = item['q_p']  # negative sampling
+        [ns_q_state, _] = sess.run(
+            [discriminator.ns_test_q_out,
+             discriminator.ns_q],
+            feed_dict=feed_dict)
+        ns_q_state_all.extend(ns_q_state)
+        # 属性的对应字符串
+        _1 = [dh.converter.arr_to_text_no_unk(x)   for x  in  item['q_p']]
+        ns_q_str.extend(_1)
+        # 遍历得分
+
+    # 遍历问题
+    dh.question_comcpeting_ps = []
+    dh.competing_train_p_id_num.clear()
+    ct.print("@==================ns_competing_v2" , 'update_score')
+    time_start = time.time()
+    for global_index in range(len(ns_q_str)): # 遍历所有问题
+        if global_index % 100 == 0:
+            ct.print('cost %d/%d: %s'% (global_index ,len(ns_q_str), time.time() - time_start),'cost')
+            time_start = time.time()
+        # 获取问题的竞争属性
+        r_pos1 = dh.relation_list[global_index]  # 正确的属性
+        q_origin = dh.question_list_origin[global_index]
+
+        _label = dh.question_labels[global_index]
+        _s = dh.entity1_list[global_index]
+        _s_clean = dh.bh.entity_re_extract_one_repeat(_s)
+
+        q_current_for_p = q_origin.replace(_s_clean, '♠')  # 去掉实体的问句,用于属性训练
+        q_p = dh.convert_str_to_indexlist(q_current_for_p)
+        # 提供当前的-问题
+
+        # 提供当前的-neg属性
+
+        p_v = dh.competing_train_dict.get(r_pos1, '') # 获取P的竞争属性集合
+        if p_v == '':
+            ct.print('%s '%r_pos1,'bug')
+
+        p_v = [x[0] for x in p_v]  # 去除频率
+
+        # 尝试 不包含P_POS
+        # if config.cc_par('only_p_neg_in_cp'):
+        #     p_v = list(set(p_v) -  set(dh.relation_list))
+        # else:
+        #     pass
+
+        p_v.insert(0,r_pos1)  # 加入自己
+        p_v_state = []
+        _pv = []
+        # if config.cc_par('convert_rs_to_words'):
+        #     p_v = ct.convert_rs_to_words(p_v)
+        # else:
+        #     pass
+
+
+        for x in p_v:
+            _es = cp_dict.get(x,'')  # 获取该属性的state 隐藏层向量
+            if _es != '':
+                p_v_state.append(_es)     # 取出state
+                _pv.append(x)
+            else:
+                ct.print("%s - %s"%(r_pos1,x), 'ns_competing_v2_not_exist') #  片长英文名
+        # continue
+        p_v = _pv # 去掉找不到的
+        temp_ns_q_state_list = [ns_q_state_all[global_index] for x
+                                in range(len(p_v_state))]
+        feed_dict = {}
+        feed_dict[discriminator.ns2_q] = temp_ns_q_state_list  # negative sampling 问题
+        feed_dict[discriminator.ns2_r] = p_v_state  # negative sampling 属性
+
+        # 记录
+
+        for x in p_v:
+            ct.print('%s\t%s'%(ns_q_str[global_index],x),'ns_q_p')
+            # pass
+
+        # try: 老版本的方法
+        if True:
+            [ns2_q_r_score
+             #    ,_ns2_q,_ns2_r,_ns2_q_feat,_ns2_r_feat,
+             # _debug_ns__output_q, _debug_ns__reshape_q_1,
+             # _debug_ns__reshape_q_3, _debug_ns__reshape_a, _debug_ns__M_1, _debug_ns__M_2, _debug_ns__S_1, _debug_ns__S_2, _debug_ns__S_diag,
+             # _debug_ns__attention_a, _debug_ns__attention_a_1, _debug_ns__output_a, _debug_ns__reshape_q_2,
+             #
+             # _debug_ns__debug_output, _debug_ns__debug_output_q,debug_ns__lstm_out,
+             # _debug_ns__input_q
+             ] = sess.run(
+                    [discriminator.ns2_q_r
+                     # .discriminator.ns2_q,discriminator.ns2_r,
+                     # discriminator.ns2_q_feat,discriminator.ns2_r_feat,
+                     #
+                     # discriminator._debug_output_q, discriminator._debug_reshape_q_1, discriminator._debug_reshape_q_3,
+                     # discriminator._debug_reshape_a, discriminator._debug_M_1, discriminator._debug_M_2,
+                     # discriminator._debug_S_1, discriminator._debug_S_2, discriminator._debug_S_diag,
+                     # discriminator._debug_attention_a, discriminator._debug_attention_a_1, discriminator._debug_output_a,
+                     # discriminator._debug_reshape_q_2,
+                     #
+                     # discriminator._debug_output,discriminator._debug_output_q,
+                     # discriminator._debug_lstm_out,discriminator._debug_input_q
+                     ],
+                    feed_dict=feed_dict)
+            # except Exception as e1:
+            #     print(e1)
+        else: # 简单的方法
+            test_q = np.array([q_p for x in range(len(p_v))])
+            test_r = np.array([dh.convert_str_to_indexlist(x) for x  in  p_v])
+            feed_dict[discriminator.test_input_q] = test_q  # negative sampling 问题
+            feed_dict[discriminator.test_input_r] = test_r  # negative sampling 属性
+            [ns2_q_r_score
+             #    ,_test_q,_test_r,_test_q_out,
+             # _test_r_out,_test_q_feat_out,_test_r_feat_out,
+             #
+             # _debug_output_q, _debug_reshape_q_1,
+             # _debug_reshape_q_3, _debug_reshape_a, _debug_M_1, _debug_M_2, _debug_S_1, _debug_S_2, _debug_S_diag,
+             # _debug_attention_a, _debug_attention_a_1, _debug_output_a, _debug_reshape_q_2,
+             # _debug_output, _debug_output_q,_debug_lstm_out,_debug_input_q
+             ] = sess.run(
+                [discriminator.test_q_r
+                 #    ,discriminator.test_q,discriminator.test_r,
+                 # discriminator.test_q_out,discriminator.test_r_out,
+                 # discriminator.test_q_feat_out, discriminator.test_r_feat_out,
+                 #
+                 # discriminator.debug_output_q, discriminator.debug_reshape_q_1, discriminator.debug_reshape_q_3,
+                 # discriminator.debug_reshape_a, discriminator.debug_M_1, discriminator.debug_M_2,
+                 # discriminator.debug_S_1, discriminator.debug_S_2, discriminator.debug_S_diag,
+                 # discriminator.debug_attention_a, discriminator.debug_attention_a_1, discriminator.debug_output_a,
+                 # discriminator.debug_reshape_q_2,
+                 #
+                 # discriminator.debug_output, discriminator.debug_output_q, discriminator.debug_lstm_out
+                 # ,discriminator.debug_input_q
+                 ],
+                feed_dict=feed_dict)
+
+        st_list = []
+        _competing_train_dict_set = set()
+        for _index in range(len(ns2_q_r_score)):
+            st = ct.new_struct()
+            try:
+                st.index = _index
+                st.p = p_v[_index]
+                st.label = st.p == r_pos1
+                st.score = max(0,ns2_q_r_score[_index])  # 保持非负数
+            except Exception as e1:
+                print(e1)
+            # if st.score < 0 or st.score == None:
+            #     ct.print('st.score<0 ','bug')
+            st_list.append(st)
+            # _tp = (st.p, st.score)  # 属性 ，得分
+            # _competing_train_dict_set.add(_tp)
+
+        # 加入
+        _r_pos1_score = st_list[0].score # 第一个是正确属性
+        if True:
+            del st_list[0] # 删除pos , 偶尔同p计算的score不一样 考虑是否增加一个margin
+            padding = 0 # 0.001 # 作为一个间隔
+            loss_margin  = config.cc_par('loss_margin')
+            st_list = list(filter(lambda x: x.score > (_r_pos1_score + padding), st_list))
+            # _r_pos1_score - config.cc_par('loss_margin')
+            # _r_pos1_score
+            st_list.sort(key=ct.get_key)
+            # st_list.reverse()
+            # 临时测试：过滤掉包含原属性的,
+            # st_list = list(filter(lambda x: not str(x.p).__contains__(r_pos1), st_list))
+        else:
+            st_list.sort(key=ct.get_key)
+
+
+        # 过滤掉出现在句子中的（可能更符合），
+        # st_list = list(filter(lambda x: not str(q_origin).__contains__(x.p), st_list))
+        # 临时测试改为取5个分数最低的
+        # 超过5个才取
+        # if len(st_list)>5:
+        #     st_list = st_list[0:5]
+        # else:
+        #     st_list = []
+
+        _msg = []
+        q_k = dh.question_list_origin[global_index]  # 问题
+        is_test = dh.question_labels[global_index]  # 是训练集还是测试集
+        for item in st_list:
+            _msg.append("%s_%s" % (item.p, str(item.score)))
+            _tp = (item.p, item.score)  # 属性 ，得分
+            if not is_test:  # 只加入训练的
+                _competing_train_dict_set.add(_tp)
+
+        ct.print("%s\t@%s\t%s\t%f\t%d\t%s" %
+                 (str(is_test),q_k, r_pos1, _r_pos1_score, len(st_list), '\t'.join(_msg)),
+                 'update_score')
+        # 记录更新 K-V
+
+        num = len(st_list)  # 个数
+        _v1 = dh.competing_train_p_id_num.get(r_pos1, '')
+        _t1 = (global_index, num) # dh.question_global_index[global_index]
+        if _v1 != '':
+            if _v1[1] >= num: # 已经存在的少于当前的
+                _t1 = _v1 # 将最好的赋值到当前的，保持之前最好的
+                if is_test:  # 打印测试集的
+                    ct.print("%s\t@%s\t%s\t%f\t%d\t%s" %
+                             (str(is_test), q_k, r_pos1, _r_pos1_score, len(st_list), '\t'.join(_msg)),
+                             'update_score_test')
+        if not is_test:  # 只加入训练集的
+            dh.competing_train_p_id_num[r_pos1] = _t1 # 更新该属性最弱的问题
+        dh.question_comcpeting_ps.append(_competing_train_dict_set)
 
 def ns_competing_v1(dh, discriminator,  sess, step):
     ct.print('ns_epoches start')
