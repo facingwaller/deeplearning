@@ -37,17 +37,22 @@ def main():
     word_set= set()
 
     # 问题路径
-    path1 = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt"
+    # path1 = "../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.training.testing-data-all.txt"
+    path1 = '../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt'
     # rdf路径
     #
     lines = ct.file_read_all_lines(path1)
     # lines =['《机械设计基础》这本书的作者是谁','鑫威kw9000es是个什么产品']
+    result_lines = []
     for line in lines:
         sentence = str(line).split('\t')[0]
         # line = "《机械设计基础》这本书的作者是谁"
+        sentence = ct.clean_str_question(sentence)
     # 读取所有的line
         words = jieba.cut(sentence, cut_all=False)
-        print('%s'% ' '.join(words))
+        result_lines.append('%s'% ' '.join(words))
+    ct.file_wirte_list('../data/nlpcc2016/4-ner/seg/sentence.v6.txt',result_lines)
+    print('done')
         # vs = []
         # for word in words:
         #     print(word)

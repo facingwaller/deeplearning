@@ -628,7 +628,7 @@ class baike_helper:
         # f_in2
         ct.print_t("3.1 加载N-GRAM的字典")
         n_gram_dict = dict()
-        _tree = Trie()
+        # _tree = Trie()
 
         with codecs.open(f_in2, mode="r", encoding="utf-8") as read_file:
             for line in read_file:
@@ -640,9 +640,9 @@ class baike_helper:
                     n_gram_dict[time] = tmp
                 else:
                     n_gram_dict[time] = [word]
-                _tree[word] = 0
+                # _tree[word] = 0
         self.n_gram_dict = n_gram_dict
-        self.dict_tree = _tree
+        # self.dict_tree = _tree
         ct.print_t("init_ner ok")
 
     def init_ner_dict_tree(self, f_in2="../data/nlpcc2016/result/e12.txt.statistics.txt"):
@@ -1737,6 +1737,21 @@ class baike_helper:
 
         # return r1, a1
 
+    def kb_get_p_o_by_s_p(self, s1_in_q,  p):
+        # 读取别名指代的全部实体
+        _es = self.alias_dict.get(ct.clean_str_s(s1_in_q), "")
+        if _es == "":
+            ct.print("cant find key:  %s " % s1_in_q)
+            # raise Exception('entity cant find')
+            ct.print(s1_in_q  , 'kb_get_p_o_by_s')
+        tp = []
+        for _ in _es:
+            _e1, _o1 = self.read_entity_and_get_all_neg_relations_cc(_)
+            for _1, _2 in zip(_e1, _o1):
+                _spo = (_, _1, _2)
+                if _1 == p :
+                        tp.append(_spo)
+        return tp
 
     # 生成的是,黑桃问题-属性-属性值；
     def answer_get_all_neg_relations_cc_1(self, entity_list, answer_to_except):
@@ -2792,6 +2807,19 @@ class baike_helper:
                     kb_new.append('\t'.join(_kb_one))
         ct.file_wirte_list(f_out, kb_new)
 
+    def stat_dict(self,f1='../data/nlpcc2016/4-ner/extract_entitys_all.txt'):
+        f1s = ct.file_read_all_lines_strip_no_tips(f1)
+        # 将统计出现的次数，按出现次数少的排在前面
+        d1 = dict()
+        for words_list in f1s:
+            for word in words_list:
+                if word in d1:
+                    d1[word] += 1
+                else:
+                    d1[word] = 1
+        self.d1 = d1
+        self.d2_get_total = d1
+        return d1
 class baike_test:
     # 词频 (term frequency, TF) 指的是某一个给定的词语在该文件中出现的次数
     # 逆向文件频率 (inverse document frequency, IDF) 是一个词语普遍重要性的度量。某一特定词语的IDF，
@@ -3904,19 +3932,19 @@ class baike_test:
                     # ct.just_log("../data/nlpcc2016/extract_entitys2.txt", "NULL")
                 print(ss)
         # 将统计出现的次数，按出现次数少的排在前面
-        # d1 = dict()
-        # for words_list in result:
-        #     for word in words_list:
-        #         if word in d1:
-        #             d1[word] += 1
-        #         else:
-        #             d1[word] = 1
-        # # result = [x= sorted(x,key=get_total(x))  for x  in  result]
-        # bkh.d1 = d1
-        # for index in range(len(result)):
-        #     tmp = result[index]
-        #     tmp = sorted(tmp, key=bkh.get_total)
-        #     result[index] = tmp
+        d1 = dict()
+        for words_list in result:
+            for word in words_list:
+                if word in d1:
+                    d1[word] += 1
+                else:
+                    d1[word] = 1
+        # result = [x= sorted(x,key=get_total(x))  for x  in  result]
+        bkh.d1 = d1
+        for index in range(len(result)):
+            tmp = result[index]
+            tmp = sorted(tmp, key=bkh.get_total)
+            result[index] = tmp
 
         with open(f_out, mode='w', encoding='utf-8') as o1:
             for words_list in result:
@@ -3926,11 +3954,32 @@ class baike_test:
                 # for x1 in x :
                 #     print("%s  %s"%(x1,bkh.get_total(x1)))
         print('finish!')
+
+    # 获得分词后的统计词表
+    # 用来为新词排序
+    def stat_dict(self,f1='../data/nlpcc2016/4-ner/extract_entitys_all.txt'):
+        f1s = ct.file_read_all_lines_strip_no_tips(f1)
+        # 将统计出现的次数，按出现次数少的排在前面
+        d1 = dict()
+        for words_list in f1s:
+            for word in words_list:
+                if word in d1:
+                    d1[word] += 1
+                else:
+                    d1[word] = 1
+        return d1
+        # bkh = baike_helper()
+        # bkh.d1 = d1
+        # pass
+    def sort_sentence(self,res,bkh):
+        l1 = list(sorted(res, key=bkh.get_total))
+        return l1
+
+        return l1
     # 分词一个句子
     @staticmethod
-    def ner_q(line="",f3="../data/nlpcc2016/result/combine_e12.txt.statistics.txt",):
-        bkh = baike_helper()
-        bkh.init_ner(f_in2=f3)
+    def ner_q(bkh,line=""):
+
         s = line.replace("\r", "").replace("\n", "").replace(' ', '')
         s = ct.clean_str_s(s)  # 把
         ss = bkh.ner(s)

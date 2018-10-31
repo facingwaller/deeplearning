@@ -13,7 +13,9 @@ import datetime
 import lib.my_log as mylog
 from lib.config import config
 from lib.ct import ct, log_path
-from lib.baike_helper import baike_helper
+from lib.baike_helper import baike_helper,baike_test
+
+
 # from gensim import models
 import math
 import random
@@ -138,6 +140,7 @@ class DataClass:
             if need_load_kb:
                 self.bh = baike_helper(config.cc_par('alias_dict'))
                 self.bh.init_spo(f_in=config.cc_par('kb-use'))
+                self.bkt = baike_test()
                 # 临时关闭
 
             self.init_cc_questions(config.cc_par('cc_q_path'), run_type)

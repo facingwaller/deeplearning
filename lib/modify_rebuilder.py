@@ -131,12 +131,12 @@ if __name__ == '__main__':  #
             use_cx=False, use_expect=False, acc_index=[num],
             get_math_subject=True,
             f6='../data/nlpcc2016/4-ner/extract_entitys_all.txt.statistics.txt',
-            f2='../data/nlpcc2016/4-ner/demo_20180904/q.rdf.txt.failed_v4.8_%d_%s.txt' % (num, time_str),
-            f8='../data/nlpcc2016/4-ner/demo_20180904/extract_entitys_all_tj.resort_%d_%s.v4.8.txt' % (num, time_str),
-            f9='../data/nlpcc2016/4-ner/demo_20180904/q.rdf.ms.re.top_%d_%s.v4.10.txt' % (num, time_str),
-            f10='../data/nlpcc2016/4-ner/demo_20180904/ner_%d_%s.v4.10.txt' % (num, time_str),
+            f2='../data/nlpcc2016/4-ner/demo_20181030/q.rdf.txt.failed_v4.8_%d_%s.txt' % (num, time_str),
+            f8='../data/nlpcc2016/4-ner/demo_20181030/extract_entitys_all_tj.resort_%d_%s.v4.8.txt' % (num, time_str),
+            f9='../data/nlpcc2016/4-ner/demo_20181030/q.rdf.ms.re.top_%d_%s.v4.10.txt' % (num, time_str),
+            f10='../data/nlpcc2016/4-ner/demo_20181030/ner_%d_%s.v4.10.txt' % (num, time_str),
             f13='../data/nlpcc2016/4-ner/extract_entitys_all_tj.v4.txt',
-            f12='../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.txt',
+            f12='../data/nlpcc2016/6-answer/q.rdf.ms.re.v2.1.txt',
             combine_idf=False,
             cant_contains_others=False,
             test_top_1000=True,
@@ -274,7 +274,7 @@ if __name__ == '__main__':  #
         skip = config.cc_par('real_split_train_test_skip_v2')
         cf.build_test_ps_v2(f1=f1,
                          f2='../data/nlpcc2016/14-cp/train_ps.v2.txt', skip=skip)
-    if True:
+    if False:
         cf.build_competing_ps_v2(f1='../data/nlpcc2016/14-cp/train_ps.v2.txt',
                               f2='../data/nlpcc2016/14-cp/competing_ps.v1.txt',
                               f3='../data/nlpcc2016/14-cp/competing_ps_tj.v2.txt')
@@ -286,10 +286,46 @@ if __name__ == '__main__':  #
 
     # 输入一个问句输出对应的NER 前3
     # 1 分词
+    if True:
+        print('加载别名词典:')
+        bkh = baike_helper()
+        bkt = baike_test()
+        bkh.stat_dict('../data/nlpcc2016/4-ner/extract_entitys_all.txt')
+        bkh.init_ner(f_in2='../data/nlpcc2016/4-ner/extract_e/e1.tj.txt')
+        print('input:')
+        line = '民生路有哪些结点?' # input()
+        res = bkt.ner_q(bkh,line)
+        ct.print(res)
+        # 排序
+        res2 = bkt.sort_sentence(res,bkh)
+        ct.print(res2)
+        # 实体抽取《》
+        list1_new = [baike_helper.entity_re_extract_one_repeat(ct.clean_str_zh2en(x)) for x in res2]
+        # 去掉重复
+        list1_new = ct.list_no_repeat(list1_new)  # 去掉重复
+        # 去掉包含
+        # 5.8.3 去掉词语包含试试 有一首歌叫	有一首歌	一首歌
+        if True:
+            # 能略微提高
+            list1_new_2 = []
+            for list1_new_word in list1_new:
+                if not ct.be_contains(list1_new_word, list1_new):
+                    list1_new_2.append(list1_new_word)
+            list1_new = list1_new_2
+        ct.print(list1_new)
+
+    # 使用jieba分词出实体
     if False:
-        line = input()
-        res = baike_test.ner_q(line,f3='../data/nlpcc2016/4-ner/extract_entitys_all.v2.txt')
-        print(res)
+        # 读取别名字典，然后将其按格式 名字 长度 n 输出
+        names = ct.file_read_all_lines_strip_no_tips(config.cc_par('alias_dict'))
+        alias = [str(x).split('\t')[0] for x in names]
+        # alias = list(sorted(alias,key=lambda x:len(x),reverse=True))
+        alias2 = ["%s %d n"%(ct.clean_str_s(str(x)),len(x)) for x in  alias]
+        path1 = '../word2vec-test/jieba_dict/dict.txt.big'
+        path2 = '../data/nlpcc2016/4-ner/extract_e/dict.txt.big'
+        ct.file_wirte_list(path1,alias2)
+        print('done')
+
 
 
 
