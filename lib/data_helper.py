@@ -134,42 +134,43 @@ class DataClass:
         self.expend_es = []
         self.expend_score = []
 
-
-        if mode == "cc":
-            need_load_kb = True
-            if need_load_kb:
-                self.bh = baike_helper(config.cc_par('alias_dict'))
-                self.bh.init_spo(f_in=config.cc_par('kb-use'))
-                self.bkt = baike_test()
-                # 临时关闭
-
+        # if mode == "cc":
+        need_load_kb = True
+        if need_load_kb:
+            self.bh = baike_helper(config.cc_par('alias_dict'))
+            self.bh.init_spo(f_in=config.cc_par('kb-use'))
+            self.bkt = baike_test()
+            # 临时关闭
+        if run_type == "run":
             self.init_cc_questions(config.cc_par('cc_q_path'), run_type)
             ct.print("init_cc_questions finish.")
-            self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'), type="zh-cn")
-            if run_type == 'init':  # 初始化
-                return
-            msg = 'questions_len_train:%s\t wrong_relation_num:%s\t' % (
-                config.get_static_q_num_debug(), config.get_static_num_debug())
-            ct.print(msg, 'debug')
-
+        self.converter = read_utils.TextConverter(filename=config.par('cc_vocab'), type="zh-cn")
+        # if run_type == 'init':  # 初始化
+        #     return
+        msg = 'questions_len_train:%s\t wrong_relation_num:%s\t' % (
+            config.get_static_q_num_debug(), config.get_static_num_debug())
+        ct.print(msg, 'debug')
+        if run_type == "run":
             self.load_all_q_r_tuple(config.get_static_q_num_debug(), config.get_static_num_debug(), is_record=True)
-            self.get_max_length()
+        self.get_max_length(run_type,max_num=30)
+        if run_type == "run":
             self.q_r_2_arrary_and_padding()
             # 按比例分割训练和测试集
             self.division_data(0.8, config.cc_par('real_split_train_test'))
-            self.build_embedding_weight(config.wiki_vector_path(mode))
-            # 加载
-            if config.cc_par('synonym_mode') == 'ps_synonym':
-                self.init_synonym(config.cc_par('synonym_words'))
-            if config.cc_compare('S_model', 'S_model'):
-                self.synonym_train_data(config.cc_par('synonym_train_data'))
-            # if config.cc_compare('pool_mode', 'competing_ps'):
+        self.build_embedding_weight(config.wiki_vector_path(mode))
+        # 加载
+        # if config.cc_par('synonym_mode') == 'ps_synonym':
+        #     self.init_synonym(config.cc_par('synonym_words'))
+        # if config.cc_compare('S_model', 'S_model'):
+        #     self.synonym_train_data(config.cc_par('synonym_train_data'))
+        # if config.cc_compare('pool_mode', 'competing_ps'):
+        if run_type == "run":
             self.init_competing_model(config.cc_par('competing_ps_path'))
-            # self.init_expend_es(config.cc_par('expend_es'))
-            # 加载别名字典
-            # self.init_alias_dict(config.cc_par('alias_dict'))
-            ct.print("load embedding ok! start init nn")
-            return
+        # self.init_expend_es(config.cc_par('expend_es'))
+        # 加载别名字典
+        # self.init_alias_dict(config.cc_par('alias_dict'))
+        ct.print("load embedding ok! start init nn")
+        return
         # # elif mode == 'ner':
         # #     need_load_kb = True
         # #     if need_load_kb:
@@ -378,8 +379,8 @@ class DataClass:
                 # ct.print_list(['\nTEST\n'], 'log_q_neg_r_tuple')
                 # ct.print_list(["%s\t%s\t%s" % (x[0], x[1], x[2]) for x in self.q_neg_r_tuple_test], 'log_q_neg_r_tuple')
 
-    def get_max_length(self):
-        if self.mode == "cc":
+    def get_max_length(self,mode="cc",max_num=30 ):
+        if mode == "run":
             # max_document_length1 = max([len(x) for x in self.question_list])  # 获取单行的最大的长度
             # temp_qs = [str(x).replace() for x  in  self.question_list_origin]
             train_qs = []
@@ -400,9 +401,12 @@ class DataClass:
             max_document_length1 = max([len(x) for x in train_qs])  # 获取单行的最大的长度
             max_document_length2 = max([len(x) for x in self.relation_list])  # 获取单行的最大的长度
             # print("train:%d,r:%d"%(max_document_length1,max_document_length2))
-        elif self.mode == "ner":
+        elif mode == "ner":
             max_document_length1 = max([len(x) for x in self.question_list])  # 获取单行的最大的长度
             max_document_length2 = max([len(x) for x in self.question_list])  # 获取单行的最大的长度
+        elif mode == "test":
+            max_document_length1 = max_num
+            max_document_length2 = max_num
         else:
             # 将问题/关系转换成index的系列表示
             max_document_length1 = max([len(x.split(" ")) for x in self.question_list_origin])  # 获取单行的最大的长度
@@ -2075,34 +2079,34 @@ class DataClass:
             temp_cand_ps_neg, temp_cand_as_neg = \
                     self.bh.kb_get_p_o_by_s(cand_s_neg_item,[r_pos1])
 
-            if config.cc_par('hand_add_some_neg'):
-                # 手动添加一些NEG
-                hand_add = []
-                if r_pos1 == '出处':
-                    hand_add = ['中文名称']
-                elif r_pos1 == '属性':
-                    hand_add = ['类别']
-                elif r_pos1 == '名称':
-                    hand_add = ['别称']
-                elif r_pos1 == '注音':
-                    hand_add = ['属性', '外文名称', '中文名称']
-                elif r_pos1 == '片长':
-                    hand_add = ['主演', '编剧']
-                elif r_pos1 == '用途':
-                    hand_add = ['中文名', '别名']
-                elif r_pos1 == '部首':
-                    hand_add = ['除部首外笔画']
-                elif r_pos1 == '分级':
-                    hand_add = ['上映时间']
-                elif r_pos1 == '作者':
-                    hand_add = ['原著作者','原作者','曲作者','漫画作者','作者名言','作者身份','作者其他作品','作者籍贯']
-                else:
-                    pass
-                temp_cand_ps_neg.extend(hand_add)
-                temp_cand_as_neg.extend(hand_add)
-                pass
-            else:
-                pass
+            # if config.cc_par('hand_add_some_neg'):
+            #     # 手动添加一些NEG
+            #     hand_add = []
+            #     if r_pos1 == '出处':
+            #         hand_add = ['中文名称']
+            #     elif r_pos1 == '属性':
+            #         hand_add = ['类别']
+            #     elif r_pos1 == '名称':
+            #         hand_add = ['别称']
+            #     elif r_pos1 == '注音':
+            #         hand_add = ['属性', '外文名称', '中文名称']
+            #     elif r_pos1 == '片长':
+            #         hand_add = ['主演', '编剧']
+            #     elif r_pos1 == '用途':
+            #         hand_add = ['中文名', '别名']
+            #     elif r_pos1 == '部首':
+            #         hand_add = ['除部首外笔画']
+            #     elif r_pos1 == '分级':
+            #         hand_add = ['上映时间']
+            #     elif r_pos1 == '作者':
+            #         hand_add = ['原著作者','原作者','曲作者','漫画作者','作者名言','作者身份','作者其他作品','作者籍贯']
+            #     else:
+            #         pass
+            #     temp_cand_ps_neg.extend(hand_add)
+            #     temp_cand_as_neg.extend(hand_add)
+            #     pass
+            # else:
+            #     pass
             for _cand_ps_neg_item, _as in \
                     zip(temp_cand_ps_neg, temp_cand_as_neg):
                 # 如果实体和属性都是正确的，则跳过
@@ -2763,7 +2767,7 @@ class DataClass:
             
 
     # 获取竞争属性集合，用于计算互相之间的相似度
-    def batch_iter_all_competing_ps(self):
+    def batch_iter_all_competing_ps(self,ns_ps_len_max_limit = 22):
         total = 1000
         _index = 0
         r_cp = []
@@ -2776,8 +2780,15 @@ class DataClass:
         #     c_set = c_set - _temp # 取 差集
         # else:
         #     pass
+
+        filter_num = 0
+        total_num = 0
         for item in c_set:
             ct.print(item,'ns_p')
+            if len(item)>ns_ps_len_max_limit:
+                ct.print(item, 'ns_p_too_long')
+                filter_num+=1
+                continue
             _index += 1
             r_cp.append(self.convert_str_to_indexlist(item))
             need_return = _index % total == 0
@@ -2791,17 +2802,18 @@ class DataClass:
             d1 = dict()
             d1['r_cp'] = np.array(r_cp)
             yield d1
+        ct.print("total_num=%d\tfilter_num=%d"%(_index,filter_num))
 
     # 1
     # 获取竞争属性集合，用于计算互相之间的相似度
-    def batch_iter_all_questions(self):
+    def batch_iter_all_questions(self,skip_test = True):
         total = 1000
         _index = 0
         q_p = []  # 用于属性识别的q
         key = 'q_p'
         for q_current,_s,_label in zip( self.question_list_origin ,self.entity1_list,self.question_labels):
-            # if _label:
-            #     continue
+            if _label and skip_test: # 跳过测试集
+                continue
             # q_current =  # 原始的问题(未处理)-字符串
 
             _s_clean = self.bh.entity_re_extract_one_repeat(_s)

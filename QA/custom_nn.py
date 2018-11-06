@@ -252,7 +252,7 @@ class CustomNetwork:
                 # # # NS.V2
                 # self.ns2_q_feat, self.ns2_r_feat,self.debug1 = get_feature_debug2(self,self.ns2_q, self.ns2_r, att_W, weight_dict)
 
-                print(_AM)
+                # print(_AM)
 
             elif _AM =='both':
                 # a_side 保留 a 部分

@@ -53,7 +53,13 @@ class TestHTTPHandler(BaseHTTPRequestHandler):
             self.wfile.write(''.encode(enc))  # 输出响应内容
             return
         # parsed_path = parse.urlparse(self.path)
-        spo_list = self.hand_question(url_path)
+        spo_list =[]
+        try:
+            spo_list = self.hand_question(url_path)
+        except Exception as e1:
+            print(e1)
+            _1 =('出错了', '原因是', str(e1))
+            spo_list.append(_1)
         # _best_p, _best_s = 's测试','p'
         msg_list = []
         for _ in spo_list:
@@ -95,6 +101,7 @@ def main():
         now = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         #  重要的，是否恢复模型，loss的部分；属性的数目
         model = FLAGS.mode
+        test_style = True
         ct.print("tf:%s should be 1.2.1 model:%s " % (str(tf.__version__), model))  # 1.2.1
         ct.print("mark:%s " % config.cc_par('mark'), 'mark')  # 1.2.1
         ct.just_log2("info", now)
@@ -116,7 +123,7 @@ def main():
         error_test_dict = dict()
         valid_test_dict = dict()
         # 1 读取所有的数据,返回一批数据标记好的数据{data.x,data.label}
-        dh = data_helper.DataClass(model)
+        dh = data_helper.DataClass(model,"test")
         if FLAGS.word_model == "word2vec_train":
             embedding_weight = dh.embeddings
 
@@ -134,17 +141,17 @@ def main():
             embedding_weight=embedding_weight,
             need_gan=True, first=True)
 
-        generator = Generator(
-            max_document_length=dh.max_document_length,  # timesteps
-            word_dimension=FLAGS.word_dimension,  # 一个单词的维度
-            vocab_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
-            rnn_size=FLAGS.rnn_size,  # 隐藏层大小
-            model=model,
-            need_cal_attention=config.cc_par('g_need_cal_attention'), # 不带注意力玩
-            need_max_pooling=FLAGS.need_max_pooling,
-            word_model=FLAGS.word_model,
-            embedding_weight=embedding_weight,
-            need_gan=True, first=False)
+        # generator = Generator(
+        #     max_document_length=dh.max_document_length,  # timesteps
+        #     word_dimension=FLAGS.word_dimension,  # 一个单词的维度
+        #     vocab_size=dh.converter.vocab_size,  # embedding时候的W的大小embedding_size
+        #     rnn_size=FLAGS.rnn_size,  # 隐藏层大小
+        #     model=model,
+        #     need_cal_attention=config.cc_par('g_need_cal_attention'), # 不带注意力玩
+        #     need_max_pooling=FLAGS.need_max_pooling,
+        #     word_model=FLAGS.word_model,
+        #     embedding_weight=embedding_weight,
+        #     need_gan=True, first=False)
 
         ct.print("max_document_length=%s,vocab_size=%s " % (str(dh.max_document_length), str(dh.converter.vocab_size)))
         # 初始化

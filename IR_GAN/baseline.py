@@ -6,11 +6,18 @@ import numpy as np
 import os
 import time
 import datetime
-import insurance_qa_data_helpers
+from  IR_GAN import insurance_qa_data_helpers
 import operator
-from insurance_qa_data_helpers import encode_sent
+from IR_GAN.insurance_qa_data_helpers import encode_sent
 import random
 import pickle
+
+DIS_MODEL_FILE="../IR_GAN/model/pre-trained.model"
+with open(DIS_MODEL_FILE,"rb") as f:
+    param = pickle.load(f,encoding='iso-8859-1')
+
+print('ok---------------------')
+
 
 import math
 now = int(time.time()) 
@@ -24,7 +31,7 @@ timeStamp = time.strftime("%Y%m%d%H%M%S", timeArray)
 # ==================================================
 
 import tensorflow as tf
-import Discriminator
+from IR_GAN  import  Discriminator
 # Model Hyperparameters
 tf.flags.DEFINE_integer("max_sequence_length", 200, "Max sequence length fo sentence (default: 200)")
 tf.flags.DEFINE_integer("embedding_dim", 100, "Dimensionality of character embedding (default: 128)")
@@ -54,25 +61,32 @@ FLAGS._parse_flags()
 # Data Preparatopn
 # ==================================================
 # Load data
-print(("Loading data..."))
+## add 测试加载
+# pickle.load(f, encoding='latin1')
+# DIS_MODEL_FILE = "model/pre-trained.model"
+# param = pickle.load(DIS_MODEL_FILE,encoding='iso-8859-1')
 
-vocab = insurance_qa_data_helpers.build_vocab()
-# embeddings =insurance_qa_data_helpers.load_vectors(vocab)
-alist = insurance_qa_data_helpers.read_alist()
-raw = insurance_qa_data_helpers.read_raw()
+## end add
+if True:
+    print(("Loading data..."))
+
+    vocab = insurance_qa_data_helpers.build_vocab()
+    # embeddings =insurance_qa_data_helpers.load_vectors(vocab)
+    alist = insurance_qa_data_helpers.read_alist()
+    raw = insurance_qa_data_helpers.read_raw()
 
 
 
-test1List = insurance_qa_data_helpers.loadTestSet("test1")
-test2List= insurance_qa_data_helpers.loadTestSet("test2")
-devList= insurance_qa_data_helpers.loadTestSet("dev")
-testSet=[("test1",test1List),("test2",test2List),("dev",devList)]
+    test1List = insurance_qa_data_helpers.loadTestSet("test1")
+    test2List= insurance_qa_data_helpers.loadTestSet("test2")
+    devList= insurance_qa_data_helpers.loadTestSet("dev")
+    testSet=[("test1",test1List),("test2",test2List),("dev",devList)]
 
 
-print("Load done...")
+    print("Load done...")
 
-val_file = 'insuranceQA/test1'
-precision = 'log/test1.dns'+timeStamp
+val_file = '../IR_GAN/insuranceQA/test1'
+precision = '../IR_GAN/log/test1.dns'+timeStamp
 
 
 
@@ -181,8 +195,8 @@ def main():
                     # param = pickle.load(open(DIS_MODEL_FILE))
                     # print( param)
                     param= None
-                    DIS_MODEL_FILE="model/pre-trained.model"
-                    param = pickle.load(open(DIS_MODEL_FILE,"rb"))
+                    DIS_MODEL_FILE="../IR_GAN/model/pre-trained.model"
+                    param = pickle.load(open(DIS_MODEL_FILE,"rb"),encoding='iso-8859-1')
                     discriminator = Discriminator.Discriminator(
                             sequence_length=FLAGS.max_sequence_length,
                             batch_size=FLAGS.batch_size,

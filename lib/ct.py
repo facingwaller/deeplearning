@@ -1503,10 +1503,21 @@ class ct:
         #         ct.print('get_shuffle_indices_test not exist %s ' % train_step, 'shuffle_indices_test')
 
         return id_list
+
+    @staticmethod
+    def generate_counter():
+        CNT = [0]
+
+        def add_one():
+            CNT[0] = CNT[0] + 1
+            return CNT[0]
+
+        return add_one
 log_path = ct.log_path_static()
 
 
 if __name__ == "__main__":
+    print(len('历元2456400.5(2013年4月18日更新)'))
     all_ps_ret = []
     all_os_ret = []
     all_ps= [1,2,3,5]
