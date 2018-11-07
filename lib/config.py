@@ -97,7 +97,7 @@ batch_size = 5  # 1个batch的大小 # 临时改成1 个看loss
 
 # ==================================需要配置
 # mark = '测试CP的效果；寻找最佳的CP策略；10P;NEG负例的个数是全部 ;14-cp的竞争策略[20181013-1]' # 备注
-mark = '测试CP的效果；' # 备注
+mark = '测试CP的效果；每次5个;NS default 轮流来' # 备注
 t_relation_num = 100  # 4385  # 重要！这个指示了训练的关系个数 4358
 ner_top_cand = 0  # 训练取2，测试取3（写死） ; 0 只测属性识别,2 测实体或者实体+属性
 
@@ -123,7 +123,8 @@ gan_learn_rate = 0.05
 d_need_cal_attention = True
 g_need_cal_attention = True
 competing_s_neg_p_num = 10   # 竞争属性中，P_POS的负例的多少 用于 ert
-competing_p_pos_neg_size = 9999  # 竞争属性中，P_POS的负例的多少
+competing_p_pos_neg_size = 5  # 竞争属性中，P_POS的负例的多少
+print('测试：competing_p_pos_neg_size:%d'%competing_p_pos_neg_size)
 convert_rs_to_words = False   # 关系集合转换为对应的字符集合
 only_p_neg_in_cp = False               # 只加入P_NEG进入 CP 暂停，这样会导致POS无法加入
 hand_add_some_neg = False
@@ -135,8 +136,10 @@ does_cp_contains_default = False # competing_q 模式下 是否包含默认的 �
 
 # 一些调整的参数
 ns_ps_try_only_pos = False
-ns_ps_len_max_limit = 22
+ns_ps_len_max_limit = 22 # len('历元2456400.5(2013年4月18日更新)')
 ns_q_ploicy_all = 'all_p' # D的策略，全问题还是一个 all_p , 1_q,1_p
+p_neg_score = 'CP' # CP 竞争属性 DEFAULT  轮流
+
 # 模型恢复
 restore_model = True
 restore_path_base = r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs'
@@ -151,12 +154,12 @@ restore_test = False
 
 # 竞争属性集
 # competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
+# competing_ps_path = '../data/nlpcc2016/14-cp/competing_ps_tj_tt.v2.txt'
 competing_ps_path = '../data/nlpcc2016/14-cp/competing_ps_tj.v2.txt'
-# competing_ps_path = '../data/nlpcc2016/13-competing/competing_ps_tj.v2.txt'# 13-competing 版本的
-# competing_ps_path = '../data/nlpcc2016/13-competing/competing_p_in_kb.v2.txt'
-competing_batch_size = 10 # 控制size 无用
+# ct.print('临时用：%s'%competing_ps_path)
+# competing_batch_size = 10 # 控制size 无用
 
-expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
+# expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
 
 # S-NER
 ner_model = 'cos'
@@ -170,8 +173,8 @@ negative_sampling_model = 'alias'  # alias | competing
 
 # 只验证错误的模式 only_error|all
 valid_model = 'all'
-valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
-valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
+# valid_only_error_valid = '../data/nlpcc2016/7-error/only_error/valid.v1.txt'
+# valid_only_error_test = '../data/nlpcc2016/7-error/only_error/test.v1.txt'
 keep_run = False  # 指示是否持续跑maybe里面的属性
 optimizer_method = optimizer_m.gan  # 优化模式 gan | lstm
 synonym_mode = 'none'  # 属性同义词 ps_synonym| none
@@ -220,7 +223,7 @@ cc_p = {
     # q.rdf.score.expend.v1.txt
     'real_split_train_test': True,
     'real_split_train_test_skip': 14097, # 14610
-    'real_split_train_test_skip_v2': 14097,
+    'real_split_train_test_skip_v2': 14097, # 14097
     'use_property': use_property,  # 记录进日志
     'train_part': train_part,  # 属性 relation |answer
     'loss_part': loss_part,  # 属性 relation |answer
@@ -247,14 +250,14 @@ cc_p = {
     'synonym_train_mode': synonym_train_mode,
     'S_model': S_model,
     'valid_model': valid_model,
-    'valid_only_error_valid': valid_only_error_valid,
-    'valid_only_error_test': valid_only_error_test,
+    # 'valid_only_error_valid': valid_only_error_valid,
+    # 'valid_only_error_test': valid_only_error_test,
     # 竞争
     'competing_ps_path': competing_ps_path,
-    'competing_batch_size':competing_batch_size,
+    # 'competing_batch_size':competing_batch_size,
     'competing_s_neg_p_num':competing_s_neg_p_num,
     ## NER
-    'expend_es':expend_es,
+    # 'expend_es':expend_es,
     'ner_model' : ner_model,
     'ner_path' : ner_path,
     'ner_top_cand':ner_top_cand,
@@ -351,7 +354,7 @@ def get_config_msg():
     for attr, value in sorted(FLAGS.__flags.items()):
         FLAGS_Parameters += "{}={}\n".format(attr.upper(), value)
     for item in cc_p:
-        FLAGS_Parameters += '%s\n' % cc_p[item]
+        FLAGS_Parameters += ('%s:\t%s\n' % (item,cc_p[item]))
 
     return FLAGS_Parameters
 
@@ -475,6 +478,7 @@ class config:
 
 
 if __name__ == "__main__":
+    print(get_config_msg())
     # print(config.get_model())
     print(restore_path)
     ns_q_state_all= []

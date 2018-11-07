@@ -254,11 +254,11 @@ if __name__ == '__main__':  #
                                    '../data/nlpcc2016/13-competing/competing_s_in_kb.v2.txt',
                                    kb_path)
     if False:
-        #  读取问题
+        #  读取问题 train_test_ps  train_ps
         f1 = config.cc_par('cc_q_path')
         skip = config.cc_par('real_split_train_test_skip_v2')
         cf.build_test_ps(f1=f1,
-                         f2='../data/nlpcc2016/13-competing/train_ps.v2.txt', skip=skip)
+                         f2='../data/nlpcc2016/13-competing/train_test_ps.v2.txt', skip=skip)
 
     if False:
         cf.build_competing_ps(f1='../data/nlpcc2016/13-competing/train_ps.v2.txt',
@@ -267,17 +267,37 @@ if __name__ == '__main__':  #
     # ============================================================
     # 竞争属性部分 V2
     # ============================================================
-
     if False:
-        #  读取问题
+        #  读取问题 train_test_ps  train_ps
         f1 = config.cc_par('cc_q_path')
         skip = config.cc_par('real_split_train_test_skip_v2')
         cf.build_test_ps_v2(f1=f1,
-                         f2='../data/nlpcc2016/14-cp/train_ps.v2.txt', skip=skip)
+                         f2='../data/nlpcc2016/14-cp/train_test_ps.v2.txt', skip=skip)
     if False:
-        cf.build_competing_ps_v2(f1='../data/nlpcc2016/14-cp/train_ps.v2.txt',
-                              f2='../data/nlpcc2016/14-cp/competing_ps.v1.txt',
-                              f3='../data/nlpcc2016/14-cp/competing_ps_tj.v2.txt')
+        cf.build_competing_ps_v2(f1='../data/nlpcc2016/14-cp/train_test_ps.v2.txt',
+                              f2='../data/nlpcc2016/14-cp/competing_ps_tt.v1.txt',
+                              f3='../data/nlpcc2016/14-cp/competing_ps_tj_tt.v2.txt')
+
+    # @1 查看train中的P_POS的P_NEG是否包含test中的P_NEG，如果不存在则列出来
+    if False:
+        cf.check_diff_train_test_ps(f1='../data/nlpcc2016/14-cp/competing_ps_tj.v2.txt',f0=config.cc_par('cc_q_path'),
+                            f2='../data/nlpcc2016/14-cp/competing_ps_tj_tt.v2.txt',f3='../data/nlpcc2016/14-cp/diff.txt')
+    # ============================================================
+    # 竞争属性部分 V3 找出基于别名alias的所有P_NEG
+    # ============================================================
+    if True:
+        kb_path = config.cc_par('kb')
+        cc_q = config.cc_par('cc_q_path')
+        #
+        cf.build_competing_p_in_kb_by_alias('../data/nlpcc2016/14-cp/v3/competing_p_in_kb.v3.txt',
+                                   '../data/nlpcc2016/14-cp/v3/competing_s_in_kb.v3.txt',
+                                   '../data/nlpcc2016/14-cp/v3/competing_ps_kb.v3.txt',
+                                   kb_path)
+    # if False:
+    #     cf.build_competing_ps_v3(f1='../data/nlpcc2016/14-cp/v3/competing_p_in_kb.v3.txt',
+    #                                  f2='../data/nlpcc2016/14-cp/v3/competing_ps_kb.v1.txt',
+    #                                   start_index=0)
+
     # 检查所有的实体是否存在KV中
     #
     if False:
@@ -286,7 +306,7 @@ if __name__ == '__main__':  #
 
     # 输入一个问句输出对应的NER 前3
     # 1 分词
-    if True:
+    if False:
         print('加载别名词典:')
         bkh = baike_helper()
         bkt = baike_test()
@@ -325,7 +345,7 @@ if __name__ == '__main__':  #
         path2 = '../data/nlpcc2016/4-ner/extract_e/dict.txt.big'
         ct.file_wirte_list(path1,alias2)
         print('done')
-
+    print('done')
 
 
 

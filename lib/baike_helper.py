@@ -41,6 +41,24 @@ class baike_helper:
                 alias_dict[_s] = _ps
             self.alias_dict = alias_dict
 
+    def init_back_alias_dict(self,f2=''):
+        if f2 != '':
+            # f2 = config.cc_par('alias_dict')
+            alias_dict = dict()
+            f2s = ct.file_read_all_lines_strip_no_tips(f2)  # 字典
+            for l2 in f2s:
+                _s = str(l2).split('\t')[0]
+                _ps = str(l2).split('\t')[1:]
+                for _ps_one in _ps:
+                    res = alias_dict.get(_ps_one,'')
+                    if res == '':
+                        alias_dict[_ps_one] = _s
+                    else:
+                        print('%s \t %s '%(_s,_ps_one))
+            self.alias_back_dict = alias_dict
+
+        pass
+
     # 统计关系的数目并做分析，排序
     @staticmethod
     def relatons_statistics(f1="../data/nlpcc2016/nlpcc-iccpol-2016.kbqa.kb",
@@ -1241,7 +1259,7 @@ class baike_helper:
         #     return
         ct.print_t('init_spo')
         self.kbqa = dict()
-        self.ps_set = set()
+        # self.ps_set = set()
 
         index = 0
         if use_gzip:
@@ -1266,7 +1284,7 @@ class baike_helper:
             o1 = ls[2]
             t1 = (p, o1)
             # 全部的P整理进来
-            self.ps_set.add(p)
+            # self.ps_set.add(p)
             # del line
             if s in self.kbqa:
                 # try:
@@ -1281,7 +1299,7 @@ class baike_helper:
         f_out.close()
         # ct.pickle_save(config.par('baike_dict_path'), self.kbqa)
         ct.print_t("init_spo ok")
-        self.ps_all_list = list(self.ps_set)
+        # self.ps_all_list = list(self.ps_set)
 
         time_elapsed = time.time() - start_time
         ct.print_t("time_elapsed: %6.7f" % time_elapsed)

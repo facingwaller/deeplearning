@@ -889,12 +889,16 @@ def main():
 
             for step in range(FLAGS.epoches):
                 train_step = 0
+                if step %2 == 0:
+                    p_neg_score = 'CP'
+                else:
+                    p_neg_score ='DEFAULT'
 
                 # 更新一圈竞争排名 # 20180916 ns 实验 negative sampling top k
                 for cos_index in range(FLAGS.ns_epoches):
                     # ns_competing_v1(dh, discriminator,  sess, step)
                     if config.cc_par('ns_model')=='competing_q':
-                        ns_competing_relation_origin(dh, discriminator,  sess, step)
+                        ns_competing_relation_origin(dh, discriminator,  sess, step,p_neg_score)
                         # ns_competing_v2(dh, discriminator,  sess, step)
                         # ns_competing_v2 老版本
                     elif config.cc_par('ns_model')=='competing_q_ert':
@@ -1146,7 +1150,7 @@ def main():
             ct.print('finish epoches %d' % FLAGS.epoches)
 
 # 使用原版本的test的方法不过早优化
-def ns_competing_relation_origin(dh, discriminator,  sess, step,is_add_all = False):
+def ns_competing_relation_origin(dh, discriminator,  sess, step,p_neg_score = ''):
     ct.print('ns_epoches start')
     ns_r_r_score_all = []
 
@@ -1222,14 +1226,22 @@ def ns_competing_relation_origin(dh, discriminator,  sess, step,is_add_all = Fal
 
         # 提供当前的-neg属性
 
-        p_v = dh.competing_train_dict.get(r_pos1, '') # 获取P的竞争属性集合
-        if p_v == '':   # 少量只存在测试集中的属性没有竞争属性
-            ct.print('%s '%r_pos1,'bug')
+        if p_neg_score == 'CP':
+            p_v = dh.competing_train_dict.get(r_pos1, '') # 获取P的竞争属性集合
+            if p_v == '':   # 少量只存在测试集中的属性没有竞争属性
+                ct.print('%s '%r_pos1,'bug')
+                temp_cand_ps_neg, temp_cand_as_neg = \
+                    dh.bh.kb_get_p_o_by_s(_s, [r_pos1])
+                p_v = temp_cand_ps_neg
+            else:
+                p_v = [x[0] for x in p_v]  # 去除频率
+        elif p_neg_score == 'DEFAULT':
             temp_cand_ps_neg, temp_cand_as_neg = \
                 dh.bh.kb_get_p_o_by_s(_s, [r_pos1])
             p_v = temp_cand_ps_neg
         else:
-            p_v = [x[0] for x in p_v]  # 去除频率
+            raise ('NO NO')
+
 
         # 去掉长度不合适的
         ns_ps_len_max_limit = config.cc_par('ns_ps_len_max_limit')

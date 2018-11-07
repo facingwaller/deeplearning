@@ -1513,10 +1513,22 @@ class ct:
             return CNT[0]
 
         return add_one
+    @staticmethod
+    def filter_limit_len(list1,min_len):
+        return list(filter(lambda x: len(x)<min_len , list1))
+
 log_path = ct.log_path_static()
 
 
 if __name__ == "__main__":
+    for step in range(10):
+        train_step = 0
+        if step % 2 == 0:
+            p_neg_score = 'CP'
+        else:
+            p_neg_score = 'DEFAULT'
+        print(p_neg_score)
+    print(len('//upload.wikimedia.org/wikipedia/zh/7/7d/%e9%9b%bb%e5%bd%b1%e5%8b%9d%e5%88%a9.jpg上海国际电影节宣传海报'))
     print(len('历元2456400.5(2013年4月18日更新)'))
     all_ps_ret = []
     all_os_ret = []

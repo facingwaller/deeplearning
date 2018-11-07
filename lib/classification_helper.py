@@ -770,7 +770,7 @@ class classification:
 
         # 00: 04:34: 22438   公司性质          公司口号         公司类型
 
-    # 构建基于P_POS的竞争属性集合
+    # 从问题中构建基于P_POS的竞争属性集合
     def build_test_ps_v2(self, f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
                       f2='../data/nlpcc2016/5-class/test_ps.txt', skip=14097):
         f1s = ct.file_read_all_lines_strip(f1)
@@ -832,6 +832,63 @@ class classification:
 
         # 00: 04:34: 22438   公司性质          公司口号         公司类型
 
+    def init_competing_model(self, f1='competing_ps_path'):
+        competing_dict = dict()
+        # competing_prob_dict = dict()
+        competing_set = set()
+        competing_p_dict = dict() # 只有属性没有频率
+        f1s = ct.file_read_all_lines_strip_no_tips(f1)
+        for l1 in f1s:
+            k1 = str(l1).split('\t')[0]  # key
+            v1 = str(l1).split('\t')[1]  #
+            competing_set.add(v1)
+            # _prob = float(str(l1).split('\t')[2])
+            if competing_dict.__contains__(k1):
+                _cs_set=competing_dict[k1]
+            else:
+                _cs_set = set()
+            # _cs_set.add((v1,_prob))
+            _cs_set.add(v1)
+            competing_dict[k1] = _cs_set
+            # competing_prob_dict["%s_%s"%(k1,v1)] = _prob
+        # self.competing_train_dict = competing_dict
+        # self.competing_set = competing_set
+        return competing_dict
+
+    # 查看train中的P_POS的P_NEG是否包含test中的P_NEG，如果不存在则列出来
+    def check_diff_train_test_ps(self, f0='',f1='../data/nlpcc2016/3-questions/q.rdf.ms.re.v1.filter.txt',
+                      f2='../data/nlpcc2016/5-class/test_ps.txt', f3= ''):
+        f0s = ct.file_read_all_lines_strip(f0)
+
+        bkh = baike_helper(config.cc_par('alias_dict'))
+        bkh.init_spo(config.cc_par('kb-use'))
+        pos_set = set()
+        index = -1
+        cp_train = self.init_competing_model(f1)
+        cp_all  = self.init_competing_model(f2)
+        # 收集所有的pos-p
+        for f1l in f0s:
+            index += 1
+            if index < 14097:
+                continue
+            pos = ct.clean_str_rel(str(f1l).split('\t')[3])
+            pos_set.add(pos)
+        msg_list = []
+        for _p in pos_set:
+            # 对于其中每个属性，都要对比两者的属性取差集
+            _s_all = cp_all.get(_p)
+            _s_train = cp_train.get(_p)
+            if _s_all == None or _s_train == None :
+                ct.print('%s\t%d\t%s'%(_p,len(_s_all),'\t'.join(_s_all)))
+                continue
+            _s = _s_all - _s_train
+            msg = "%s\t%s"%(_p,'\t'.join(list(_s)))
+            ct.print(msg,'diff')
+            msg_list.append(msg)
+        ct.file_wirte_list(f3, msg_list)
+
+        # 00: 04:34: 22438   公司性质          公司口号         公司类型
+
 
     # 读取出所有NEG的PS
     def build_competing_ps(self, f1='../data/nlpcc2016/5-class/test_ps.txt',
@@ -889,10 +946,11 @@ class classification:
             msg_list.append(msg)
         ct.file_wirte_list(f3, msg_list)
 
-    # 读取出所有NEG的PS
+    # 读取出所有NEG的PS，输出
+    # f2是老版本的，可无视
     def build_competing_ps_v2(self, f1='../data/nlpcc2016/5-class/test_ps.txt',
                            f2='../data/nlpcc2016/5-class/competing_ps.txt',
-                           f3=''):
+                           f3='',start_index = 4):
         f1s = ct.file_read_all_lines_strip(f1)
         # bkh = baike_helper()
         # bkh.init_spo()
@@ -904,13 +962,14 @@ class classification:
         import itertools
         for f1l in f1s:
             index += 1
-
+            if index %100 == 0 :
+                print("%d - %d"%( index/100,len(f1s)/100))
             # if index < skip:  # 跳过train的数据
             #     continue
 
             # 每行互为K-V
             # 我想知道东城街道有几个社区?	#社区数	True	9554_9547_9540_9531_4867	行政区类型	上级行政区	村级区划单位数	电话区号	地理、人口、经济	东城街道(巴中市)	行政区划代码	社区数	行政村数	别名	东城街道(重庆市)	东城街道(二连浩特市)	东城街道(聊城市)	东城街道(雅安市)	面积	地理位置	中文名称	人口	政府驻地	概览	其他	常住人口	毗邻	//zh.wikipedia.org/wiki/filewijincheng_ii.jpg东城街道辖区内的中国科技五金城	东城街道(四会市)	东城街道(东营市)	东城街道(清远市)	东城街道(兴平市)	东城街道(荆州市)	方言	气候条件	行政区类别	所属地区	东城街道(凌源市)	东城街道(菏泽市)	东城街道	东城街道(郏县)	东城街道(商水县)	户籍人口1997年	建置时间	时区	所属	中文名	职位	东城街道(达州市)	外文名称	总面积	原名	时间	著名景点	车牌代码	邮政区码	性质	东城街道(东莞市)	下辖地区	总户数	辖区面积	总人口	东城街道(西昌市)	东城街道(临朐县)	东城街道(库车县)	东城街道(铜梁县)	机场	火车站	属于	东城街道(阳城县)	东城街道(盖州市)	东城街道(宜宾市)	东城街道(吉林市)	东城街道(利川市)	街道辖区面积	成立于	城区面积	村委会	位置	所在地	东城街道(沈丘县)	东城街道(单县)	东城街道(界首市)	东城街道(新民市)	东城街道(运城市)	东城街道(高平市)	东城街道(龙岩市)
-            l1 = str(f1l).split('\t')[4:] # L1 是后面一个问题的所有候选属性
+            l1 = str(f1l).split('\t')[start_index:] # L1 是后面一个问题的所有候选属性
             #  对L1中的所有的属性，任取2个排序，意思是这2个是竞争关系
             #  将这2个加入到D1中
             for w in itertools.permutations(l1,2):
@@ -938,6 +997,11 @@ class classification:
             msg = "%s\t%s\t%d\t%d\t%f" % (w1,w2, vs,v1,vs/v1)
             msg_list.append(msg)
         ct.file_wirte_list(f3, msg_list)
+
+
+
+
+
     # 找到同实体不同属性名，但是属性值一样的
     def class_p_by_o_kb(self, f1='../data/nlpcc2016/2-kb/kb.v1.txt',
                         f3='../data/nlpcc2016/5-class/demo1/same_o.txt',
@@ -1579,10 +1643,8 @@ class classification:
     # .png .jpg
     def build_competing_p_in_kb(self,f1='',f2='',kb_path=''):
         index = -1
-
         p_dict = dict() # key = p , value = s
         with open(kb_path, mode='r', encoding='utf-8') as rf:
-
             for l1 in rf:
                 index += 1
                 if index % 10000 == 0:
@@ -1632,6 +1694,200 @@ class classification:
 
         pass
 
+        # 竞争属性相关
+        #  去掉 upload.wikimedia.org
+        # .png .jpg
+
+    # 获取训练集中的所有 P_POS
+    def get_all_p_pos_set(self,  ):
+        f1s = ct.file_read_all_lines_strip(config.cc_par('cc_q_path'))
+        pos_set = set()
+        index = -1
+        skip = config.cc_par('real_split_train_test_skip')
+        # 收集所有的pos-p
+        for f1l in f1s:
+            index += 1
+            train = True
+            if index > skip:
+                break
+                # train = False
+                # break
+            pos = ct.clean_str_rel(str(f1l).split('\t')[3])
+            pos_set.add(pos)
+        return pos_set
+
+    def build_competing_p_in_kb_by_alias(self, f1='', f2='',f3='', kb_path=''):
+        """
+        1. 加载正向和反向的别名字典；正向指Key=alias（别名）。Value = S （具体的实体）；
+        反向指：KEY = S，value = alias
+        2. 遍历KB，过滤后，只找P在POS集合中的 P
+        3. P根据获取S，根据S获取alias，根据alias获取多个S。 做字典 KEY = P , VALUE = 多个S
+        4. 遍历P，获取他的多个S，再获取他的多个P_NEG
+        5. 输出P_POS - P_NEG（\t分割）
+
+        :param f1:
+        :param f2:
+        :param f3:
+        :param kb_path:
+        :return:
+        """
+
+        # 反向加载一个别名
+        self.bh = baike_helper(config.cc_par('alias_dict'))
+        self.bh.init_back_alias_dict(config.cc_par('alias_dict'))
+        print('init alias_dict ok')
+        self.bh.init_spo(kb_path)  # kb
+        index = -1
+        p_dict = dict()  # key = p , value = s
+        p_pos_set = self.get_all_p_pos_set()
+        ct.print("p_pos_set = %d"%len(p_pos_set))
+        with open(kb_path, mode='r', encoding='utf-8') as rf:
+            for l1 in rf:
+                index += 1
+                if index % 10000 == 0:
+                    print("%s %s" % (index / 10000, 4300))
+                l1_split = l1.split('\t')
+                s = ct.clean_str_s(l1_split[0])
+                p = ct.clean_str_rel(l1_split[1])
+                o = ct.clean_str_answer(l1_split[2])
+                # 过滤掉P =0的
+                if p == o or l1_split[1] == l1_split[2]:
+                    # ct.print("%s\t%s"%(p,o))
+                    continue
+                # 过滤掉 S=P的 或者S=O的
+                # e.g 林芷筠	林芷筠	safina 林芷筠	外文名	safina
+                if s == p or s == o:
+                    continue
+                if p.__contains__('.jpg') or p.__contains__('.jpeg') or p.__contains__('.png'):
+                    continue
+                # 超过问题集已知最大的问题集中最大属性长度的过滤
+                if len(p) > config.cc_par('ns_ps_len_max_limit'):
+                    continue
+                # 判断P 必须是P_POS ,否则过滤
+                if p not in p_pos_set:
+                    continue
+                s_set = p_dict.get(p, "")
+                if s_set == "":  # 不包含则添加
+                    s_set = set()
+                # 在此再加所有alias对应的别名-实体
+                alias_s = self.bh.alias_back_dict.get(s,'') # 一个实体对应的别名？
+                if alias_s != '':
+                    alias_s_to_s= self.bh.alias_dict.get(alias_s,'')
+                    for _ in alias_s_to_s:
+                        s_set.add(_)
+                else:
+                    print("none : %s "%s)
+                #
+                s_set.add(s)
+                p_dict[p] = s_set
+        # ct.file_wirte_list(f3, f3s)
+        # ct.file_wirte_list(f4, f4s)
+
+        self.bh.alias_dict.clear()
+        self.bh.alias_back_dict.clear()
+        p_pos_set.clear()
+
+        p_p_dict = dict()  # key = p , values = p
+        with codecs.open(f1, mode="w", encoding="utf-8") as f1_writer:
+            for _p, _s_set in p_dict.items():
+                p_p_dict_set = []
+                for _s_set_item in _s_set:
+                    # _rs, _as = self.bh.kb_get_p_o_by_s(_s_set_item, [_p])
+                    _rs, _as = self.bh.read_entity_and_get_all_neg_relations_cc(_s_set_item, [_p])
+                     # 过滤掉过长的
+                    _rs = list(filter(lambda x:len(x)<config.cc_par('ns_ps_len_max_limit'),_rs))
+                    # debug
+                    p_p_dict_set.extend(_rs)
+                p_p_dict_set = list(set(p_p_dict_set))
+                # for _ in p_p_dict_set:
+                #     if _ == '连载杂志':
+                #         ct.print('%s' % _s_set_item, 'rs')  # 输所有包含连载杂志的S
+                # p_p_dict[_p] = p_p_dict_set
+                msg = "%s\t%s\r\n" % (_p, '\t'.join(p_p_dict_set))
+                f1_writer.write(msg)
+                p_p_dict_set.clear()
+
+
+        # out = [] # 输出所有的属性-竞争属性
+        # for _p, _s_set in p_p_dict.items():# key = p_pos , values =  p_neg
+        #     msg = "%s\t%s" % (_p, '\t'.join(_s_set))
+        #     out.append(msg)
+        # ct.file_wirte_list(f1, out)
+        #
+        # out.clear()
+        # for _p, _s_set in p_p_dict.items():
+        #     for _ in list(_s_set):
+        #         msg = "%s\t%s" % (_p, _)
+        #         out.append(msg)
+        #     # msg = "%s\t%s" % (_p, '\t'.join(list(_s_set)))
+        # ct.file_wirte_list(f3, out)
+        #
+        # out.clear()
+        # for _p, _s_set in p_dict.items():
+        #     msg = "%s\t%s" % (_p, '\t'.join(list(_s_set)))
+        #     out.append(msg)
+        # ct.file_wirte_list(f2, out)
+
+        pass
+
+    # 读取出所有NEG的PS，输出
+    # f2是老版本的，可无视
+    # 取消次数的统计
+    def build_competing_ps_v3(self, f1='../data/nlpcc2016/5-class/test_ps.txt',
+                           f2='../data/nlpcc2016/5-class/competing_ps.txt',
+                          start_index = 4):
+        f1s = ct.file_read_all_lines_strip(f1)
+        # bkh = baike_helper()
+        # bkh.init_spo()
+
+        index = -1
+        d1 = dict()  # KEY=P VALUE = 竞争的P
+        d2 = dict() # key =  w1_w2 , value = 次数
+        d3 = dict() # key = w1 , value = 次数
+        p_pos_set = self.get_all_p_pos_set()
+        ct.print("p_pos_set = %d"%len(p_pos_set))
+        import itertools
+        for f1l in f1s:
+            index += 1
+            if index %100 == 0 :
+                ct.print("%d - %d"%( index/100,len(f1s)/100))
+            # if index < skip:  # 跳过train的数据
+            #     continue
+
+            # 每行互为K-V
+            # 我想知道东城街道有几个社区?	#社区数	True	9554_9547_9540_9531_4867	行政区类型	上级行政区	村级区划单位数	电话区号	地理、人口、经济	东城街道(巴中市)	行政区划代码	社区数	行政村数	别名	东城街道(重庆市)	东城街道(二连浩特市)	东城街道(聊城市)	东城街道(雅安市)	面积	地理位置	中文名称	人口	政府驻地	概览	其他	常住人口	毗邻	//zh.wikipedia.org/wiki/filewijincheng_ii.jpg东城街道辖区内的中国科技五金城	东城街道(四会市)	东城街道(东营市)	东城街道(清远市)	东城街道(兴平市)	东城街道(荆州市)	方言	气候条件	行政区类别	所属地区	东城街道(凌源市)	东城街道(菏泽市)	东城街道	东城街道(郏县)	东城街道(商水县)	户籍人口1997年	建置时间	时区	所属	中文名	职位	东城街道(达州市)	外文名称	总面积	原名	时间	著名景点	车牌代码	邮政区码	性质	东城街道(东莞市)	下辖地区	总户数	辖区面积	总人口	东城街道(西昌市)	东城街道(临朐县)	东城街道(库车县)	东城街道(铜梁县)	机场	火车站	属于	东城街道(阳城县)	东城街道(盖州市)	东城街道(宜宾市)	东城街道(吉林市)	东城街道(利川市)	街道辖区面积	成立于	城区面积	村委会	位置	所在地	东城街道(沈丘县)	东城街道(单县)	东城街道(界首市)	东城街道(新民市)	东城街道(运城市)	东城街道(高平市)	东城街道(龙岩市)
+            l1 = str(f1l).split('\t')[start_index:] # L1 是后面一个问题的所有候选属性
+            #  对L1中的所有的属性，任取2个排序，意思是这2个是竞争关系
+            #  将这2个加入到D1中
+            # l1 = ct.filter_limit_len(l1,config.cc_par('ns_ps_len_max_limit'))
+            for w in itertools.permutations(l1,2):
+                w1 = w[0]
+                w2 = w[1]
+                # d1 = ct.dict_add(d1, w1, w2) # 不调用函数 减少7秒钟。# 过滤过长的 在减少4秒
+                # 判断一下 W1 必须是 P_POS
+                if w1 not in p_pos_set:
+                    continue
+                if w1 in d1:
+                    s1 = d1[w1]
+                    s1.add(w2)  # 可能会存在不足
+                    d1[w1] = s1
+                else:
+                    s1 = set()
+                    s1.add(w2)
+                    d1[w1] = s1
+            #     d2 = ct.dict_add_tj(d2, w1, w2)
+            # # for w in l1:
+            #     d3 = ct.dict_add_tj_w1(d3, w1)
+                # d3 = ct.dict_add_tj_w1(d3, w2)
+
+        msg_list = []
+        for k1,vs in d1.items(): # KEY=P VALUE = 竞争的P
+            # vs = d1[k1]
+            msg = "%s\t%s" % (k1, '\t'.join(vs))
+            # for _ in vs:
+            #     msg = "%s\t%s" % (k1,_)
+            msg_list.append(msg)
+        ct.file_wirte_list(f2, msg_list)
 
 if __name__ == '__main__':
     cf = classification()
