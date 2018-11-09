@@ -890,9 +890,9 @@ def main():
             for step in range(FLAGS.epoches):
                 train_step = 0
                 if step %2 == 0:
-                    p_neg_score = 'DEFAULT'
-                else:
                     p_neg_score = 'CP'
+                else:
+                    p_neg_score = 'DEFAULT'
 
                 # 更新一圈竞争排名 # 20180916 ns 实验 negative sampling top k
                 for cos_index in range(FLAGS.ns_epoches):
@@ -1285,14 +1285,15 @@ def ns_competing_relation_origin(dh, discriminator,  sess, step,p_neg_score = ''
 
         # P_V 分拆下 单次的话 显存不足
 
-        temp_ns_q_state_list = [ns_q_state_all[global_index] for x
-                                in range(len(p_v_state))]
+
 
         ns2_q_r_score_all = []
-        for _ in ct.yield_return(p_v, batch_size=1000):
+        for _ in ct.yield_return(p_v_state, batch_size=1000):
             feed_dict = {}
+            temp_ns_q_state_list = [ns_q_state_all[global_index] for x
+                                    in range(len(_))]
             feed_dict[discriminator.ns2_q] = temp_ns_q_state_list  # negative sampling 问题
-            feed_dict[discriminator.ns2_r] = p_v_state  # negative sampling 属性
+            feed_dict[discriminator.ns2_r] = _  # negative sampling 属性
 
             # 记录
 
