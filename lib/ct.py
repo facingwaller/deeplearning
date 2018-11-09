@@ -8,7 +8,7 @@ import os
 import datetime
 import time
 import pickle
-
+import math
 
 class classObject:
     pass
@@ -1517,28 +1517,37 @@ class ct:
     def filter_limit_len(list1,min_len):
         return list(filter(lambda x: len(x)<min_len , list1))
 
+    @staticmethod
+    def yield_return(data,batch_size):
+
+        length = len(data)
+        geshu = math.ceil(length / batch_size)  # 向上取整
+
+        for i in range(geshu):
+            yield data[i * batch_size:(i + 1) * batch_size]
+
+
 log_path = ct.log_path_static()
 
 
 if __name__ == "__main__":
+    data = []
     for step in range(10):
-        train_step = 0
-        if step % 2 == 0:
-            p_neg_score = 'CP'
-        else:
-            p_neg_score = 'DEFAULT'
-        print(p_neg_score)
-    print(len('//upload.wikimedia.org/wikipedia/zh/7/7d/%e9%9b%bb%e5%bd%b1%e5%8b%9d%e5%88%a9.jpg上海国际电影节宣传海报'))
-    print(len('历元2456400.5(2013年4月18日更新)'))
-    all_ps_ret = []
-    all_os_ret = []
-    all_ps= [1,2,3,5]
-    num=5
-    range_array = ct.random_get_some_from_list(all_ps,num)
-    for i in range_array:
-        # all_ps_ret.append(all_ps[i])
-        # all_os_ret.append(all_ps[i])
+        data.append(step)
+        print(step)
+    for i in  ct.yield_return(data,2):
         print(i)
+    # print(len('//upload.wikimedia.org/wikipedia/zh/7/7d/%e9%9b%bb%e5%bd%b1%e5%8b%9d%e5%88%a9.jpg上海国际电影节宣传海报'))
+    # print(len('历元2456400.5(2013年4月18日更新)'))
+    # all_ps_ret = []
+    # all_os_ret = []
+    # all_ps= [1,2,3,5]
+    # num=5
+    # range_array = ct.random_get_some_from_list(all_ps,num)
+    # for i in range_array:
+    #     # all_ps_ret.append(all_ps[i])
+    #     # all_os_ret.append(all_ps[i])
+    #     print(i)
 
 
     # pass

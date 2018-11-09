@@ -890,12 +890,13 @@ def main():
             for step in range(FLAGS.epoches):
                 train_step = 0
                 if step %2 == 0:
-                    p_neg_score = 'CP'
+                    p_neg_score = 'DEFAULT'
                 else:
-                    p_neg_score ='DEFAULT'
+                    p_neg_score = 'CP'
 
                 # 更新一圈竞争排名 # 20180916 ns 实验 negative sampling top k
                 for cos_index in range(FLAGS.ns_epoches):
+
                     # ns_competing_v1(dh, discriminator,  sess, step)
                     if config.cc_par('ns_model')=='competing_q':
                         ns_competing_relation_origin(dh, discriminator,  sess, step,p_neg_score)
@@ -1151,7 +1152,7 @@ def main():
 
 # 使用原版本的test的方法不过早优化
 def ns_competing_relation_origin(dh, discriminator,  sess, step,p_neg_score = ''):
-    ct.print('ns_epoches start')
+    ct.print('ns_epoches start :%s'%p_neg_score)
     ns_r_r_score_all = []
 
     r_cp = []
@@ -1237,8 +1238,10 @@ def ns_competing_relation_origin(dh, discriminator,  sess, step,p_neg_score = ''
                 p_v = [x[0] for x in p_v]  # 去除频率
         elif p_neg_score == 'DEFAULT':
             temp_cand_ps_neg, temp_cand_as_neg = \
-                dh.bh.kb_get_p_o_by_s(_s, [r_pos1])
+                dh.bh.kb_get_p_o_by_s(_s_clean, [r_pos1])
             p_v = temp_cand_ps_neg
+        elif p_neg_score == 'BOTH':
+            pass
         else:
             raise ('NO NO')
 
@@ -1279,75 +1282,82 @@ def ns_competing_relation_origin(dh, discriminator,  sess, step,p_neg_score = ''
 
         # continue
         p_v = _pv # 去掉找不到的
+
+        # P_V 分拆下 单次的话 显存不足
+
         temp_ns_q_state_list = [ns_q_state_all[global_index] for x
                                 in range(len(p_v_state))]
-        feed_dict = {}
-        feed_dict[discriminator.ns2_q] = temp_ns_q_state_list  # negative sampling 问题
-        feed_dict[discriminator.ns2_r] = p_v_state  # negative sampling 属性
 
-        # 记录
+        ns2_q_r_score_all = []
+        for _ in ct.yield_return(p_v, batch_size=1000):
+            feed_dict = {}
+            feed_dict[discriminator.ns2_q] = temp_ns_q_state_list  # negative sampling 问题
+            feed_dict[discriminator.ns2_r] = p_v_state  # negative sampling 属性
 
-        # for x in p_v:
-        #     ct.print('%s\t%s'%(ns_q_str[global_index],x),'ns_q_p')
-            # pass
+            # 记录
 
-        # try: 老版本的方法
-        if True:
-            [ns2_q_r_score
-             #    ,_ns2_q,_ns2_r,_ns2_q_feat,_ns2_r_feat,
-             # _debug_ns__output_q, _debug_ns__reshape_q_1,
-             # _debug_ns__reshape_q_3, _debug_ns__reshape_a, _debug_ns__M_1, _debug_ns__M_2, _debug_ns__S_1, _debug_ns__S_2, _debug_ns__S_diag,
-             # _debug_ns__attention_a, _debug_ns__attention_a_1, _debug_ns__output_a, _debug_ns__reshape_q_2,
-             #
-             # _debug_ns__debug_output, _debug_ns__debug_output_q,debug_ns__lstm_out,
-             # _debug_ns__input_q
-             ] = sess.run(
-                    [discriminator.ns2_q_r
-                     # .discriminator.ns2_q,discriminator.ns2_r,
-                     # discriminator.ns2_q_feat,discriminator.ns2_r_feat,
+            # for x in p_v:
+            #     ct.print('%s\t%s'%(ns_q_str[global_index],x),'ns_q_p')
+                # pass
+
+            # try: 老版本的方法
+            if True:
+                [ns2_q_r_score
+                 #    ,_ns2_q,_ns2_r,_ns2_q_feat,_ns2_r_feat,
+                 # _debug_ns__output_q, _debug_ns__reshape_q_1,
+                 # _debug_ns__reshape_q_3, _debug_ns__reshape_a, _debug_ns__M_1, _debug_ns__M_2, _debug_ns__S_1, _debug_ns__S_2, _debug_ns__S_diag,
+                 # _debug_ns__attention_a, _debug_ns__attention_a_1, _debug_ns__output_a, _debug_ns__reshape_q_2,
+                 #
+                 # _debug_ns__debug_output, _debug_ns__debug_output_q,debug_ns__lstm_out,
+                 # _debug_ns__input_q
+                 ] = sess.run(
+                        [discriminator.ns2_q_r
+                         # .discriminator.ns2_q,discriminator.ns2_r,
+                         # discriminator.ns2_q_feat,discriminator.ns2_r_feat,
+                         #
+                         # discriminator._debug_output_q, discriminator._debug_reshape_q_1, discriminator._debug_reshape_q_3,
+                         # discriminator._debug_reshape_a, discriminator._debug_M_1, discriminator._debug_M_2,
+                         # discriminator._debug_S_1, discriminator._debug_S_2, discriminator._debug_S_diag,
+                         # discriminator._debug_attention_a, discriminator._debug_attention_a_1, discriminator._debug_output_a,
+                         # discriminator._debug_reshape_q_2,
+                         #
+                         # discriminator._debug_output,discriminator._debug_output_q,
+                         # discriminator._debug_lstm_out,discriminator._debug_input_q
+                         ],
+                        feed_dict=feed_dict)
+                # except Exception as e1:
+                #     print(e1)
+            else: # 简单的方法
+                test_q = np.array([q_p for x in range(len(p_v))])
+                test_r = np.array([dh.convert_str_to_indexlist(x) for x  in  p_v])
+                feed_dict[discriminator.test_input_q] = test_q  # negative sampling 问题
+                feed_dict[discriminator.test_input_r] = test_r  # negative sampling 属性
+                [ns2_q_r_score
+                 #    ,_test_q,_test_r,_test_q_out,
+                 # _test_r_out,_test_q_feat_out,_test_r_feat_out,
+                 #
+                 # _debug_output_q, _debug_reshape_q_1,
+                 # _debug_reshape_q_3, _debug_reshape_a, _debug_M_1, _debug_M_2, _debug_S_1, _debug_S_2, _debug_S_diag,
+                 # _debug_attention_a, _debug_attention_a_1, _debug_output_a, _debug_reshape_q_2,
+                 # _debug_output, _debug_output_q,_debug_lstm_out,_debug_input_q
+                 ] = sess.run(
+                    [discriminator.test_q_r
+                     #    ,discriminator.test_q,discriminator.test_r,
+                     # discriminator.test_q_out,discriminator.test_r_out,
+                     # discriminator.test_q_feat_out, discriminator.test_r_feat_out,
                      #
-                     # discriminator._debug_output_q, discriminator._debug_reshape_q_1, discriminator._debug_reshape_q_3,
-                     # discriminator._debug_reshape_a, discriminator._debug_M_1, discriminator._debug_M_2,
-                     # discriminator._debug_S_1, discriminator._debug_S_2, discriminator._debug_S_diag,
-                     # discriminator._debug_attention_a, discriminator._debug_attention_a_1, discriminator._debug_output_a,
-                     # discriminator._debug_reshape_q_2,
+                     # discriminator.debug_output_q, discriminator.debug_reshape_q_1, discriminator.debug_reshape_q_3,
+                     # discriminator.debug_reshape_a, discriminator.debug_M_1, discriminator.debug_M_2,
+                     # discriminator.debug_S_1, discriminator.debug_S_2, discriminator.debug_S_diag,
+                     # discriminator.debug_attention_a, discriminator.debug_attention_a_1, discriminator.debug_output_a,
+                     # discriminator.debug_reshape_q_2,
                      #
-                     # discriminator._debug_output,discriminator._debug_output_q,
-                     # discriminator._debug_lstm_out,discriminator._debug_input_q
+                     # discriminator.debug_output, discriminator.debug_output_q, discriminator.debug_lstm_out
+                     # ,discriminator.debug_input_q
                      ],
                     feed_dict=feed_dict)
-            # except Exception as e1:
-            #     print(e1)
-        else: # 简单的方法
-            test_q = np.array([q_p for x in range(len(p_v))])
-            test_r = np.array([dh.convert_str_to_indexlist(x) for x  in  p_v])
-            feed_dict[discriminator.test_input_q] = test_q  # negative sampling 问题
-            feed_dict[discriminator.test_input_r] = test_r  # negative sampling 属性
-            [ns2_q_r_score
-             #    ,_test_q,_test_r,_test_q_out,
-             # _test_r_out,_test_q_feat_out,_test_r_feat_out,
-             #
-             # _debug_output_q, _debug_reshape_q_1,
-             # _debug_reshape_q_3, _debug_reshape_a, _debug_M_1, _debug_M_2, _debug_S_1, _debug_S_2, _debug_S_diag,
-             # _debug_attention_a, _debug_attention_a_1, _debug_output_a, _debug_reshape_q_2,
-             # _debug_output, _debug_output_q,_debug_lstm_out,_debug_input_q
-             ] = sess.run(
-                [discriminator.test_q_r
-                 #    ,discriminator.test_q,discriminator.test_r,
-                 # discriminator.test_q_out,discriminator.test_r_out,
-                 # discriminator.test_q_feat_out, discriminator.test_r_feat_out,
-                 #
-                 # discriminator.debug_output_q, discriminator.debug_reshape_q_1, discriminator.debug_reshape_q_3,
-                 # discriminator.debug_reshape_a, discriminator.debug_M_1, discriminator.debug_M_2,
-                 # discriminator.debug_S_1, discriminator.debug_S_2, discriminator.debug_S_diag,
-                 # discriminator.debug_attention_a, discriminator.debug_attention_a_1, discriminator.debug_output_a,
-                 # discriminator.debug_reshape_q_2,
-                 #
-                 # discriminator.debug_output, discriminator.debug_output_q, discriminator.debug_lstm_out
-                 # ,discriminator.debug_input_q
-                 ],
-                feed_dict=feed_dict)
-
+            ns2_q_r_score_all.extend(ns2_q_r_score)
+        ns2_q_r_score = ns2_q_r_score_all
         st_list = []
         _competing_train_dict_set = set()
         for _index in range(len(ns2_q_r_score)):
@@ -1418,7 +1428,7 @@ def ns_competing_relation_origin(dh, discriminator,  sess, step,p_neg_score = ''
         if not is_test:  # 只加入训练集的
             dh.competing_train_p_id_num[r_pos1] = _t1 # 更新该属性最弱的问题
         dh.question_comcpeting_ps.append(_competing_train_dict_set)
-    ct.print('[过滤后的总数量]totoal_bad_neg_ps=%d ,过滤后的平均单个Q的NEG量=%d   '
+    ct.print('[过滤后的总数量]=%d ,过滤后的平均单个Q的NEG量=%d   '
              %(totoal_bad_neg_ps,totoal_bad_neg_ps/len(ns_q_str) ),'ns-stat')
 
 

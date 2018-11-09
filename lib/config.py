@@ -82,7 +82,7 @@ questions_len_test = 999999999999  # 测试的问题数目，全部
 wrong_relation_num = 999999999999  # 错误的关系，设置9999可以是全部的意思
 total_questions = 99999999
 stop_loss_zeor_count = 2000  # 2000次则停下来
-rnn_size = 100
+rnn_size = 200
 mode = "cc" #cc 中文训练  cc_test 中文测试
 check = 100000
 # 属性模式 # 1 num 限制数量 2 special 指定 3 no 非训练模式 4 maybe 模糊属性的单独处理
@@ -97,8 +97,8 @@ batch_size = 5  # 1个batch的大小 # 临时改成1 个看loss
 
 # ==================================需要配置
 # mark = '测试CP的效果；寻找最佳的CP策略；10P;NEG负例的个数是全部 ;14-cp的竞争策略[20181013-1]' # 备注
-mark = '测试CP的效果；每次5个;NS default 轮流来' # 备注
-t_relation_num = 100  # 4385  # 重要！这个指示了训练的关系个数 4358
+mark = '测试CP的效果；测200P;每次5个; default NS轮流来,找到瓶颈的数量' # 备注
+t_relation_num = 2000  # 4385  # 重要！这个指示了训练的关系个数 4358
 ner_top_cand = 0  # 训练取2，测试取3（写死） ; 0 只测属性识别,2 测实体或者实体+属性
 
 real_split_train_test = True  # 严格区分训练和测试
@@ -123,7 +123,7 @@ gan_learn_rate = 0.05
 d_need_cal_attention = True
 g_need_cal_attention = True
 competing_s_neg_p_num = 10   # 竞争属性中，P_POS的负例的多少 用于 ert
-competing_p_pos_neg_size = 5  # 竞争属性中，P_POS的负例的多少
+competing_p_pos_neg_size = 5 # 竞争属性中，P_POS的负例的多少
 print('测试：competing_p_pos_neg_size:%d'%competing_p_pos_neg_size)
 convert_rs_to_words = False   # 关系集合转换为对应的字符集合
 only_p_neg_in_cp = False               # 只加入P_NEG进入 CP 暂停，这样会导致POS无法加入
@@ -141,12 +141,11 @@ ns_q_ploicy_all = 'all_p' # D的策略，全问题还是一个 all_p , 1_q,1_p
 p_neg_score = 'CP' # CP 竞争属性 DEFAULT  轮流
 
 # 模型恢复
-restore_model = True
+restore_model = False
 restore_path_base = r'F:\PycharmProjects\dl2\deeplearning\QA_GAN\runs'
 restore_path = restore_path_base+ \
-               r'\2018_11_05_20_13_54_100p_retest\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
-                 # r'\2018_10_26_10_58_29_100p_default\checkpoints\step=3_epoches=d_index=0\model.ckpt-1'
-#                  r'\2018_11_01_11_45_50_allp_default_1\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
+ r'\2018_11_01_11_45_50_allp_default_1\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
+                # r'\2018_11_05_20_13_54_100p_retest\checkpoints\step=1_epoches=d_index=0\model.ckpt-1'
 # r'\2018_11_05_16_45_17_100p_cp_4\checkpoints\step=21_epoches=d_index=0\model.ckpt-1'
                 #r'\2018_10_05_11_06_59_allp_ns_cp_best\checkpoints\step=6_epoches=d_index=0\model.ckpt-1'
 restore_test = False
@@ -156,7 +155,7 @@ restore_test = False
 # competing_ps_path = '../data/nlpcc2016/5-class/competing_ps.v1.txt'
 # competing_ps_path = '../data/nlpcc2016/14-cp/competing_ps_tj_tt.v2.txt'
 competing_ps_path = '../data/nlpcc2016/14-cp/competing_ps_tj.v2.txt'
-# ct.print('临时用：%s'%competing_ps_path)
+# print('临时用：%s'%competing_ps_path)
 # competing_batch_size = 10 # 控制size 无用
 
 # expend_es = '../data/nlpcc2016/4-ner/result/q.rdf.score.top_3_all_0.v4.10.txt'
